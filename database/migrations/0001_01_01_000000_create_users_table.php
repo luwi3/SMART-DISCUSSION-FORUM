@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id(); // Primary Key (userID)
             $table->string('name');
             $table->string('email')->unique();
+            $table->string('username')->unique();
+            $table->string('phone')->nullable();
             $table->string('password'); // Securely hashed string
             
             // Core System Requirement Additions:
