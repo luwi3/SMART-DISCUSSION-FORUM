@@ -24,31 +24,11 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        //$request->authenticate();
-
-        //$request->session()->regenerate();
-
-        //return redirect()->intended(route('dashboard', absolute: false));
-
-          // 1. Validates credentials and checks the "Remember Me" checkbox automatically
         $request->authenticate();
 
-        // 2. Protects against session hijacking
         $request->session()->regenerate();
 
-        // 3. Business Logic: Fetch the logged-in user details to inspect their role
-        $user = Auth::user();
-        
-        // 4. Divert traffic based on role
-        if ($user->role === 'Administrator') {
-            return redirect()->intended('/admin/dashboard');
-        } elseif ($user->role === 'Lecturer') {
-            return redirect()->intended('/lecturer/dashboard');
-        }
-
-        // Default redirect for Students
         return redirect()->intended(route('dashboard', absolute: false));
-      
     }
 
     /**
