@@ -106,7 +106,17 @@
                 </div>
                 <button class="btn-view-all">VIEW ALL</button>
             </section>
+            <div style="background: white; padding: 20px; border-radius: 8px; margin-top: 20px; border: 1px solid #e2e8f0;">
+    <h3 style="color: #1e293b; margin-bottom: 10px;">✍️ Available Assessments</h3>
+    <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">Your registered course streams have active evaluation windows open.</p>
+    <a href="/quizzes/1" style="display: inline-block; padding: 10px 20px; background: #10b981; color: white; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 14px;">
+        🚀 Attempt Active BIT 2201 Quiz
+    </a>
+</div>
+
         </main>
+           
+
     </div>
 </body>
 </html>

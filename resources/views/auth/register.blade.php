@@ -58,7 +58,6 @@
             <input id="name" type="text" name="name" value="{{ old('name') }}" required autofocus 
                 class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="Enter your full name">
         </div>
-    </div>
 
     <div>
         <label for="username" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Username</label>
