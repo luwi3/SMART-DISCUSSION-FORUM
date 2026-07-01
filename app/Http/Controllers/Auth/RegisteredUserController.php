@@ -26,40 +26,36 @@ class RegisteredUserController extends Controller
     /**
      * Handle an incoming registration request.
      *
-     * @throws ValidationException
-     */
-  /**
-     * Handle an incoming registration request.
-     *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function store(Request $request): \Illuminate\Http\RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.\App\Models\User::class],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'username' => ['required', 'string', 'max:255'], 
             'phone' => ['required', 'string', 'max:20'], 
             'role' => ['required', 'string', 'in:student,lecturer,administrator'], 
             'agreed_to_rules' => ['required', 'accepted'],
-            'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        $user = \App\Models\User::create([
+        $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'username' => $request->username,
             'phone' => $request->phone,
             'role' => $request->role, 
             'agreed_to_rules' => (bool) $request->agreed_to_rules,
-            'password' => \Illuminate\Support\Facades\Hash::make($request->password),
+            'password' => Hash::make($request->password),
             'status' => 'active',
         ]);
 
-        event(new \Illuminate\Auth\Events\Registered($user));
+        event(new Registered($user));
 
-        \Illuminate\Support\Facades\Auth::login($user);
+        Auth::login($user);
 
-        return redirect(route('dashboard', absolute: false));
+        // 🚀 Connected to the live discussion board named route structure
+        return redirect(route('chat.index', absolute: false));
     }
 }
