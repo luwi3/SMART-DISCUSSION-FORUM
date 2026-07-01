@@ -76,6 +76,15 @@
                 <div class="stat-mini" style="color: #dc2626;"><div class="stat-mini-title">Suspended Students</div><div class="stat-mini-value">0</div></div>
             </div>
         </section>
+
+         <div style="background: white; padding: 20px; border-radius: 8px; margin-top: 20px; border: 1px solid #e2e8f0;">
+    <h3 style="color: #0b2265; margin-bottom: 10px;">🎯 Quiz Management</h3>
+    <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">Set up new course assessments, manage active timelines, and monitor student progress metrics.</p>
+    <a href="{{ route('quizzes.create') }}" style="display: inline-block; padding: 10px 20px; background: #7c3aed; color: white; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 14px;">
+        ➕ Setup & Publish New Quiz
+    </a>
+</div>
+
     </main>
 </body>
 </html>
