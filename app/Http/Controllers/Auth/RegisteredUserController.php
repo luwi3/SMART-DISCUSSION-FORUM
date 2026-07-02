@@ -26,34 +26,36 @@ class RegisteredUserController extends Controller
     /**
      * Handle an incoming registration request.
      *
-     * @throws ValidationException
+     * @throws \Illuminate\Validation\ValidationException
      */
     public function store(Request $request): RedirectResponse
     {
-       // 1. Business Validation Rules matching your UI fields
-    $request->validate([
-        'name' => ['required', 'string', 'max:255'],
-        'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-        'contact' => ['required', 'string', 'max:20'], // Captures your contact input
-        'password' => ['required', 'confirmed', \Illuminate\Validation::Rules\Password::defaults()],
-        'role' => ['required', 'in:Administrator,Lecturer,Student'], // Validates the dropdown selection
-        'rules_agreed' => ['required', 'accepted'], // Stops the user if "I have read and understood the rules" is unchecked
-    ]);
+        $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'username' => ['required', 'string', 'max:255'], 
+            'phone' => ['required', 'string', 'max:20'], 
+            'role' => ['required', 'string', 'in:student,lecturer,administrator'], 
+            'agreed_to_rules' => ['required', 'accepted'],
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        ]);
 
-    // 2. Creating the user record in the database
-    $user = User::create([
-        'name' => $request->name,
-        'email' => $request->email,
-        'contact' => $request->contact,
-        'password' => \Illuminate\Support\Facades\Hash::make($request->password), // Encrypts the password securely
-        'role' => $request->role,
-        'status' => 'Active', // Sets default user account status
-    ]);
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'username' => $request->username,
+            'phone' => $request->phone,
+            'role' => $request->role, 
+            'agreed_to_rules' => (bool) $request->agreed_to_rules,
+            'password' => Hash::make($request->password),
+            'status' => 'active',
+        ]);
 
-    // 3. Authenticate and log the user in immediately
-    event(new \Illuminate\Auth\Events\Registered($user));
-    \Illuminate\Support\Facades\Auth::login($user);
+        event(new Registered($user));
 
-    // 4. Redirect them to the dashboard area
-    return redirect(route('dashboard', absolute: false));
+        Auth::login($user);
+
+        // 🚀 Connected to the live discussion board named route structure
+        return redirect(route('chat.index', absolute: false));
+    }
 }
