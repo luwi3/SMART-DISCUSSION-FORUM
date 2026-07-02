@@ -2,23 +2,38 @@
 
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\QuizController;
-use Illuminate\Support\Facades\Route;
-
-// 1. Welcome Landing Page
 use App\Http\Controllers\ForumChatController;
-//use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\LecturerController;
+use App\Http\Controllers\QuizController;
 
 // 1. Root URL: Redirects to dashboard (or login)
 Route::get('/', function () {
-    return redirect('/dashboard');
+    return redirect('login');
 });
 
-// 2. Central Landing Dashboard
-// 2. Dashboard: Only for authenticated users
-Route::get('/dashboard', function () {
-    return view('dashboard');
+
+// 🚦 1.5 The Switchboard: Handlers Laravel's default dashboard redirects
+// 🚦 1.5 The Switchboard: Handlers Laravel's default dashboard redirects
+Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
+    $user = $request->user();
+    
+    // 🛠️ Temporary debug line:
+    dd($user, $user->lecturer);
+    
+    if ($user->role === 'administrator') {
+        return redirect()->route('admin.dashboard');
+    } elseif ($user->lecturer()->exists()) {
+        return redirect()->route('lecturer.dashboard');
+    }
+    
+    return redirect()->route('student.dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
+// 2. Dashboard: Only for authenticated users
+// 🎓 Student Dashboard Route
+Route::get('/student/dashboard', function () {
+    return view('dashboards.student');
+})->middleware(['auth', 'verified'])->name('student.dashboard');
 
 // 3. Authenticated Core Features Group (Requires Login)
 Route::middleware('auth')->group(function () {
@@ -33,9 +48,19 @@ Route::middleware('auth')->group(function () {
     Route::post('/quizzes/store', [QuizController::class, 'store'])->name('quizzes.store');
     Route::get('/quizzes/{quizID}', [QuizController::class, 'show'])->name('quizzes.show');
 });
+// 👨‍🏫 Lecturer Dashboard Route
+Route::get('/lecturer/dashboard', function () {
+    return view('dashboards.lecturer');
+})->middleware(['auth', 'verified'])->name('lecturer.dashboard');
 
-// 4. Load the external Breeze authentication paths file
-require __DIR__.'/auth.php';
+// 📋 Lecturer: Create Quiz Route
+Route::get('/quizzes/create', [QuizController::class, 'create'])
+    ->middleware(['auth', 'verified'])
+    ->name('quizzes.create');
+    // 💾 Lecturer: Store Quiz Route
+Route::post('/quizzes', [QuizController::class, 'store'])
+    ->middleware(['auth', 'verified'])
+    ->name('quizzes.store');
 
 // 🧪 5. INDEPENDENT MODULE TESTING ROUTES
 // These bypass login checks completely so you can view your progress live right now!
@@ -48,6 +73,20 @@ Route::get('/test-quiz-create', function() {
 Route::get('/test-quiz-show', function() { 
     return view('quizzes.show'); 
 });
+// 🔑 Administrator Dashboard Route
+Route::get('/admin/dashboard', function () {
+    return view('dashboards.admin');
+})->middleware(['auth', 'verified'])->name('admin.dashboard');
+
+// 2.5 Admin: Register Lecturer Route
+Route::get('/admin/lecturers/create', [LecturerController::class, 'create'])
+    ->middleware(['auth', 'verified'])
+    ->name('admin.lecturers.create');
+
+    Route::post('/admin/lecturers', [LecturerController::class, 'store'])
+    ->middleware(['auth', 'verified'])
+    ->name('admin.lecturers.store');
+
 // 3. Authenticated Group
 Route::middleware('auth')->group(function () {
     // Profile Routes (This fixes the "Route [profile.edit] not defined" error)

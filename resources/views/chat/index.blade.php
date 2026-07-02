@@ -11,9 +11,10 @@
 <body class="h-full overflow-hidden flex flex-col">
 
     <div class="flex-1 flex min-h-0">
-        <aside class="w-64 bg-gray-900 text-gray-300 flex flex-col p-4 shadow-xl">
-            <h2 class="text-[10px] font-black uppercase text-gray-500 mb-4 px-2">Workspaces</h2>
-            <div class="space-y-1">
+        <aside class="w-64 bg-gray-900 text-gray-300 flex flex-col p-4 shadow-xl overflow-y-auto">
+            
+            <h2 class="text-[10px] font-black uppercase text-gray-500 mb-2 px-2 tracking-wider">Workspaces</h2>
+            <div class="space-y-1 mb-6">
                 @foreach($groups as $group)
                     <a href="{{ url('/forum-workspace/group/' . $group->id) }}" 
                        class="flex items-center px-3 py-2 rounded-lg text-xs font-medium transition {{ (isset($type) && $type == 'group' && $id == $group->id) ? 'bg-emerald-600 text-white' : 'hover:bg-gray-800' }}">
@@ -21,11 +22,32 @@
                     </a>
                 @endforeach
             </div>
+
+            <h2 class="text-[10px] font-black uppercase text-gray-500 mb-2 px-2 tracking-wider">🔥 Active Topics</h2>
+            <div class="space-y-1 mb-6">
+                <button class="w-full flex items-center px-3 py-2 rounded-lg text-xs font-medium text-left hover:bg-gray-800 transition">
+                    <i class="fa-solid fa-fire text-amber-500 mr-2"></i> Database Normalization
+                </button>
+                <button class="w-full flex items-center px-3 py-2 rounded-lg text-xs font-medium text-left hover:bg-gray-800 transition">
+                    <i class="fa-solid fa-fire text-amber-500 mr-2"></i> Laravel Authentication Setup
+                </button>
+            </div>
+
+            <h2 class="text-[10px] font-black uppercase text-gray-500 mb-2 px-2 tracking-wider">⏱️ Recent Topics</h2>
+            <div class="space-y-1">
+                <button class="w-full flex items-center px-3 py-2 rounded-lg text-xs font-medium text-left hover:bg-gray-800 transition">
+                    <i class="fa-regular fa-clock text-blue-400 mr-2"></i> Git Merge Conflicts Help
+                </button>
+                <button class="w-full flex items-center px-3 py-2 rounded-lg text-xs font-medium text-left hover:bg-gray-800 transition">
+                    <i class="fa-regular fa-clock text-blue-400 mr-2"></i> CSS Flexbox vs Grid
+                </button>
+            </div>
         </aside>
 
         <main class="flex-1 bg-white flex flex-col min-h-0">
-            @if(isset($currentStreamTarget))
-                <div id="chat-window" class="flex-1 overflow-y-auto p-6 space-y-4">
+            
+            <div class="flex-1 overflow-y-auto p-6 space-y-4">
+                @if(isset($currentStreamTarget) && count($messages) > 0)
                     @foreach($messages as $msg)
                         <div class="flex items-start space-x-3">
                             <div class="h-8 w-8 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold">
@@ -37,59 +59,72 @@
                             </div>
                         </div>
                     @endforeach
-                </div>
+                @else
+                    <div class="h-full flex flex-col items-center justify-center text-gray-400 p-8 text-center">
+                        <i class="fa-solid fa-comments text-6xl opacity-20 mb-4"></i>
+                        <h2 class="text-sm font-bold text-gray-600">Welcome to the Forum Stream</h2>
+                        <p class="text-xs mt-2 max-w-xs">Type an open question below, or select a workspace channel to inspect filtered historical archives.</p>
+                    </div>
+                @endif
+            </div>
 
-                <div class="p-4 border-t border-gray-200 bg-white">
-                    <form id="chat-form" class="flex items-center">
-                        @csrf
-                        <input type="text" id="message-input" name="body" required autocomplete="off" placeholder="Type a message..." 
-                               class="w-full pl-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 outline-none">
-                        <button type="submit" id="send-btn" class="ml-2 bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold text-[10px] hover:bg-emerald-700 transition">SEND</button>
-                    </form>
-                </div>
-            @else
-                <div class="flex-1 flex flex-col items-center justify-center text-gray-400 p-8">
-                    <i class="fa-solid fa-comments text-6xl opacity-20 mb-4"></i>
-                    <h2 class="text-sm font-bold text-gray-600">Select a Workspace</h2>
-                    <p class="text-xs mt-2">Pick a directory to begin collaborating.</p>
-                </div>
-            @endif
+            <div class="p-4 border-t border-gray-200 bg-gray-50">
+                <form id="chat-form" class="flex items-center gap-2">
+                    @csrf
+                    
+                    <div class="relative flex items-center">
+                        <span class="absolute left-3 text-gray-400 text-xs pointer-events-none">
+                            <i class="fa-solid fa-user-shield mr-1"></i> Restrict:
+                        </span>
+                        <select name="course_id" id="course-filter" 
+                                class="pl-20 pr-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-emerald-500 outline-none cursor-pointer text-gray-700 appearance-none shadow-sm">
+                            <option value="all">🌍 All Streams</option>
+                            @if(isset($courses))
+                                @foreach($courses as $course)
+                                    <option value="{{ $course->id }}">📚 {{ $course->code }}</option>
+                                @endforeach
+                            @else
+                                <option value="BIT2201">📚 BIT 2201</option>
+                                <option value="BCS2104">📚 BCS 2104</option>
+                            @endif
+                        </select>
+                    </div>
+
+                    <input type="text" id="message-input" name="body" required autocomplete="off" placeholder="Ask a general question or broadcast a thought..." 
+                           class="flex-1 pl-4 py-2 bg-white border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 outline-none shadow-sm">
+                    
+                    <button type="submit" id="send-btn" class="bg-emerald-600 text-white px-5 py-2 rounded-xl font-bold text-xs hover:bg-emerald-700 transition shadow-sm uppercase tracking-wider">
+                        SEND
+                    </button>
+                </form>
+            </div>
         </main>
     </div>
 
     <script type="module">
+        // Prevent form reload and submit via AJAX
+        document.getElementById('chat-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const input = document.getElementById('message-input');
+            const formData = new FormData(this);
+
+            // 🛣️ Dynamically decides target endpoint URL depending on active routing conditions
+            const targetUrl = "{{ isset($type) && isset($id) ? url('/forum-workspace/' . $type . '/' . $id) : url('/messages/broadcast') }}";
+
+            fetch(targetUrl, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            }).then(() => {
+                input.value = ''; 
+            });
+        });
+
         @if(isset($type) && isset($id))
-            // 1. Listen for incoming messages
             window.Echo.channel('chat.{{ $type }}.{{ $id }}')
                 .listen('MessageSent', (e) => {
-                    const chatWindow = document.getElementById('chat-window');
-                    chatWindow.insertAdjacentHTML('beforeend', `
-                        <div class="flex items-start space-x-3 mt-4">
-                            <div class="h-8 w-8 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold">
-                                ${e.message.user.name.substring(0, 2).toUpperCase()}
-                            </div>
-                            <div class="flex-1">
-                                <span class="text-xs font-bold text-gray-900">${e.message.user.name}</span>
-                                <div class="mt-1 text-xs text-gray-700 bg-gray-50 p-2 rounded-xl border">${e.message.body}</div>
-                            </div>
-                        </div>`);
-                    chatWindow.scrollTop = chatWindow.scrollHeight;
+                    // Real-time rendering appends here...
                 });
-
-            // 2. Prevent form reload and submit via AJAX
-            document.getElementById('chat-form').addEventListener('submit', function(e) {
-                e.preventDefault();
-                const input = document.getElementById('message-input');
-                const formData = new FormData(this);
-
-                fetch("{{ url('/forum-workspace/' . $type . '/' . $id) }}", {
-                    method: 'POST',
-                    body: formData,
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                }).then(() => {
-                    input.value = ''; // Clear input only after successful request
-                });
-            });
         @endif
     </script>
 </body>

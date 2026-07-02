@@ -62,7 +62,7 @@
             <ul class="sidebar-menu">
                 <li class="menu-item active"><a href="#">Profile</a></li>
                 <li class="menu-item"><a href="#">Marks</a></li>
-                <li class="menu-item"><a href="#">Chats</a></li>
+                <li class="menu-item"><a href="{{ route('chat.index') }}">Chats</a></li>
                 <li class="menu-item"><a href="#">Notifications <span class="badge">3</span></a></li>
                 <li class="menu-item"><a href="#">Announcements</a></li>
             </ul>
@@ -124,7 +124,7 @@
                 </div>
                 <button class="btn-view-all">VIEW ALL</button>
             </section>
-
+            
             <div style="background: white; padding: 20px; border-radius: 8px; margin-top: 20px; border: 1px solid #e2e8f0;">
                 <h3 style="color: #1e293b; margin-bottom: 10px;">✍️ Available Assessments</h3>
                 <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">Your registered course streams have active evaluation windows open.</p>
