@@ -55,7 +55,7 @@
 
     <div class="timer-bar">
         <div class="timer-label">Time Remaining</div>
-        <div class="timer-display" id="clock">--:--</div>
+        <div class="timer-display" id="clock">--:--:--</div>
     </div>
 
     <div class="meta-grid">
@@ -84,6 +84,8 @@
 
     <form id="quizForm" method="POST" action="/quizzes/{{ $quiz->quizID }}/submit">
         @csrf
+        
+        <input type="hidden" name="auto_submit" id="autoSubmitInput" value="0">
         
         @foreach($questions as $index => $question)
             <div class="question-block">
@@ -117,33 +119,40 @@
 </div>
 
 <script>
-    // Countdown Timer logic based on structural database duration setup
-    let totalSeconds = {{ $quiz->duration }} * 60;
+    // ⏰ Calculate the absolute end deadline timestamp using ISO standard formatting
+    const startTime = new Date("{{ \Carbon\Carbon::parse($quiz->startTime)->toIso8601String() }}").getTime();
+    const durationMinutes = {{ $quiz->duration }};
+    const endTime = startTime + (durationMinutes * 60 * 1000);
+
     const display = document.getElementById('clock');
 
     function startTimer() {
         const timerInterval = setInterval(() => {
+            const now = new Date().getTime();
+            let totalSeconds = Math.floor((endTime - now) / 1000);
+
+            // 🛑 Strict Constraint: Session expired or forced auto-submit condition triggered
+            if (totalSeconds <= 0) {
+                clearInterval(timerInterval);
+                display.textContent = "00:00:00";
+                document.getElementById('autoSubmitInput').value = "1";
+                alert("The quiz session has officially closed! Submitting your work now.");
+                document.getElementById('quizForm').submit();
+                return;
+            }
+
             let hours = Math.floor(totalSeconds / 3600);
             let minutes = Math.floor((totalSeconds % 3600) / 60);
             let seconds = totalSeconds % 60;
 
-            // Pad values with a leading zero if single digit
             hours = hours < 10 ? "0" + hours : hours;
             minutes = minutes < 10 ? "0" + minutes : minutes;
             seconds = seconds < 10 ? "0" + seconds : seconds;
 
             display.textContent = `${hours}:${minutes}:${seconds}`;
-
-            if (totalSeconds <= 0) {
-                clearInterval(timerInterval);
-                alert("Time is up! Your quiz will now submit automatically.");
-                document.getElementById('quizForm').submit();
-            }
-            totalSeconds--;
         }, 1000);
     }
 
-    // Trigger timer automatically when interface loads
     window.onload = startTimer;
 </script>
 

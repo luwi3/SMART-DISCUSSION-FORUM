@@ -25,6 +25,12 @@
         .welcome-txt { font-size: 26px; font-weight: 700; color: #0f172a; }
         .welcome-sub { font-size: 14px; color: #64748b; margin-top: 4px; }
 
+        /* Notification Banner Component */
+        .alert-banner { background-color: #eff6ff; border-left: 4px solid #2563eb; color: #1e3a8a; padding: 16px 20px; border-radius: 8px; margin-bottom: 24px; font-size: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); display: flex; align-items: flex-start; gap: 12px; }
+        .alert-icon { font-size: 18px; line-height: 1; }
+        .alert-heading { margin: 0; font-weight: 700; color: #1e293b; }
+        .alert-body { margin: 4px 0 0 0; color: #2563eb; font-weight: 600; }
+
         /* Top Grid Metrics */
         .cards-row { display: flex; gap: 20px; margin-bottom: 30px; }
         .metric-card { background: white; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; width: 220px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
@@ -64,7 +70,18 @@
                 <button type="submit" class="logout-btn">Logout</button>
             </form>
         </aside>
+        
         <main class="main-content">
+            @if(session('quiz_result'))
+                <div class="alert-banner">
+                    <span class="alert-icon">🔔</span>
+                    <div>
+                        <h4 class="alert-heading">Evaluation Center Update</h4>
+                        <p class="alert-body">{{ session('quiz_result') }}</p>
+                    </div>
+                </div>
+            @endif
+
             <div class="welcome-header">
                 <h1 class="welcome-txt">Hello, {{ Auth::user()->name }}! 👋</h1>
                 <p class="welcome-sub">Always keep learning and stay active.</p>
@@ -80,6 +97,7 @@
                 <div class="metric-card" style="width:160px;">
                     <div class="m-title" style="color:#1e293b;">Status</div>
                     <div class="status-check">✓</div>
+                    <div class="m-sub">Account Active</div>
                 </div>
                 <div class="metric-card" style="width:240px;">
                     <div class="m-title" style="color:#7c3aed;">Recommended Topic</div>
@@ -106,17 +124,15 @@
                 </div>
                 <button class="btn-view-all">VIEW ALL</button>
             </section>
+
             <div style="background: white; padding: 20px; border-radius: 8px; margin-top: 20px; border: 1px solid #e2e8f0;">
-    <h3 style="color: #1e293b; margin-bottom: 10px;">✍️ Available Assessments</h3>
-    <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">Your registered course streams have active evaluation windows open.</p>
-    <a href="/quizzes/1" style="display: inline-block; padding: 10px 20px; background: #10b981; color: white; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 14px;">
-        🚀 Attempt Active BIT 2201 Quiz
-    </a>
-</div>
-
+                <h3 style="color: #1e293b; margin-bottom: 10px;">✍️ Available Assessments</h3>
+                <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">Your registered course streams have active evaluation windows open.</p>
+                <a href="/quizzes/1" style="display: inline-block; padding: 10px 20px; background: #10b981; color: white; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 14px;">
+                    🚀 Attempt Active BIT 2201 Quiz
+                </a>
+            </div>
         </main>
-           
-
     </div>
 </body>
 </html>

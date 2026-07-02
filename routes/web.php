@@ -34,6 +34,8 @@ require __DIR__.'/auth.php';
 
 // 🧪 5. INDEPENDENT MODULE TESTING ROUTES
 // These bypass login checks completely so you can view your progress live right now!
+  Route::get('/quizzes/{quizID}/grades', [QuizController::class, 'viewGrades'])->name('quizzes.grades');
+
 Route::get('/test-quiz-create', function() { 
     return view('quizzes.create'); 
 });
