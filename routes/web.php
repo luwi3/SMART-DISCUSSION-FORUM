@@ -4,6 +4,8 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ForumChatController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\LecturerController;
+use App\Http\Controllers\QuizController;
 
 // 1. Root URL: Redirects to dashboard (or login)
 Route::get('/', function () {
@@ -12,12 +14,16 @@ Route::get('/', function () {
 
 
 // 🚦 1.5 The Switchboard: Handlers Laravel's default dashboard redirects
+// 🚦 1.5 The Switchboard: Handlers Laravel's default dashboard redirects
 Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
     $user = $request->user();
     
+    // 🛠️ Temporary debug line:
+    dd($user, $user->lecturer);
+    
     if ($user->role === 'administrator') {
         return redirect()->route('admin.dashboard');
-    } elseif ($user->role === 'lecturer') {
+    } elseif ($user->lecturer()->exists()) {
         return redirect()->route('lecturer.dashboard');
     }
     
@@ -34,10 +40,28 @@ Route::get('/lecturer/dashboard', function () {
     return view('dashboards.lecturer');
 })->middleware(['auth', 'verified'])->name('lecturer.dashboard');
 
+// 📋 Lecturer: Create Quiz Route
+Route::get('/quizzes/create', [QuizController::class, 'create'])
+    ->middleware(['auth', 'verified'])
+    ->name('quizzes.create');
+    // 💾 Lecturer: Store Quiz Route
+Route::post('/quizzes', [QuizController::class, 'store'])
+    ->middleware(['auth', 'verified'])
+    ->name('quizzes.store');
+
 // 🔑 Administrator Dashboard Route
 Route::get('/admin/dashboard', function () {
     return view('dashboards.admin');
 })->middleware(['auth', 'verified'])->name('admin.dashboard');
+
+// 2.5 Admin: Register Lecturer Route
+Route::get('/admin/lecturers/create', [LecturerController::class, 'create'])
+    ->middleware(['auth', 'verified'])
+    ->name('admin.lecturers.create');
+
+    Route::post('/admin/lecturers', [LecturerController::class, 'store'])
+    ->middleware(['auth', 'verified'])
+    ->name('admin.lecturers.store');
 
 // 3. Authenticated Group
 Route::middleware('auth')->group(function () {
