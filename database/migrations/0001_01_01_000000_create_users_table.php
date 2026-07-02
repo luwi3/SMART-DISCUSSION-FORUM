@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('password'); // Securely hashed string
             
             // Core System Requirement Additions:
-            $table->enum('role', ['student', 'lecturer', 'administrator'])->default('student');
+           // $table->enum('role', ['student', 'lecturer', 'administrator'])->default('student');
             $table->boolean('agreed_to_rules')->default(false); // Req 5
             $table->enum('status', ['active', 'warned_1', 'warned_2', 'blacklisted'])->default('active'); // Req 4
             $table->timestamp('blacklist_until')->nullable(); // Expiration timer for blacklisted users

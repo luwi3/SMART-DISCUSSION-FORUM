@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Route;
 
 // 1. Welcome Landing Page
 use App\Http\Controllers\ForumChatController;
-use Illuminate\Support\Facades\Route;
+//use Illuminate\Support\Facades\Route;
 
 // 1. Root URL: Redirects to dashboard (or login)
 Route::get('/', function () {
