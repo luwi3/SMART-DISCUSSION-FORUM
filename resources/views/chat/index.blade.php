@@ -25,12 +25,13 @@
 
             <h2 class="text-[10px] font-black uppercase text-gray-500 mb-2 px-2 tracking-wider">🔥 Active Topics</h2>
             <div class="space-y-1 mb-6">
-                <button class="w-full flex items-center px-3 py-2 rounded-lg text-xs font-medium text-left hover:bg-gray-800 transition">
-                    <i class="fa-solid fa-fire text-amber-500 mr-2"></i> Database Normalization
-                </button>
-                <button class="w-full flex items-center px-3 py-2 rounded-lg text-xs font-medium text-left hover:bg-gray-800 transition">
-                    <i class="fa-solid fa-fire text-amber-500 mr-2"></i> Laravel Authentication Setup
-                </button>
+              @foreach($topics as $topic)
+    <a href="{{ route('chat.index', ['type' => 'topic', 'id' => $topic->id]) }}" 
+       class="flex items-center px-3 py-2 rounded-lg text-xs font-medium text-left hover:bg-gray-700">
+        <i class="fa-solid fa-fire text-amber-500 mr-2"></i> 
+        {{ $topic->title }}
+    </a>
+@endforeach
             </div>
 
             <h2 class="text-[10px] font-black uppercase text-gray-500 mb-2 px-2 tracking-wider">⏱️ Recent Topics</h2>
@@ -69,9 +70,9 @@
             </div>
 
             <div class="p-4 border-t border-gray-200 bg-gray-50">
-                <form id="chat-form" class="flex items-center gap-2">
+                @if($id)
+             <form id="chat-form" action="{{ route('chat.store', ['type' => $type, 'id' => $id]) }}" method="POST" class="flex items-center gap-2">
                     @csrf
-                    
                     <div class="relative flex items-center">
                         <span class="absolute left-3 text-gray-400 text-xs pointer-events-none">
                             <i class="fa-solid fa-user-shield mr-1"></i> Restrict:
@@ -97,18 +98,30 @@
                         SEND
                     </button>
                 </form>
+                @else
+    <div class="text-center text-gray-500">
+        Please select a group or topic from the sidebar to start chatting!
+    </div>
+@endif
             </div>
         </main>
     </div>
 
-    <script type="module">
-        // Prevent form reload and submit via AJAX
-        document.getElementById('chat-form').addEventListener('submit', function(e) {
-            e.preventDefault();
+<script type="module">
+    // 🧪 Test logs to see what JavaScript detects on load
+    console.log("Script block has executed!");
+    console.log("Looking for form:", document.getElementById('chat-form'));
+
+    const chatForm = document.getElementById('chat-form');
+
+    if (chatForm) {
+        chatForm.addEventListener('submit', function(e) {
+            e.preventDefault(); // 🛑 Stops full page reload
+            
+            console.log('Form submit intercepted successfully!'); 
+            
             const input = document.getElementById('message-input');
             const formData = new FormData(this);
-
-            // 🛣️ Dynamically decides target endpoint URL depending on active routing conditions
             const targetUrl = "{{ isset($type) && isset($id) ? url('/forum-workspace/' . $type . '/' . $id) : url('/messages/broadcast') }}";
 
             fetch(targetUrl, {
@@ -119,13 +132,14 @@
                 input.value = ''; 
             });
         });
+    }
 
-        @if(isset($type) && isset($id))
-            window.Echo.channel('chat.{{ $type }}.{{ $id }}')
-                .listen('MessageSent', (e) => {
-                    // Real-time rendering appends here...
-                });
-        @endif
-    </script>
+    @if(isset($type) && isset($id))
+        window.Echo.channel('chat.{{ $type }}.{{ $id }}')
+            .listen('MessageSent', (e) => {
+                console.log('New message received via Echo:', e.message);
+            });
+    @endif
+</script>
 </body>
 </html>
