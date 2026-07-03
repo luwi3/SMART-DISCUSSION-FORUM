@@ -61,7 +61,8 @@
     <div class="meta-grid">
         <div class="meta-item">
             <label>Quiz ID</label>
-            <input type="text" value="{{ $quiz->quizID }}">
+            <!-- 🛠️ FIX: Handled dynamic resolution key here safely -->
+            <input type="text" value="{{ $quiz->quizID ?? $quiz->id }}">
         </div>
         <div class="meta-item">
             <label>Course Code</label>
@@ -82,7 +83,8 @@
         <div class="instruction-text">Ensure you track your timer constraint. Do not refresh or exit the submission layout once active.</div>
     </div>
 
-    <form id="quizForm" method="POST" action="/quizzes/{{ $quiz->quizID }}/submit">
+    <!-- 🛠️ FIX: Handled primary key ambiguity gracefully in form submission action URL path target -->
+    <form id="quizForm" method="POST" action="/quizzes/{{ $quiz->quizID ?? $quiz->id }}/submit">
         @csrf
         
         <input type="hidden" name="auto_submit" id="autoSubmitInput" value="0">
@@ -119,23 +121,28 @@
 </div>
 
 <script>
-    // ⏰ Calculate the absolute end deadline timestamp using ISO standard formatting
-    const startTime = new Date("{{ \Carbon\Carbon::parse($quiz->startTime)->toIso8601String() }}").getTime();
-    const durationMinutes = {{ $quiz->duration }};
-    const endTime = startTime + (durationMinutes * 60 * 1000);
+    let totalSeconds = parseInt("{{ $remainingSeconds ?? -1 }}");
+
+    if (totalSeconds === -1) {
+        const startTime = new Date("{{ \Carbon\Carbon::parse($quiz->startTime)->toIso8601String() }}").getTime();
+        const durationMinutes = {{ $quiz->duration }};
+        const endTime = startTime + (durationMinutes * 60 * 1000);
+        totalSeconds = Math.floor((endTime - new Date().getTime()) / 1000);
+    }
 
     const display = document.getElementById('clock');
 
     function startTimer() {
         const timerInterval = setInterval(() => {
-            const now = new Date().getTime();
-            let totalSeconds = Math.floor((endTime - now) / 1000);
-
-            // 🛑 Strict Constraint: Session expired or forced auto-submit condition triggered
             if (totalSeconds <= 0) {
                 clearInterval(timerInterval);
                 display.textContent = "00:00:00";
                 document.getElementById('autoSubmitInput').value = "1";
+                
+                document.querySelectorAll('input[type="radio"]').forEach(radio => {
+                    radio.removeAttribute('required');
+                });
+
                 alert("The quiz session has officially closed! Submitting your work now.");
                 document.getElementById('quizForm').submit();
                 return;
@@ -150,6 +157,7 @@
             seconds = seconds < 10 ? "0" + seconds : seconds;
 
             display.textContent = `${hours}:${minutes}:${seconds}`;
+            totalSeconds--;
         }, 1000);
     }
 

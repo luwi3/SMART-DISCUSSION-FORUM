@@ -24,7 +24,7 @@
 
         /* Action Buttons Row */
         .action-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 35px; }
-        .action-card { border-radius: 12px; padding: 24px; text-align: center; font-weight: 700; font-size: 16px; color: #0f172a; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03); cursor: pointer; }
+        .action-card { border-radius: 12px; padding: 24px; text-align: center; font-weight: 700; font-size: 16px; color: #0f172a; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03); cursor: pointer; text-decoration: none; }
         .action-icon { width: 44px; height: 44px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; }
         
         .create-topic { background-color: #a7f3d0; } .create-topic .action-icon { background-color: #059669; }
@@ -62,7 +62,12 @@
 
         <section class="action-grid">
             <div class="action-card create-topic"><div class="action-icon">📝</div>Create Topic</div>
-            <div class="action-card create-quiz"><div class="action-icon">📋</div>Create Quiz</div>
+            
+            <!-- 👨‍🏫 Renamed Card & Connected to Grades Route -->
+            <a href="{{ route('quizzes.grades', ['quizID' => 1]) }}" class="action-card create-quiz">
+                <div class="action-icon">📋</div>Quiz Marks
+            </a>
+            
             <div class="action-card upload-resource"><div class="action-icon">📤</div>Upload Resource</div>
             <div class="action-card view-students"><div class="action-icon">👥</div>View Students</div>
         </section>
@@ -77,13 +82,13 @@
             </div>
         </section>
 
-         <div style="background: white; padding: 20px; border-radius: 8px; margin-top: 20px; border: 1px solid #e2e8f0;">
-    <h3 style="color: #0b2265; margin-bottom: 10px;">🎯 Quiz Management</h3>
-    <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">Set up new course assessments, manage active timelines, and monitor student progress metrics.</p>
-    <a href="{{ route('quizzes.create') }}" style="display: inline-block; padding: 10px 20px; background: #7c3aed; color: white; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 14px;">
-        ➕ Setup & Publish New Quiz
-    </a>
-</div>
+        <div style="background: white; padding: 20px; border-radius: 8px; margin-top: 20px; border: 1px solid #e2e8f0;">
+            <h3 style="color: #0b2265; margin-bottom: 10px;">🎯 Quiz Management</h3>
+            <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">Set up new course assessments, manage active timelines, and monitor student progress metrics.</p>
+            <a href="{{ route('quizzes.create') }}" style="display: inline-block; padding: 10px 20px; background: #7c3aed; color: white; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 14px;">
+                ➕ Setup & Publish New Quiz
+            </a>
+        </div>
 
     </main>
 </body>

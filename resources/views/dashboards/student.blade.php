@@ -53,6 +53,12 @@
         .feed-msg-title { font-size: 13px; font-weight: 700; color: #334155; }
         .feed-time { font-size: 11px; color: #94a3b8; margin-top: 2px; }
         .btn-view-all { width: 100%; background: #1d4ed8; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; margin-top: 20px; }
+
+        /* Assessment Card List Items styling */
+        .quiz-row-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 10px; }
+        .quiz-info-meta { display: flex; flex-direction: column; gap: 4px; }
+        .quiz-info-title { font-size: 14px; font-weight: 700; color: #334155; }
+        .quiz-info-badge { font-size: 11px; color: #64748b; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-weight: 600; width: fit-content; }
     </style>
 </head>
 <body>
@@ -61,7 +67,16 @@
         <aside class="sidebar">
             <ul class="sidebar-menu">
                 <li class="menu-item active"><a href="#">Profile</a></li>
-                <li class="menu-item"><a href="#">Marks</a></li>
+                
+                <!-- Dynamic Marks Action Button mapping natively to evaluation controller gradebook sheets -->
+                <li class="menu-item">
+                    @if(isset($activeQuizzes) && count($activeQuizzes) > 0)
+                        <a href="{{ url('/quizzes/' . ($activeQuizzes[0]->quizID ?? $activeQuizzes[0]->id) . '/grades') }}">Marks</a>
+                    @else
+                        <a href="#" onclick="alert('No completed assessments or marks are available yet.')">Marks</a>
+                    @endif
+                </li>
+                
                 <li class="menu-item"><a href="{{ route('chat.index') }}">Chats</a></li>
                 <li class="menu-item"><a href="#">Notifications <span class="badge">3</span></a></li>
                 <li class="menu-item"><a href="#">Announcements</a></li>
@@ -78,6 +93,16 @@
                     <div>
                         <h4 class="alert-heading">Evaluation Center Update</h4>
                         <p class="alert-body">{{ session('quiz_result') }}</p>
+                    </div>
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="alert-banner" style="background-color: #fef2f2; border-left-color: #ef4444; color: #991b1b;">
+                    <span class="alert-icon">⚠️</span>
+                    <div>
+                        <h4 class="alert-heading" style="color: #991b1b;">System Notice</h4>
+                        <p class="alert-body" style="color: #ef4444;">{{ session('error') }}</p>
                     </div>
                 </div>
             @endif
@@ -125,12 +150,39 @@
                 <button class="btn-view-all">VIEW ALL</button>
             </section>
             
+            <!-- ✍️ Available Assessments Block -->
             <div style="background: white; padding: 20px; border-radius: 8px; margin-top: 20px; border: 1px solid #e2e8f0;">
                 <h3 style="color: #1e293b; margin-bottom: 10px;">✍️ Available Assessments</h3>
-                <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">Your registered course streams have active evaluation windows open.</p>
-                <a href="/quizzes/1" style="display: inline-block; padding: 10px 20px; background: #10b981; color: white; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 14px;">
-                    🚀 Attempt Active BIT 2201 Quiz
-                </a>
+                
+                @if(isset($activeQuizzes) && count($activeQuizzes) > 0)
+                    <!-- CASE 1: Active quizzes found for the student -->
+                    <p style="color: #10b981; font-size: 14px; margin-bottom: 15px; font-weight: 600;">✅ Your registered course streams have active evaluation windows open.</p>
+                    
+                    @foreach($activeQuizzes as $activeQuiz)
+                        <div class="quiz-row-item">
+                            <div class="quiz-info-meta">
+                                <span class="quiz-info-title">{{ $activeQuiz->title }}</span>
+                                <span class="quiz-info-badge">{{ $activeQuiz->courseCode }} • {{ $activeQuiz->duration }} Mins</span>
+                            </div>
+                            <a href="{{ route('quizzes.show', ['quizID' => $activeQuiz->quizID ?? $activeQuiz->id]) }}" style="display: inline-block; padding: 8px 16px; background: #10b981; color: white; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px;">
+                                ✍️ Attempt Quiz
+                            </a>
+                        </div>
+                    @endforeach
+                @else
+                    <!-- CASE 2: No active quizzes are available right now -->
+                    <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">No active evaluation windows are currently open for your course stream.</p>
+                    
+                    <div class="quiz-row-item" style="opacity: 0.6; background: #f1f5f9;">
+                        <div class="quiz-info-meta">
+                            <span class="quiz-info-title" style="color: #94a3b8;">No Evaluation Scheduled</span>
+                            <span class="quiz-info-badge" style="background: #cbd5e1; color: #64748b;">-- • 0 Mins</span>
+                        </div>
+                        <button disabled style="display: inline-block; padding: 8px 16px; background: #94a3b8; color: #e2e8f0; border-radius: 6px; border: none; font-weight: bold; font-size: 13px; cursor: not-allowed;">
+                            🔒 Attempt Quiz
+                        </button>
+                    </div>
+                @endif
             </div>
         </main>
     </div>
