@@ -11,10 +11,16 @@ class ForumChatController extends Controller
 {
     public function index($type = null, $id = null)
     {
+        // Fetch all groups for the sidebar
         $groups = GroupDiscussion::orderBy('name', 'asc')->get();
+        
+        // Fetch all topics for the sidebar
+        $topics = Topic::orderBy('title', 'asc')->get(); 
+        
         $messages = collect();
         $currentStreamTarget = null;
 
+        // Check if a specific group or topic is being viewed
         if ($type && $id) {
             if ($type === 'group') {
                 $currentStreamTarget = GroupDiscussion::findOrFail($id);
@@ -25,11 +31,15 @@ class ForumChatController extends Controller
             }
         }
 
-        return view('chat.index', compact('groups', 'currentStreamTarget', 'messages', 'type', 'id'));
+        // Pass all variables, including the new $topics, to the Blade view
+        return view('chat.index', compact('groups', 'topics', 'currentStreamTarget', 'messages', 'type', 'id'));
     }
 
     public function store(Request $request, $type, $id)
     {
+        // Debugging line to verify the form submission works
+      //  dd('Hitting the store method!', $request->all(), $type, $id);
+
         $request->validate(['body' => 'required|string|max:3000']);
 
         $message = new Message();
@@ -40,9 +50,10 @@ class ForumChatController extends Controller
         if ($type === 'topic') $message->topic_id = $id;
 
         $message->save();
-        $message->load('user'); // Essential for broadcasting the user name
+        $message->load('user'); 
 
         broadcast(new \App\Events\MessageSent($message))->toOthers();
+        
         return back();
     }
 }

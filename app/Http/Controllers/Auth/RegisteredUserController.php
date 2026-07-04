@@ -55,6 +55,6 @@ class RegisteredUserController extends Controller
         Auth::login($user);
 
         // 🚀 Connected to the live discussion board named route structure
-        return redirect(route('chat.index', absolute: false));
+        return redirect(route('dashboard', absolute: false));
     }
 }

@@ -18,6 +18,9 @@ Route::get('/', function () {
 Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
     $user = $request->user();
     
+    // 🛠️ Temporary debug line:
+    //dd($user, $user->lecturer);
+    
     if ($user->role === 'administrator') {
         return redirect()->route('admin.dashboard');
     } elseif ($user->lecturer()->exists()) {
@@ -80,7 +83,7 @@ Route::middleware('auth')->group(function () {
     
     // 💬 Forum Workspace Routes
     Route::get('/forum-workspace/{type?}/{id?}', [ForumChatController::class, 'index'])->name('chat.index');
-    Route::post('/forum-workspace/{type}/{id}', [ForumChatController::class, 'store'])->name('chat.send');
+    Route::post('/forum-workspace/{type}/{id}', [ForumChatController::class, 'store'])->name('chat.store');
 });
 
 
