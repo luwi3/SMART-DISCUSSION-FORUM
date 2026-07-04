@@ -6,6 +6,7 @@ use App\Models\GroupDiscussion;
 use App\Models\Topic;
 use App\Models\Message;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class ForumChatController extends Controller
 {
@@ -20,34 +21,70 @@ class ForumChatController extends Controller
         $messages = collect();
         $currentStreamTarget = null;
 
-        // Check if a specific group or topic is being viewed
-        if ($type && $id) {
+        // 🔍 Dynamic structural detection to find what column your group relationship uses
+        $groupColumn = null;
+        foreach (['group_discussion_id', 'group_id', 'discussion_id'] as $column) {
+            if (Schema::hasColumn('messages', $column)) {
+                $groupColumn = $column;
+                break;
+            }
+        }
+
+        // Check if a specific group or topic is being viewed (Ignore fallback 'general' ID)
+        if ($type && $id && $id !== 'general' && $type !== 'broadcast') {
             if ($type === 'group') {
                 $currentStreamTarget = GroupDiscussion::findOrFail($id);
-                $messages = Message::where('group_discussion_id', $id)->with('user')->orderBy('created_at', 'asc')->get();
+                if ($groupColumn) {
+                    $messages = Message::where($groupColumn, $id)->with('user')->orderBy('created_at', 'asc')->get();
+                }
             } elseif ($type === 'topic') {
                 $currentStreamTarget = Topic::findOrFail($id);
                 $messages = Message::where('topic_id', $id)->with('user')->orderBy('created_at', 'asc')->get();
             }
+        } else {
+            // 🎯 FIX: Force target to true/object placeholder so the Blade view allows message iteration
+            $currentStreamTarget = (object) ['name' => 'General Stream', 'is_broadcast' => true];
+
+            // Load global broadcast messages safely without crashing on missing group columns
+            $query = Message::query();
+            
+            if ($groupColumn) {
+                $query->whereNull($groupColumn);
+            }
+            if (Schema::hasColumn('messages', 'topic_id')) {
+                $query->whereNull('topic_id');
+            }
+            
+            $messages = $query->with('user')->orderBy('created_at', 'asc')->get();
         }
 
         // Pass all variables, including the new $topics, to the Blade view
         return view('chat.index', compact('groups', 'topics', 'currentStreamTarget', 'messages', 'type', 'id'));
     }
 
-    public function store(Request $request, $type, $id)
+    public function store(Request $request, $type = null, $id = null)
     {
-        // Debugging line to verify the form submission works
-      //  dd('Hitting the store method!', $request->all(), $type, $id);
-
         $request->validate(['body' => 'required|string|max:3000']);
 
         $message = new Message();
         $message->user_id = auth()->id();
         $message->body = $request->body;
 
-        if ($type === 'group') $message->group_discussion_id = $id;
-        if ($type === 'topic') $message->topic_id = $id;
+        // 🔍 Dynamically detect column name before saving target ID
+        $groupColumn = null;
+        foreach (['group_discussion_id', 'group_id', 'discussion_id'] as $column) {
+            if (Schema::hasColumn('messages', $column)) {
+                $groupColumn = $column;
+                break;
+            }
+        }
+
+        if ($type === 'group' && $id !== 'general' && $groupColumn) {
+            $message->{$groupColumn} = $id;
+        }
+        if ($type === 'topic' && $id !== 'general' && Schema::hasColumn('messages', 'topic_id')) {
+            $message->topic_id = $id;
+        }
 
         $message->save();
         $message->load('user'); 
