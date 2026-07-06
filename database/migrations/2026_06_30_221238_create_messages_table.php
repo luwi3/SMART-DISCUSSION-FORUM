@@ -17,7 +17,7 @@ return new class extends Migration
         $table->foreignId('user_id')->constrained()->onDelete('cascade'); // The sender
         
         // These are nullable because a message belongs to EITHER a group OR a topic
-        $table->foreignId('group_discussion_id')->nullable()->constrained()->onDelete('cascade');
+        
         $table->foreignId('topic_id')->nullable()->constrained()->onDelete('cascade');
         
         $table->timestamps();
