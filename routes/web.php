@@ -6,6 +6,7 @@ use App\Http\Controllers\ForumChatController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\LecturerController;
 use App\Http\Controllers\QuizController;
+use App\Http\Controllers\AdminDashboardController;
 
 // ==========================================
 // 1. ROOT & CORE SWITCHBOARD
@@ -46,10 +47,10 @@ Route::get('/lecturer/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('lecturer.dashboard');
 
 // 🔑 Administrator Dashboard Route
-Route::get('/admin/dashboard', function () {
-    return view('dashboards.admin');
-})->middleware(['auth', 'verified'])->name('admin.dashboard');
-
+// 🔑 Administrator Dashboard Route
+Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('admin.dashboard');
 
 // ==========================================
 // 3. ADMIN MANAGEMENT ROUTES

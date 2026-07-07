@@ -81,41 +81,42 @@
             <section class="metrics-grid">
                 <div class="metric-card students">
                     <div class="metric-title">Active Students</div>
-                    <div class="metric-content"><div class="metric-icon-box">👥</div><div class="metric-value">120</div></div>
+                    <div class="metric-content"><div class="metric-icon-box">👥</div><div class="metric-value">{{ $activeStudents }}</div></div>
                     <div class="progress-container"><div class="progress-bar"></div></div>
-                    <span class="metric-percentage">80% of all users</span>
+                    <span class="metric-percentage">Students marked active</span>
                 </div>
                 <div class="metric-card warnings">
                     <div class="metric-title">Warning List</div>
-                    <div class="metric-content"><div class="metric-icon-box">⚠️</div><div class="metric-value">18</div></div>
+                    <div class="metric-content"><div class="metric-icon-box">⚠️</div><div class="metric-value">{{ $warningList }}</div></div>
                     <div class="progress-container"><div class="progress-bar"></div></div>
-                    <span class="metric-percentage">12% of all users</span>
+                    <span class="metric-percentage">Students flagged on warning</span>
                 </div>
                 <div class="metric-card blacklist">
                     <div class="metric-title">Blacklisted Users</div>
-                    <div class="metric-content"><div class="metric-icon-box">🚫</div><div class="metric-value">7</div></div>
+                    <div class="metric-content"><div class="metric-icon-box">🚫</div><div class="metric-value">{{ $blacklistedUsers }}</div></div>
                     <div class="progress-container"><div class="progress-bar"></div></div>
-                    <span class="metric-percentage">5% of all users</span>
+                    <span class="metric-percentage">Suspended accounts</span>
                 </div>
                 <div class="metric-card totals">
                     <div class="metric-title">Total Users</div>
-                    <div class="metric-content"><div class="metric-icon-box">📊</div><div class="metric-value">145</div></div>
+                    <div class="metric-content"><div class="metric-icon-box">📊</div><div class="metric-value">{{ $totalUsers }}</div></div>
                     <div class="progress-container"><div class="progress-bar"></div></div>
-                    <span class="metric-percentage">100%</span>
+                    <span class="metric-percentage">100% of registrations</span>
                 </div>
             </section>
+
             <section class="chart-card">
                 <h3 class="chart-title">User Statistics Overview</h3>
                 <div class="chart-layout">
                     <div class="donut-container">
                         <div class="donut-chart">
-                            <div class="donut-hole"><span class="donut-total">145</span><span class="donut-label">Total Users</span></div>
+                            <div class="donut-hole"><span class="donut-total">{{ $totalUsers }}</span><span class="donut-label">Total Users</span></div>
                         </div>
                     </div>
                     <div class="chart-legend">
-                        <div class="legend-item"><div class="legend-label-group"><div class="legend-dot dot-green"></div><span>Active Students</span></div><div>120 (80%)</div></div>
-                        <div class="legend-item"><div class="legend-label-group"><div class="legend-dot dot-orange"></div><span>Warning List</span></div><div>18 (12%)</div></div>
-                        <div class="legend-item"><div class="legend-label-group"><div class="legend-dot dot-red"></div><span>Blacklisted Users</span></div><div>7 (5%)</div></div>
+                        <div class="legend-item"><div class="legend-label-group"><div class="legend-dot dot-green"></div><span>Active Students</span></div><div>{{ $activeStudents }}</div></div>
+                        <div class="legend-item"><div class="legend-label-group"><div class="legend-dot dot-orange"></div><span>Warning List</span></div><div>{{ $warningList }}</div></div>
+                        <div class="legend-item"><div class="legend-label-group"><div class="legend-dot dot-red"></div><span>Blacklisted Users</span></div><div>{{ $blacklistedUsers }}</div></div>
                     </div>
                 </div>
             </section>

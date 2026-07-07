@@ -63,34 +63,58 @@ class ForumChatController extends Controller
     }
 
     public function store(Request $request, $type = null, $id = null)
-    {
-        $request->validate(['body' => 'required|string|max:3000']);
+{
+    // 1. Validate the incoming message
+$request->validate(['body' => 'required|string|max:3000']);
 
-        $message = new Message();
-        $message->user_id = auth()->id();
-        $message->body = $request->body;
+// 2. Fetch the student record for the logged-in user
+$student = Student::where('user_id', auth()->id())->first();
 
-        // 🔍 Dynamically detect column name before saving target ID
-        $groupColumn = null;
-        foreach (['group_discussion_id', 'group_id', 'discussion_id'] as $column) {
-            if (Schema::hasColumn('messages', $column)) {
-                $groupColumn = $column;
-                break;
-            }
-        }
-
-        if ($type === 'group' && $id !== 'general' && $groupColumn) {
-            $message->{$groupColumn} = $id;
-        }
-        if ($type === 'topic' && $id !== 'general' && Schema::hasColumn('messages', 'topic_id')) {
-            $message->topic_id = $id;
-        }
-
-        $message->save();
-        $message->load('user'); 
-
-        broadcast(new \App\Events\MessageSent($message))->toOthers();
-        
-        return back();
+// 3. Check if they are blacklisted
+// 3. Check if they are blacklisted
+if ($student && $student->status === 'blacklisted') {
+    if ($request->ajax() || $request->wantsJson()) {
+        return response()->json([
+            'errors' => ['message' => ['You have been blocked from using the chat due to inactivity until further notice.']]
+        ], 422);
     }
+
+    return back()->withErrors(['message' => 'You have been blocked from using the chat due to inactivity until further notice.']);
+}
+
+    $message = new Message();
+    $message->user_id = auth()->id();
+    $message->body = $request->body;
+
+    // 🔍 Dynamically detect column name before saving target ID
+    $groupColumn = null;
+    foreach (['group_discussion_id', 'group_id', 'discussion_id'] as $column) {
+        if (Schema::hasColumn('messages', $column)) {
+            $groupColumn = $column;
+            break;
+        }
+    }
+
+    if ($type === 'group' && $id !== 'general' && $groupColumn) {
+        $message->{$groupColumn} = $id;
+    }
+    if ($type === 'topic' && $id !== 'general' && Schema::hasColumn('messages', 'topic_id')) {
+        $message->topic_id = $id;
+    }
+
+    $message->save();
+
+    // ⏱️ This will now run because $student is no longer null!
+    $student = auth()->user()->student;
+    if ($student) {
+        $student->lastCommDate = now();
+        $student->save();
+    }
+
+    $message->load('user'); 
+
+    broadcast(new \App\Events\MessageSent($message))->toOthers();
+    
+    return back();
+}
 }

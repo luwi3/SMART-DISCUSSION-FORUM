@@ -9,7 +9,7 @@
     <!-- Tailwind CSS CDN -->
    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-gray-100 antialiased font-sans"
+<body class="bg-gray-100 antialiased font-sans">
 
 <div class="flex h-screen bg-white">
     <!-- Sidebar Workspace Navigation Container -->
@@ -67,6 +67,16 @@
         
         <!-- Message Historical Feed List Stream Container Wrapper -->
         <div id="chat-messages-container" class="flex-1 overflow-y-auto px-8 py-6 space-y-4 pb-24 scroll-smooth">
+            @if ($errors->any())
+    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl m-4 shadow-sm flex items-start space-x-2">
+        <i class="fa-solid fa-circle-exclamation mt-0.5 text-red-500"></i>
+        <ul class="list-disc list-inside text-xs font-medium">
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
             @if(count($messages) > 0)
                 @foreach($messages as $msg)
                     <div class="flex items-end space-x-3 {{ $msg->user_id === auth()->id() ? 'flex-row-reverse space-x-reverse' : '' }} mb-1">

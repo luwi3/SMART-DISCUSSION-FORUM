@@ -27,6 +27,7 @@ class User extends Authenticatable
         'role',
         'agreed_to_rules',
         'status',
+        'lastCommDate',
         'blacklist_until',
         'student_category',
     ];
@@ -56,5 +57,9 @@ class User extends Authenticatable
     public function lecturer()
 {
     return $this->hasOne(Lecturer::class);
+}
+public function student()
+{
+    return $this->hasOne(Student::class, 'user_id', 'id');
 }
 }
