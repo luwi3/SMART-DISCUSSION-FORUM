@@ -23,7 +23,21 @@
         .welcome-section { margin-bottom: 24px; }
         .welcome-title { font-size: 24px; font-weight: 700; color: #0f172a; }
         .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 24px; }
-        .metric-card { background: white; border-radius: 12px; padding: 20px; border: 1px solid #eef2f6; }
+        .metric-card { 
+    background: white; 
+    border-radius: 12px; 
+    padding: 20px; 
+    border: 1px solid #eef2f6;
+    /* Smooth out the movement over 0.3 seconds */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+}
+
+/* Define the 3D interaction state */
+.metric-card:hover {
+    transform: translateY(-5px); /* Smoothly lifts the card up */
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08); /* Adds depth with a soft shadow */
+}
         .metric-title { font-size: 13px; font-weight: 700; margin-bottom: 16px; }
         .metric-content { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
         .metric-icon-box { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; }
@@ -57,14 +71,14 @@
             <div class="brand-text">SMART DISCUSSION FORUM</div>
         </div>
         <ul class="sidebar-menu">
-            <li class="menu-item active"><a href="#">Dashboard</a></li>
+            <li class="menu-item active"><a href="?view=dashboard">Dashboard</a></li>
             <li class="menu-item"><a href="#">Profile</a></li>
             <li class="menu-item"><a href="{{ route('admin.lecturers.create') }}">Register Lecturer</a></li>
-            <li class="menu-item"><a href="#">Statistics of Users</a></li>
-            <li class="menu-item"><a href="#">Groups</a></li>
-            <li class="menu-item"><a href="#">Chatbox</a></li>
-            <li class="menu-item"><a href="#">Resources</a></li>
-            <li class="menu-item"><a href="#">Announcements</a></li>
+            <!-- <li class="menu-item"><a href="#">Statistics of Users</a></li> -->
+            <li class="menu-item"><a href="?view=blacklist">Activate Student</a></li>
+            <!-- <li class="menu-item"><a href="#">Chatbox</a></li> -->
+            <!-- <li class="menu-item"><a href="#">Resources</a></li> -->
+            <!-- <li class="menu-item"><a href="#">Announcements</a></li> -->
         </ul>
         <div class="logout-form">
             <form method="POST" action="{{ route('logout') }}">@csrf
@@ -72,55 +86,115 @@
             </form>
         </div>
     </aside>
-    <main class="main-content">
-        <nav class="top-navbar"><div class="nav-title">SMART DISCUSSION FORUM</div></nav>
-        <div class="dashboard-body">
-            <div class="welcome-section">
-                <h1 class="welcome-title">Welcome Administrator {{ Auth::user()->name }}! 👋</h1>
-            </div>
-            <section class="metrics-grid">
-                <div class="metric-card students">
-                    <div class="metric-title">Active Students</div>
-                    <div class="metric-content"><div class="metric-icon-box">👥</div><div class="metric-value">{{ $activeStudents }}</div></div>
-                    <div class="progress-container"><div class="progress-bar"></div></div>
-                    <span class="metric-percentage">Students marked active</span>
+   <main class="main-content">
+    <nav class="top-navbar"><div class="nav-title">SMART DISCUSSION FORUM</div></nav>
+    <div class="dashboard-body">
+        
+        @switch(request('view'))
+            @case('blacklist')
+                <div class="welcome-section">
+                    <h1 class="welcome-title">Manage Suspended Students 🚫</h1>
                 </div>
-                <div class="metric-card warnings">
-                    <div class="metric-title">Warning List</div>
-                    <div class="metric-content"><div class="metric-icon-box">⚠️</div><div class="metric-value">{{ $warningList }}</div></div>
-                    <div class="progress-container"><div class="progress-bar"></div></div>
-                    <span class="metric-percentage">Students flagged on warning</span>
-                </div>
-                <div class="metric-card blacklist">
-                    <div class="metric-title">Blacklisted Users</div>
-                    <div class="metric-content"><div class="metric-icon-box">🚫</div><div class="metric-value">{{ $blacklistedUsers }}</div></div>
-                    <div class="progress-container"><div class="progress-bar"></div></div>
-                    <span class="metric-percentage">Suspended accounts</span>
-                </div>
-                <div class="metric-card totals">
-                    <div class="metric-title">Total Users</div>
-                    <div class="metric-content"><div class="metric-icon-box">📊</div><div class="metric-value">{{ $totalUsers }}</div></div>
-                    <div class="progress-container"><div class="progress-bar"></div></div>
-                    <span class="metric-percentage">100% of registrations</span>
-                </div>
-            </section>
+                
+                <section class="chart-card">
+                    <h3 class="chart-title">Suspended Accounts List</h3>
+                    
+                    <div style="overflow-x: auto; margin-top: 20px;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid #eef2f6; color: #64748b;">
+                                    <th style="padding: 12px;">User ID</th>
+                                    <th style="padding: 12px;">Name</th>
+                                    <th style="padding: 12px;">Status</th>
+                                    <th style="padding: 12px;">Action</th>
+                                </tr>
+                            </thead>
+                           <tbody>
+    @forelse($suspendedStudents as $student)
+        <tr style="border-bottom: 1px solid #eef2f6;">
+           <td style="padding: 12px;">#{{ $student->regNo }}</td>
+<td style="padding: 12px;">{{ $student->user->name ?? 'No Name Linked' }}</td>
+            <td style="padding: 12px;">
+                <span style="color: #ef4444; background: #fee2e2; padding: 4px 8px; border-radius: 4px; font-size: 14px;">
+                    {{ $student->status }}
+                </span>
+            </td>
+            <td style="padding: 12px;">
+                <button style="background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer;">
+                    Activate
+                </button>
+            </td>
+        </tr>
+    @empty
+        <tr>
+            <td colspan="4" style="padding: 20px; text-align: center; color: #64748b;">
+                No blacklisted students found. 🎉
+            </td>
+        </tr>
+    @endforelse
+</tbody>
+                        </table>
+                    </div>
+                </section>
+                @break
 
-            <section class="chart-card">
-                <h3 class="chart-title">User Statistics Overview</h3>
-                <div class="chart-layout">
-                    <div class="donut-container">
-                        <div class="donut-chart">
-                            <div class="donut-hole"><span class="donut-total">{{ $totalUsers }}</span><span class="donut-label">Total Users</span></div>
+            @default
+                <div class="welcome-section">
+                    <h1 class="welcome-title">Welcome Administrator {{ Auth::user()->name }}! 👋</h1>
+                </div>
+                
+                <section class="metrics-grid">
+                    <div class="metric-card students">
+                        <div class="metric-title">Active Students</div>
+                        <div class="metric-content"><div class="metric-icon-box">👥</div><div class="metric-value">{{ $activeStudents }}</div></div>
+                        <div class="progress-container"><div class="progress-bar"></div></div>
+                        <span class="metric-percentage">Students marked active</span>
+                    </div>
+                    
+                    <div class="metric-card warnings">
+                        <div class="metric-title">Warning List</div>
+                        <div class="metric-content"><div class="metric-icon-box">⚠️</div><div class="metric-value">{{ $warningList }}</div></div>
+                        <div class="progress-container"><div class="progress-bar"></div></div>
+                        <span class="metric-percentage">Students flagged on warning</span>
+                    </div>
+                    
+                    <div class="metric-card blacklist transition-all duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer">
+                        <div class="metric-title">Blacklisted Users</div>
+                        <div class="metric-content">
+                            <div class="metric-icon-box">🚫</div>
+                            <div class="metric-value">{{ $blacklistedUsers }}</div>
+                        </div>
+                        <div class="progress-container"><div class="progress-bar"></div></div>
+                        <span class="metric-percentage">Suspended accounts</span>
+                    </div>
+                    
+                    <div class="metric-card totals">
+                        <div class="metric-title">Total Users</div>
+                        <div class="metric-content"><div class="metric-icon-box">📊</div><div class="metric-value">{{ $totalUsers }}</div></div>
+                        <div class="progress-container"><div class="progress-bar"></div></div>
+                        <span class="metric-percentage">100% of registrations</span>
+                    </div>
+                </section>
+
+                <section class="chart-card">
+                    <h3 class="chart-title">User Statistics Overview</h3>
+                    <div class="chart-layout">
+                        <div class="donut-container">
+                            <div class="donut-chart">
+                                <div class="donut-hole"><span class="donut-total">{{ $totalUsers }}</span><span class="donut-label">Total Users</span></div>
+                            </div>
+                        </div>
+                        <div class="chart-legend">
+                            <div class="legend-item"><div class="legend-label-group"><div class="legend-dot dot-green"></div><span>Active Students</span></div><div>{{ $activeStudents }}</div></div>
+                            <div class="legend-item"><div class="legend-label-group"><div class="legend-dot dot-orange"></div><span>Warning List</span></div><div>{{ $warningList }}</div></div>
+                            <div class="legend-item"><div class="legend-label-group"><div class="legend-dot dot-red"></div><span>Blacklisted Users</span></div><div>{{ $blacklistedUsers }}</div></div>
                         </div>
                     </div>
-                    <div class="chart-legend">
-                        <div class="legend-item"><div class="legend-label-group"><div class="legend-dot dot-green"></div><span>Active Students</span></div><div>{{ $activeStudents }}</div></div>
-                        <div class="legend-item"><div class="legend-label-group"><div class="legend-dot dot-orange"></div><span>Warning List</span></div><div>{{ $warningList }}</div></div>
-                        <div class="legend-item"><div class="legend-label-group"><div class="legend-dot dot-red"></div><span>Blacklisted Users</span></div><div>{{ $blacklistedUsers }}</div></div>
-                    </div>
-                </div>
-            </section>
-        </div>
-    </main>
+                </section>
+                @break
+        @endswitch
+
+    </div>
+</main>
 </body>
 </html>

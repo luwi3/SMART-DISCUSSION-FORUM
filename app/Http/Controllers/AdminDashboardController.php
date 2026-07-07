@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Student;
 
 class AdminDashboardController extends Controller
 {
@@ -22,13 +23,14 @@ class AdminDashboardController extends Controller
     
     // Leaving this as 0 for now until we define warning rules
     $warningList = 0; 
-
+  $suspendedStudents = Student::where('status', 'blacklisted')->get();
     // 3. Pass variables to the view
     return view('dashboards.admin', compact(
         'totalUsers', 
         'activeStudents', 
         'warningList', 
-        'blacklistedUsers'
+        'blacklistedUsers',
+        'suspendedStudents'
     ));
 }
 }

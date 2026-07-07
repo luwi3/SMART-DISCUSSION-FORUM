@@ -132,52 +132,38 @@
 
         <!-- Sticky Input Tray Box Wrapper Container -->
         <div class="absolute bottom-0 left-0 right-0 p-4 bg-slate-50 border-t border-slate-200 z-10">
-            <form id="chat-form" method="POST" action="{{ route('chat.store', ['type' => $type ?? 'broadcast', 'id' => $id ?? 'general']) }}" class="flex items-center space-x-3 max-w-7xl mx-auto">
-                @csrf
-                
-                <!-- Restrict Dropdown Toggle Card Component Module -->
-                <div class="relative inline-block text-left">
-                    <button type="button" id="dropdown-toggle" class="flex items-center space-x-1.5 px-3 py-2 bg-[#0b1329] border border-slate-950 rounded-xl text-slate-300 shadow-sm focus:outline-none hover:bg-slate-800 transition-all cursor-pointer">
-                        <i class="fa-solid fa-shield-halved text-xs text-sky-400"></i>
-                        <span class="text-[10px] font-bold tracking-wide uppercase">Restrict</span>
-                        <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                        <i class="fa-solid fa-chevron-up text-[9px] text-slate-400 ml-0.5"></i>
-                    </button>
+    <form id="chat-form" method="POST" action="{{ route('chat.store', ['type' => $type ?? 'broadcast', 'id' => $id ?? 'general']) }}" class="flex items-center space-x-3 max-w-7xl mx-auto">
+        @csrf
+        
+        <div class="relative inline-block text-left">
+            <button type="button" id="dropdown-toggle" class="flex items-center space-x-1.5 px-3 py-2 bg-[#0b1329] border border-slate-950 rounded-xl text-slate-300 shadow-sm focus:outline-none hover:bg-slate-800 transition-all cursor-pointer">
+                <i class="fa-solid fa-shield-halved text-xs text-sky-400"></i>
+                <span class="text-[10px] font-bold tracking-wide uppercase">Restrict</span>
+                <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <i class="fa-solid fa-chevron-up text-[9px] text-slate-400 ml-0.5"></i>
+            </button>
 
-                    <!-- Dynamic Dropdown Options Container Menu Layout Box -->
-                    <div id="dropdown-menu" class="hidden absolute bottom-full mb-2 left-0 w-64 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden divide-y divide-slate-100 z-50">
-                        <div class="py-1">
-                            <span class="block px-3 py-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider">Filter By Course Code</span>
-                            @foreach($topics as $topic)
-                                <a href="{{ url('/forum-workspace/topic/' . $topic->id) }}" class="block px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 hover:text-blue-600 truncate {{ ($type === 'topic' && $id == $topic->id) ? 'bg-blue-50 text-blue-600 font-semibold' : '' }}">
-                                    <span class="bg-blue-100 text-blue-800 font-mono text-[10px] px-1.5 py-0.5 rounded mr-1.5 border border-blue-200 font-semibold">
-                                        {{ $topic->course_code ?? 'CODE' }}
-                                    </span>
-                                    <span class="text-slate-500 text-[11px]">{{ $topic->title }}</span>
-                                </a>
-                            @endforeach
-                        </div>
-                        <div class="py-1">
-                            <span class="block px-3 py-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider">Active Group Forums</span>
-                            @foreach($groups as $group)
-                                <a href="{{ url('/forum-workspace/group/' . $group->id) }}" class="block px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 hover:text-emerald-600 truncate {{ ($type === 'group' && $id == $group->id) ? 'bg-emerald-50 text-emerald-600 font-semibold' : '' }}">
-                                    <i class="fa-regular fa-comments mr-1.5 text-emerald-400"></i> {{ $group->name }}
-                                </a>
-                            @endforeach
-                        </div>
-                    </div>
+            <div id="dropdown-menu" class="hidden absolute bottom-full mb-2 left-0 w-64 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden divide-y divide-slate-100 z-50">
                 </div>
-
-                <div class="flex-1 relative flex items-center">
-                    <input type="text" id="message-input" name="body" required autocomplete="off" placeholder="Write an answer or update workspace thread..." 
-                           class="w-full text-sm px-4 py-2.5 bg-white rounded-xl focus:outline-none focus:ring-1 focus:ring-slate-800 transition-all text-slate-800 placeholder-slate-400 shadow-sm border border-slate-200">
-                </div>
-
-                <button type="submit" id="send-btn" class="w-10 h-10 bg-[#0b1329] hover:bg-slate-800 text-slate-200 rounded-full transition-all shadow active:scale-95 flex items-center justify-center shrink-0">
-                    <i class="fa-solid fa-paper-plane text-xs"></i>
-                </button>
-            </form>
         </div>
+
+        @if($currentStudent && $currentStudent->status === 'blacklisted')
+            <div class="flex-1 flex items-center justify-center py-2.5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-medium shadow-sm">
+                <i class="fa-solid fa-circle-exclamation text-red-500 mr-2"></i>
+                <span>Your messaging privileges have been suspended due to inactivity.</span>
+            </div>
+        @else
+            <div class="flex-1 relative flex items-center">
+                <input type="text" id="message-input" name="body" required autocomplete="off" placeholder="Write an answer or update workspace thread..." 
+                       class="w-full text-sm px-4 py-2.5 bg-white rounded-xl focus:outline-none focus:ring-1 focus:ring-slate-800 transition-all text-slate-800 placeholder-slate-400 shadow-sm border border-slate-200">
+            </div>
+
+            <button type="submit" id="send-btn" class="w-10 h-10 bg-[#0b1329] hover:bg-slate-800 text-slate-200 rounded-full transition-all shadow active:scale-95 flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-paper-plane text-xs"></i>
+            </button>
+        @endif
+    </form>
+</div>
     </div>
 </div>
 

@@ -39,12 +39,12 @@
         <ul class="sidebar-menu">
             <li class="menu-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
             <li class="menu-item active"><a href="#">Register Lecturer</a></li>
-            <li class="menu-item"><a href="#">Profile</a></li>
-            <li class="menu-item"><a href="#">Statistics of Users</a></li>
-            <li class="menu-item"><a href="#">Groups</a></li>
-            <li class="menu-item"><a href="#">Chatbox</a></li>
-            <li class="menu-item"><a href="#">Resources</a></li>
-            <li class="menu-item"><a href="#">Announcements</a></li>
+            <!-- <li class="menu-item"><a href="#">Profile</a></li> -->
+            <!-- <li class="menu-item"><a href="#">Statistics of Users</a></li> -->
+            <!-- <li class="menu-item"><a href="#">Groups</a></li> -->
+            <!-- <li class="menu-item"><a href="#">Chatbox</a></li> -->
+            <!-- <li class="menu-item"><a href="#">Resources</a></li> -->
+            <!-- <li class="menu-item"><a href="#">Announcements</a></li> -->
         </ul>
         <div class="logout-form">
             <form method="POST" action="{{ route('logout') }}">@csrf

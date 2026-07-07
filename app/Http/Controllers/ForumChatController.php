@@ -7,6 +7,7 @@ use App\Models\Topic;
 use App\Models\Message;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use App\Models\Student;
 
 class ForumChatController extends Controller
 {
@@ -59,7 +60,9 @@ class ForumChatController extends Controller
         }
 
         // Pass all variables, including the new $topics, to the Blade view
-        return view('chat.index', compact('groups', 'topics', 'currentStreamTarget', 'messages', 'type', 'id'));
+      $currentStudent = \App\Models\Student::where('user_id', auth()->id())->first();
+
+      return view('chat.index', compact('groups', 'topics', 'currentStreamTarget', 'messages', 'type', 'id', 'currentStudent'));
     }
 
     public function store(Request $request, $type = null, $id = null)
