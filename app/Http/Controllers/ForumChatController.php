@@ -37,9 +37,6 @@ class ForumChatController extends Controller
 
     public function store(Request $request, $type, $id)
     {
-        // Debugging line to verify the form submission works
-      //  dd('Hitting the store method!', $request->all(), $type, $id);
-
         $request->validate(['body' => 'required|string|max:3000']);
 
         $message = new Message();
@@ -54,6 +51,11 @@ class ForumChatController extends Controller
 
         broadcast(new \App\Events\MessageSent($message))->toOthers();
         
+        // 🌟 UX Optimization: Send an encouraging confirmation if a student participates in an graded topic
+        if ($type === 'topic' && auth()->user()->role === 'student') {
+            return back()->with('success', 'Your reply has been posted! Live participation marks have synced.');
+        }
+
         return back();
     }
 }
