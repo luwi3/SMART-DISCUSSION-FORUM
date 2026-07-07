@@ -57,4 +57,14 @@ class User extends Authenticatable
 {
     return $this->hasOne(Lecturer::class);
 }
+
+/**
+ * Link from User to Student profile.
+ * We must specify 'user_id' as the foreign key on the students table,
+ * and 'id' as the local key on our users table.
+ */
+public function student()
+{
+    return $this->hasOne(Student::class, 'user_id', 'id');
+}
 }

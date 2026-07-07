@@ -66,7 +66,9 @@
     <div class="workspace-layout">
         <aside class="sidebar">
             <ul class="sidebar-menu">
-                <li class="menu-item active"><a href="#">Profile</a></li>
+                <li class="menu-item {{ request()->routeIs('profile.edit') ? 'active' : '' }}">
+                    <a href="{{ route('profile.edit') }}">Profile</a>
+                </li>
                 
                 <!-- Dynamic Marks Action Button mapping natively to evaluation controller gradebook sheets -->
                 <li class="menu-item">

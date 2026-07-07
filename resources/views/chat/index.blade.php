@@ -7,9 +7,9 @@
     <title>Smart Forum Workspace</title>
     
     <!-- Tailwind CSS CDN -->
-   @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-gray-100 antialiased font-sans"
+<body class="bg-gray-100 antialiased font-sans">
 
 <div class="flex h-screen bg-white">
     <!-- Sidebar Workspace Navigation Container -->
@@ -170,8 +170,6 @@
         </div>
     </div>
 </div>
-
-@vite(['resources/js/app.js'])
 
 <script type="module">
     const container = document.getElementById('chat-messages-container');
