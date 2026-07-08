@@ -7,11 +7,9 @@
     <title>Smart Forum Workspace</title>
     
     <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <!-- FontAwesome Icons CDN -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+   @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-gray-100 antialiased font-sans">
+<body class="bg-gray-100 antialiased font-sans"
 
 <div class="flex h-screen bg-white">
     <!-- Sidebar Workspace Navigation Container -->

@@ -21,6 +21,9 @@ Route::get('/', function () {
 Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
     $user = $request->user();
     
+    // 🛠️ Temporary debug line:
+    //dd($user, $user->lecturer);
+    
     if ($user->role === 'administrator') {
         return redirect()->route('admin.dashboard');
     } elseif ($user->lecturer()->exists()) {
