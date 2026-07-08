@@ -47,103 +47,118 @@
                 <x-input-error :messages="$errors->get('agreed_to_rules')" class="text-xs text-red-500" />
 
                 <form method="POST" action="{{ route('register') }}" class="space-y-4">
-    @csrf
+                    @csrf
 
-    <div>
-        <label for="name" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Full Name</label>
-        <div class="relative mt-1 shadow-sm">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
-                <i class="fas fa-id-card text-gray-400 text-sm"></i>
-            </span>
-            <input id="name" type="text" name="name" value="{{ old('name') }}" required autofocus 
-                class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="Enter your full name">
-        </div>
+                    <div>
+                        <label for="name" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Full Name</label>
+                        <div class="relative mt-1 shadow-sm">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
+                                <i class="fas fa-id-card text-gray-400 text-sm"></i>
+                            </span>
+                            <input id="name" type="text" name="name" value="{{ old('name') }}" required autofocus 
+                                class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="Enter your full name">
+                        </div>
+                    </div>
 
-    <div>
-        <label for="username" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Username</label>
-        <div class="relative mt-1 shadow-sm">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
-                <i class="fas fa-user text-gray-400 text-sm"></i>
-            </span>
-            <input id="username" type="text" name="username" value="{{ old('username') }}" required 
-                class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="Choose a unique username">
-        </div>
-    </div>
+                    <div>
+                        <label for="username" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Username</label>
+                        <div class="relative mt-1 shadow-sm">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
+                                <i class="fas fa-user text-gray-400 text-sm"></i>
+                            </span>
+                            <input id="username" type="text" name="username" value="{{ old('username') }}" required 
+                                class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="Choose a unique username">
+                        </div>
+                    </div>
 
-    <div>
-        <label for="email" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Email Address</label>
-        <div class="relative mt-1 shadow-sm">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
-                <i class="fas fa-envelope text-gray-400 text-sm"></i>
-            </span>
-            <input id="email" type="email" name="email" value="{{ old('email') }}" required 
-                class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="Enter university email">
-        </div>
-    </div>
+                    <div>
+                        <label for="email" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Email Address</label>
+                        <div class="relative mt-1 shadow-sm">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
+                                <i class="fas fa-envelope text-gray-400 text-sm"></i>
+                            </span>
+                            <input id="email" type="email" name="email" value="{{ old('email') }}" required 
+                                class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="Enter university email">
+                        </div>
+                    </div>
 
-    <div>
-        <label for="phone" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Contact Number</label>
-        <div class="relative mt-1 shadow-sm">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
-                <i class="fas fa-phone text-gray-400 text-sm"></i>
-            </span>
-            <input id="phone" type="text" name="phone" value="{{ old('phone') }}" required 
-                class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="e.g. +256700000000">
-        </div>
-    </div>
+                    <div>
+                        <label for="phone" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Contact Number</label>
+                        <div class="relative mt-1 shadow-sm">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
+                                <i class="fas fa-phone text-gray-400 text-sm"></i>
+                            </span>
+                            <input id="phone" type="text" name="phone" value="{{ old('phone') }}" required 
+                                class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="e.g. +256700000000">
+                        </div>
+                    </div>
 
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div>
-            <label for="password" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Password</label>
-            <div class="relative mt-1 shadow-sm">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
-                    <i class="fas fa-lock text-gray-400 text-sm"></i>
-                </span>
-                <input id="password" type="password" name="password" required 
-                    class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="Min 8 chars">
-            </div>
-        </div>
-        <div>
-            <label for="password_confirmation" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Confirm</label>
-            <div class="relative mt-1 shadow-sm">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
-                    <i class="fas fa-shield text-gray-400 text-sm"></i>
-                </span>
-                <input id="password_confirmation" type="password" name="password_confirmation" required 
-                    class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="Confirm">
-            </div>
-        </div>
-    </div>
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                            <label for="password" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Password</label>
+                            <div class="relative mt-1 shadow-sm">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
+                                    <i class="fas fa-lock text-gray-400 text-sm"></i>
+                                </span>
+                                <input id="password" type="password" name="password" required 
+                                    class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="Min 8 chars">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="password_confirmation" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Confirm</label>
+                            <div class="relative mt-1 shadow-sm">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
+                                    <i class="fas fa-shield text-gray-400 text-sm"></i>
+                                </span>
+                                <input id="password_confirmation" type="password" name="password_confirmation" required 
+                                    class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="Confirm">
+                            </div>
+                        </div>
+                    </div>
 
-    <div class="space-y-4 pt-2 border-t border-gray-100 mt-4">
-        <div>
-            <label for="course_code" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Course Code</label>
-            <div class="relative mt-1 shadow-sm">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
-                    <i class="fas fa-graduation-cap text-gray-400 text-sm"></i>
-                </span>
-                <input id="course_code" type="text" name="course_code" value="{{ old('course_code') }}" required
-                    class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="e.g. BCS">
-            </div>
-        </div>
-        <div>
-            <label for="reg_no" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Registration Number</label>
-            <div class="relative mt-1 shadow-sm">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
-                    <i class="fas fa-address-card text-gray-400 text-sm"></i>
-                </span>
-                <input id="reg_no" type="text" name="reg_no" value="{{ old('reg_no') }}" required
-                    class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="e.g. 26/U/1234/PS">
-            </div>
-        </div>
-    </div>
+                    <div class="pt-2 border-t border-gray-100 mt-4">
+                        <label for="role" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Account Role</label>
+                        <div class="relative mt-1 shadow-sm">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
+                                <i class="fas fa-user-gear text-gray-400 text-sm"></i>
+                            </span>
+                            <select id="role" name="role" required onchange="toggleRoleFields(this.value)"
+                                class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200">
+                                <option value="student" {{ old('role') == 'student' ? 'selected' : '' }}>Student Profile Workspace</option>
+                                <option value="lecturer" {{ old('role') == 'lecturer' ? 'selected' : '' }}>Lecturer / Faculty Workspace</option>
+                            </select>
+                        </div>
+                    </div>
 
-    <div class="pt-1">
-        <label class="flex items-center cursor-pointer">
-            <input type="checkbox" name="agreed_to_rules" value="1" required class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-            <span class="ml-2 text-xs font-medium text-gray-600 select-none">I agree to the community regulations</span>
-        </label>
-    </div>
+                    <div id="student-fields" class="space-y-4 transition-all duration-300">
+                        <div>
+                            <label for="course_code" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Course Code</label>
+                            <div class="relative mt-1 shadow-sm">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
+                                    <i class="fas fa-graduation-cap text-gray-400 text-sm"></i>
+                                </span>
+                                <input id="course_code" type="text" name="course_code" value="{{ old('course_code') }}"
+                                    class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="e.g. BCS">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="reg_no" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Registration Number</label>
+                            <div class="relative mt-1 shadow-sm">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
+                                    <i class="fas fa-address-card text-gray-400 text-sm"></i>
+                                </span>
+                                <input id="reg_no" type="text" name="reg_no" value="{{ old('reg_no') }}"
+                                    class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="e.g. 26/U/1234/PS">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-1">
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" name="agreed_to_rules" value="1" required class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="ml-2 text-xs font-medium text-gray-600 select-none">I agree to the community regulations</span>
+                        </label>
+                    </div>
 
                     <div class="flex items-center justify-between gap-4 pt-2">
                         <a href="/" class="w-1/2 text-center px-4 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 transition font-bold text-xs uppercase tracking-wider">
@@ -175,5 +190,28 @@
             </div>
         </div>
     </div>
-   
+
+    <script>
+        function toggleRoleFields(role) {
+            const studentFields = document.getElementById('student-fields');
+            const courseInput = document.getElementById('course_code');
+            const regInput = document.getElementById('reg_no');
+
+            if (role === 'lecturer') {
+                studentFields.classList.add('hidden');
+                courseInput.removeAttribute('required');
+                regInput.removeAttribute('required');
+            } else {
+                studentFields.classList.remove('hidden');
+                courseInput.setAttribute('required', 'required');
+                regInput.setAttribute('required', 'required');
+            }
+        }
+        
+        // Execute once on page load to preserve old validation states cleanly
+        window.addEventListener('DOMContentLoaded', () => {
+            const currentRole = document.getElementById('role').value;
+            toggleRoleFields(currentRole);
+        });
+    </script>
 </x-guest-layout>
