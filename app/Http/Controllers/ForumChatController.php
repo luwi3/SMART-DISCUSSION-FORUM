@@ -13,7 +13,7 @@ class ForumChatController extends Controller
     public function index($type = null, $id = null)
     {
         // Fetch all groups for the sidebar
-        $groups = GroupDiscussion::orderBy('name', 'asc')->get();
+        
         
         // Fetch all topics for the sidebar
         $topics = Topic::orderBy('title', 'asc')->get(); 
@@ -59,7 +59,8 @@ class ForumChatController extends Controller
         }
 
         // Pass all variables, including the new $topics, to the Blade view
-        return view('chat.index', compact('groups', 'topics', 'currentStreamTarget', 'messages', 'type', 'id'));
+        return view('chat.index', compact('topics', 'currentStreamTarget', 'messages', 'type', 'id'));
+        
     }
 
     public function store(Request $request, $type = null, $id = null)

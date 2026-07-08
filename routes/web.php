@@ -6,6 +6,8 @@ use App\Http\Controllers\ForumChatController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\LecturerController;
 use App\Http\Controllers\QuizController;
+use App\Http\Controllers\TopicController;
+use App\Http\Controllers\GroupDiscussionController;
 
 // 1. Root URL: Redirects to dashboard (or login)
 Route::get('/', function () {
@@ -69,6 +71,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Topic creation
+Route::get('/topics/create', [TopicController::class, 'create'])
+    ->name('topics.create');
+Route::post('/topics/create', [TopicController::class, 'store'])
+    ->name('topics.store');
+
+// Group creation
+Route::get('/groups/create', [GroupDiscussionController::class, 'create'])
+    ->name('groups.create');
 
     // Forum Workspace Routes
     Route::get('/forum-workspace/{type?}/{id?}', [ForumChatController::class, 'index'])->name('chat.index');

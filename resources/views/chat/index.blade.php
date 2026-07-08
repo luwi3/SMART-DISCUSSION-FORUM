@@ -44,23 +44,7 @@
             </div>
 
             <!-- Recent Group Discussions Sidebar Collection Container -->
-            <div>
-                <h2 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase mb-2 flex items-center">
-                    <i class="fa-solid fa-users text-slate-400 mr-2"></i> Study Groups
-                </h2>
-                <ul class="space-y-1">
-                    @foreach($groups as $group)
-                        <li>
-                            <a href="{{ url('/forum-workspace/group/' . $group->id) }}" 
-                               class="flex items-center space-x-2 px-2 py-1.5 text-xs rounded-md transition-colors hover:bg-slate-800 hover:text-white 
-                               {{ ($type === 'group' && $id == $group->id) ? 'bg-slate-800 text-white font-medium' : '' }}">
-                                <i class="fa-regular fa-comments text-emerald-400"></i>
-                                <span class="truncate">{{ $group->name }}</span>
-                            </a>
-                        </li>
-                    @endforeach
-                </ul>
-            </div>
+            
         </div>
     </div>
 
@@ -149,14 +133,7 @@
                                 </a>
                             @endforeach
                         </div>
-                        <div class="py-1">
-                            <span class="block px-3 py-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider">Active Group Forums</span>
-                            @foreach($groups as $group)
-                                <a href="{{ url('/forum-workspace/group/' . $group->id) }}" class="block px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 hover:text-emerald-600 truncate {{ ($type === 'group' && $id == $group->id) ? 'bg-emerald-50 text-emerald-600 font-semibold' : '' }}">
-                                    <i class="fa-regular fa-comments mr-1.5 text-emerald-400"></i> {{ $group->name }}
-                                </a>
-                            @endforeach
-                        </div>
+                        
                     </div>
                 </div>
 
