@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use App\Models\Student;
 
 class RegisteredUserController extends Controller
 {
@@ -26,34 +27,46 @@ class RegisteredUserController extends Controller
     /**
      * Handle an incoming registration request.
      *
-     * @throws ValidationException
+     * @throws \Illuminate\Validation\ValidationException
      */
-    public function store(Request $request): RedirectResponse
-    {
-       // 1. Business Validation Rules matching your UI fields
+  public function store(Request $request): RedirectResponse
+{
+    // 1. Validate both user and student inputs
     $request->validate([
         'name' => ['required', 'string', 'max:255'],
         'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-        'contact' => ['required', 'string', 'max:20'], // Captures your contact input
-        'password' => ['required', 'confirmed', \Illuminate\Validation::Rules\Password::defaults()],
-        'role' => ['required', 'in:Administrator,Lecturer,Student'], // Validates the dropdown selection
-        'rules_agreed' => ['required', 'accepted'], // Stops the user if "I have read and understood the rules" is unchecked
+        'username' => ['required', 'string', 'max:255'], 
+        'phone' => ['required', 'string', 'max:20'], 
+        'course_code' => ['required', 'string', 'max:50'], // 🎓 Added
+        'reg_no' => ['required', 'string', 'max:50'],      // 🎓 Added
+        'agreed_to_rules' => ['required', 'accepted'],
+        'password' => ['required', 'confirmed', Rules\Password::defaults()],
     ]);
 
-    // 2. Creating the user record in the database
+    // 2. Create the main user account
     $user = User::create([
         'name' => $request->name,
         'email' => $request->email,
-        'contact' => $request->contact,
-        'password' => \Illuminate\Support\Facades\Hash::make($request->password), // Encrypts the password securely
-        'role' => $request->role,
-        'status' => 'Active', // Sets default user account status
+        'username' => $request->username,
+        'phone' => $request->phone,
+        'role' => 'student', 
+        'agreed_to_rules' => (bool) $request->agreed_to_rules,
+        'password' => Hash::make($request->password),
+        'status' => 'active',
     ]);
 
-    // 3. Authenticate and log the user in immediately
-    event(new \Illuminate\Auth\Events\Registered($user));
-    \Illuminate\Support\Facades\Auth::login($user);
+    // 3. Create the matching student profile linked by user_id
+    Student::create([
+        'user_id' => $user->id,
+        'regNo' => $request->reg_no,          // Maps form input to DB column
+        'courseCode' => $request->course_code,  // Maps form input to DB column
+        'status' => 'active',
+    ]);
 
-    // 4. Redirect them to the dashboard area
+    event(new Registered($user));
+
+    Auth::login($user);
+
     return redirect(route('dashboard', absolute: false));
+}
 }

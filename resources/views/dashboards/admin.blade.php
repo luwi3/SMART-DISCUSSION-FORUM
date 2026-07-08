@@ -59,6 +59,7 @@
         <ul class="sidebar-menu">
             <li class="menu-item active"><a href="#">Dashboard</a></li>
             <li class="menu-item"><a href="#">Profile</a></li>
+            <li class="menu-item"><a href="{{ route('admin.lecturers.create') }}">Register Lecturer</a></li>
             <li class="menu-item"><a href="#">Statistics of Users</a></li>
             <li class="menu-item"><a href="#">Groups</a></li>
             <li class="menu-item"><a href="#">Chatbox</a></li>
