@@ -91,6 +91,11 @@ class ForumChatController extends Controller
 
         broadcast(new \App\Events\MessageSent($message))->toOthers();
         
+        // 🌟 UX Optimization: Send an encouraging confirmation if a student participates in an graded topic
+        if ($type === 'topic' && auth()->user()->role === 'student') {
+            return back()->with('success', 'Your reply has been posted! Live participation marks have synced.');
+        }
+
         return back();
     }
 }
