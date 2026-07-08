@@ -122,4 +122,12 @@ Route::get('/test-quiz-show', function() {
 // ==========================================
 // 6. DEFAULT AUTH SYSTEM FILE LOADER
 // ==========================================
+
+use App\Http\Controllers\TopicExportController;
+
+// Safely added for PDF generation functionality
+Route::get('/topics/{id}/export-pdf', [TopicExportController::class, 'export'])
+    ->name('topics.export-pdf')
+    ->middleware('auth');
+
 require __DIR__.'/auth.php';
