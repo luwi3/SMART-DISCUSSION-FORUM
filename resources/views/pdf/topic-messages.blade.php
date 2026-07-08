@@ -25,7 +25,7 @@
                 • {{ $message->created_at->format('M d, Y h:i A') }}
             </div>
             <div class="content">
-                {{ $message->content }}
+                {{ $message->body }}
             </div>
         </div>
     @endforeach

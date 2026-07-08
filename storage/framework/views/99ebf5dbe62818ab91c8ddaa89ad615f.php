@@ -26,7 +26,7 @@
 
             </div>
             <div class="content">
-                <?php echo e($message->content); ?>
+                <?php echo e($message->body); ?>
 
             </div>
         </div>

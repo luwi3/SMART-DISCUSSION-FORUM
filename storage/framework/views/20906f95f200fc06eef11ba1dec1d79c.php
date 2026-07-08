@@ -24,26 +24,38 @@
         
         <div class="flex-1 overflow-y-auto p-4 space-y-6">
             <!-- Active Courses Sidebar Collection Container -->
-            <div>
-                <h2 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase mb-2 flex items-center">
-                    <i class="fa-solid fa-graduation-cap text-sky-400 mr-2"></i> Active Courses
-                </h2>
-                <ul class="space-y-1">
-                    <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::openLoop(); ?><?php endif; ?><?php $__currentLoopData = $topics; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $topic): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::startLoopIteration(); ?><?php endif; ?>
-                        <li>
-                            <a href="<?php echo e(url('/forum-workspace/topic/' . $topic->id)); ?>" 
-                               class="flex items-center space-x-2 px-2 py-1.5 text-xs rounded-md transition-colors hover:bg-slate-800 hover:text-white 
-                               <?php echo e(($type === 'topic' && $id == $topic->id) ? 'bg-slate-800 text-white font-medium' : ''); ?>">
-                                <i class="fa-solid fa-book-bookmark text-blue-400"></i>
-                                <span class="truncate"><?php echo e($topic->course_code ?? $topic->title); ?></span>
-                            </a>
-                        </li>
-                    <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::endLoop(); ?><?php endif; ?><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::closeLoop(); ?><?php endif; ?>
-                    <a href="<?php echo e(route('topics.export-pdf', $topic->id)); ?>" class="btn btn-primary">
-    Export Chats to PDF
-</a>
-                </ul>
-            </div>
+<div>
+    <h2 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase mb-2 flex items-center">
+        <i class="fa-solid fa-graduation-cap text-sky-400 mr-2"></i> Active Courses
+    </h2>
+    <ul class="space-y-1">
+        <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::openLoop(); ?><?php endif; ?><?php $__currentLoopData = $topics; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $topic): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::startLoopIteration(); ?><?php endif; ?>
+            <li>
+                <a href="<?php echo e(url('/forum-workspace/topic/' . $topic->id)); ?>" 
+                   class="flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors hover:bg-slate-800 hover:text-white 
+                   <?php echo e(($type === 'topic' && $id == $topic->id) ? 'bg-slate-800 text-white font-medium' : ''); ?>">
+                    
+                    <!-- Left Side: Icon and Title (Keeps your exact logic) -->
+                    <div class="flex items-center space-x-2 truncate mr-2">
+                        <i class="fa-solid fa-book-bookmark text-blue-400 shrink-0"></i>
+                        <span class="truncate"><?php echo e($topic->course_code ?? $topic->title); ?></span>
+                    </div>
+
+                    <!-- Right Side: Download Icon Link (Isolated Feature) -->
+                    <object>
+                        <a href="<?php echo e(route('topics.export-pdf', $topic->id)); ?>" 
+                           title="Export to PDF" 
+                           class="text-slate-400 hover:text-sky-400 transition-colors p-0.5 shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3.5 h-3.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                            </svg>
+                        </a>
+                    </object>
+                </a>
+            </li>
+        <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::endLoop(); ?><?php endif; ?><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::closeLoop(); ?><?php endif; ?>
+    </ul>
+</div>
 
             <!-- Recent Group Discussions Sidebar Collection Container -->
             <div>
