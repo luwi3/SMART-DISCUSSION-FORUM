@@ -112,19 +112,22 @@
                            <tbody>
     @forelse($suspendedStudents as $student)
         <tr style="border-bottom: 1px solid #eef2f6;">
-           <td style="padding: 12px;">#{{ $student->regNo }}</td>
-<td style="padding: 12px;">{{ $student->user->name ?? 'No Name Linked' }}</td>
-            <td style="padding: 12px;">
-                <span style="color: #ef4444; background: #fee2e2; padding: 4px 8px; border-radius: 4px; font-size: 14px;">
-                    {{ $student->status }}
-                </span>
-            </td>
-            <td style="padding: 12px;">
-                <button style="background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer;">
-                    Activate
-                </button>
-            </td>
-        </tr>
+    <td style="padding: 12px;">#{{ $student->regNo }}</td>
+    <td style="padding: 12px;">{{ $student->user->name ?? 'No Name Linked' }}</td>
+    <td style="padding: 12px;">
+        <span style="color: #ef4444; background: #fee2e2; padding: 4px 8px; border-radius: 4px; font-size: 14px;">
+            {{ $student->status }}
+        </span>
+    </td>
+    <td style="padding: 12px;">
+    <form action="/admin/students/{{ $student->regNo }}/activate" method="POST" style="margin: 0;">
+            @csrf
+            <button type="submit" style="background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer;">
+                Activate
+            </button>
+        </form>
+    </td>
+</tr>
     @empty
         <tr>
             <td colspan="4" style="padding: 20px; text-align: center; color: #64748b;">
@@ -147,14 +150,14 @@
                     <div class="metric-card students">
                         <div class="metric-title">Active Students</div>
                         <div class="metric-content"><div class="metric-icon-box">👥</div><div class="metric-value">{{ $activeStudents }}</div></div>
-                        <div class="progress-container"><div class="progress-bar"></div></div>
+                        <div class="progress-container"><div class="progress-bar" style="width: {{ $activePercentage }}%;"></div></div>
                         <span class="metric-percentage">Students marked active</span>
                     </div>
                     
                     <div class="metric-card warnings">
                         <div class="metric-title">Warning List</div>
                         <div class="metric-content"><div class="metric-icon-box">⚠️</div><div class="metric-value">{{ $warningList }}</div></div>
-                        <div class="progress-container"><div class="progress-bar"></div></div>
+                        <div class="progress-container"><div class="progress-bar" style="width: {{ $warningPercentage }}%;"></div></div>
                         <span class="metric-percentage">Students flagged on warning</span>
                     </div>
                     
@@ -164,7 +167,7 @@
                             <div class="metric-icon-box">🚫</div>
                             <div class="metric-value">{{ $blacklistedUsers }}</div>
                         </div>
-                        <div class="progress-container"><div class="progress-bar"></div></div>
+                        <div class="progress-container"><div class="progress-bar" style="width: {{ $blacklistedPercentage }}%;"></div></div>
                         <span class="metric-percentage">Suspended accounts</span>
                     </div>
                     
@@ -180,7 +183,7 @@
                     <h3 class="chart-title">User Statistics Overview</h3>
                     <div class="chart-layout">
                         <div class="donut-container">
-                            <div class="donut-chart">
+                            <div class="donut-chart" style="background: conic-gradient(#16a34a 0% {{ $activePercentage }}%, #ea580c {{ $activePercentage }}% {{ $activePercentage + $warningPercentage }}%, #dc2626 {{ $activePercentage + $warningPercentage }}% 100%);">
                                 <div class="donut-hole"><span class="donut-total">{{ $totalUsers }}</span><span class="donut-label">Total Users</span></div>
                             </div>
                         </div>

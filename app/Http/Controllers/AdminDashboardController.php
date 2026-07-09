@@ -4,33 +4,50 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Student;
+use App\Models\User;
 
 class AdminDashboardController extends Controller
 {
     public function index()
-{
-    // 1. Automatically blacklist students inactive for more than 5 minutes
-    $thresholdTime = now()->subMinutes(5);
-    
-    \App\Models\Student::where('status', 'active')
-        ->where('lastCommDate', '<', $thresholdTime)
-        ->update(['status' => 'blacklisted']);
+    {
+        // 1. Define our time thresholds 🗓️
+        $warningThreshold = now()->subDays(2);
+        $blacklistThreshold = now()->subDays(3);
+        
+        // 2. Automatically transition active students to warning after 2 days of inactivity ⚠️
+        Student::where('status', 'active')
+            ->where('lastCommDate', '<', $warningThreshold)
+            ->update(['status' => 'warning']);
 
-    // 2. Fetch the updated statistics from the database
-    $totalUsers = \App\Models\User::count();
-    $activeStudents = \App\Models\Student::where('status', 'active')->count();
-    $blacklistedUsers = \App\Models\Student::where('status', 'blacklisted')->count();
-    
-    // Leaving this as 0 for now until we define warning rules
-    $warningList = 0; 
-  $suspendedStudents = Student::where('status', 'blacklisted')->get();
-    // 3. Pass variables to the view
-    return view('dashboards.admin', compact(
-        'totalUsers', 
-        'activeStudents', 
-        'warningList', 
-        'blacklistedUsers',
-        'suspendedStudents'
-    ));
-}
+        // 3. Automatically transition warning students to blacklisted after 3 days of inactivity 🛑
+        Student::where('status', 'warning')
+            ->where('lastCommDate', '<', $blacklistThreshold)
+            ->update(['status' => 'blacklisted']);
+
+        // 4. Fetch the updated statistics from the database 📊
+        $totalUsers = User::count();
+        $activeStudents = Student::where('status', 'active')->count();
+        $warningList = Student::where('status', 'warning')->count();
+        $blacklistedUsers = Student::where('status', 'blacklisted')->count();
+        
+        // 5. Calculate percentages 📈
+        $activePercentage = ($totalUsers > 0) ? ($activeStudents / $totalUsers) * 100 : 0;
+        $warningPercentage = ($totalUsers > 0) ? ($warningList / $totalUsers) * 100 : 0;
+        $blacklistedPercentage = ($totalUsers > 0) ? ($blacklistedUsers / $totalUsers) * 100 : 0;
+        
+        // 6. Fetch the collection of blacklisted students for the dashboard table 🗂️
+        $suspendedStudents = Student::where('status', 'blacklisted')->get();
+        
+        // 7. Pass variables to the view ↩️
+        return view('dashboards.admin', compact(
+            'totalUsers', 
+            'activeStudents', 
+            'warningList', 
+            'blacklistedUsers',
+            'suspendedStudents',
+            'activePercentage',
+            'warningPercentage',
+            'blacklistedPercentage'
+        ));
+    }
 }

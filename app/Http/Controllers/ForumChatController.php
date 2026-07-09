@@ -65,25 +65,24 @@ class ForumChatController extends Controller
       return view('chat.index', compact('groups', 'topics', 'currentStreamTarget', 'messages', 'type', 'id', 'currentStudent'));
     }
 
-    public function store(Request $request, $type = null, $id = null)
+   public function store(Request $request, $type = null, $id = null)
 {
     // 1. Validate the incoming message
-$request->validate(['body' => 'required|string|max:3000']);
+    $request->validate(['body' => 'required|string|max:3000']);
 
-// 2. Fetch the student record for the logged-in user
-$student = Student::where('user_id', auth()->id())->first();
+    // 2. Fetch the student record for the logged-in user
+    $student = Student::where('user_id', auth()->id())->first();
 
-// 3. Check if they are blacklisted
-// 3. Check if they are blacklisted
-if ($student && $student->status === 'blacklisted') {
-    if ($request->ajax() || $request->wantsJson()) {
-        return response()->json([
-            'errors' => ['message' => ['You have been blocked from using the chat due to inactivity until further notice.']]
-        ], 422);
+    // 3. Check if they are blacklisted
+    if ($student && $student->status === 'blacklisted') {
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'errors' => ['message' => ['You have been blocked from using the chat due to inactivity until further notice.']]
+            ], 422);
+        }
+
+        return back()->withErrors(['message' => 'You have been blocked from using the chat due to inactivity until further notice.']);
     }
-
-    return back()->withErrors(['message' => 'You have been blocked from using the chat due to inactivity until further notice.']);
-}
 
     $message = new Message();
     $message->user_id = auth()->id();
@@ -107,10 +106,16 @@ if ($student && $student->status === 'blacklisted') {
 
     $message->save();
 
-    // ⏱️ This will now run because $student is no longer null!
+    // ⏱️ Update communication timestamp and reset warnings
     $student = auth()->user()->student;
     if ($student) {
         $student->lastCommDate = now();
+
+        // 🔄 Automatically bring warned students back to active
+        if ($student->status === 'warning') {
+            $student->status = 'active';
+        }
+
         $student->save();
     }
 

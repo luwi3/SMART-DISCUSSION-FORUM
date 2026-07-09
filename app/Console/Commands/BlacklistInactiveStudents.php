@@ -16,20 +16,19 @@ class BlacklistInactiveStudents extends Command
      */
  public function handle()
 {
-    $cutoff = \Carbon\Carbon::now()->subDays(5)->toDateTimeString();
+ // Define the cutoff date (Yesterday at midnight)
+$cutoff = today()->subDays(1)->toDateString();
 
-    // 1️⃣ Case A: Blacklist students whose last communication is older than 5 days
-    Student::where('status', 'active')
-        ->whereNotNull('lastCommDate')
-        ->where('lastCommDate', '<', $cutoff)
-        ->update(['status' => 'blacklisted']);
+// 1️⃣ Case A: Blacklist students who haven't communicated since before yesterday
+Student::where('status', 'active')
+    ->whereNotNull('lastCommDate')
+    ->whereDate('lastCommDate', '<', $cutoff)
+    ->update(['status' => 'blacklisted']);
 
-    // 2️⃣ Case B: Blacklist students who never communicated and registered over 5 days ago
-    Student::where('status', 'active')
-        ->whereNull('lastCommDate')
-        ->where('created_at', '<', $cutoff)
-        ->update(['status' => 'blacklisted']);
-        
-    $this->info('Active student scan complete.');
+// 2️⃣ Case B: Blacklist students who never communicated and registered over 5 days ago
+Student::where('status', 'active')
+    ->whereNull('lastCommDate')
+    ->whereDate('created_at', '<', today()->subDays(5)->toDateString())
+    ->update(['status' => 'blacklisted']);
 }
 }

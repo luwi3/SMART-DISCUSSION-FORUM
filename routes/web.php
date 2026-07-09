@@ -7,7 +7,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\LecturerController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\AdminDashboardController;
-
+use App\Models\Student;
+use Carbon\Carbon;
 // ==========================================
 // 1. ROOT & CORE SWITCHBOARD
 // ==========================================
@@ -101,8 +102,53 @@ Route::get('/test-quiz-create', function() {
 Route::get('/test-quiz-show', function() { 
     return view('quizzes.show'); 
 });
+Route::get('/test-blacklist', function () {
+    // 📅 1. Calculate both cutoff dates
+    $blacklistCutoff = today()->subDays(3)->toDateString(); 
+    $warningCutoff = today()->subDays(2)->toDateString();   
 
+    // ⚠️ 2. WARNING: Inactive communication for 2 days (but not yet 3)
+    Student::where('status', 'active')
+        ->whereNotNull('lastCommDate')
+        ->whereDate('lastCommDate', '<', $warningCutoff)
+        ->whereDate('lastCommDate', '>=', $blacklistCutoff)
+        ->update(['status' => 'warning']);
 
+    // ⚠️ 3. WARNING: Registered 2 days ago, never communicated
+    Student::where('status', 'active')
+        ->whereNull('lastCommDate')
+        ->whereDate('created_at', '<', $warningCutoff)
+        ->whereDate('created_at', '>=', $blacklistCutoff)
+        ->update(['status' => 'warning']);
+
+    // 🔴 4. BLACKLIST: Inactive communication for 3+ days
+    Student::where('status', 'active')
+        ->whereNotNull('lastCommDate')
+        ->whereDate('lastCommDate', '<', $blacklistCutoff)
+        ->update(['status' => 'blacklisted']);
+
+    // 🔴 5. BLACKLIST: Registered 3+ days ago, never communicated
+    Student::where('status', 'active')
+        ->whereNull('lastCommDate')
+        ->whereDate('created_at', '<', $blacklistCutoff)
+        ->update(['status' => 'blacklisted']);
+
+    return response()->json([
+        'status' => 'success',
+        'message' => 'Admin scan complete. Warning and blacklist statuses updated.',
+    ]);
+})->middleware('auth');
+
+Route::post('/admin/students/{regNo}/activate', function ($regNo) {
+    $student = Student::where('regNo', $regNo)->firstOrFail();
+    
+    // 🔄 Reset status and update the communication date to right now
+    $student->status = 'active';
+    $student->lastCommDate = now(); // 👈 This resets the 5-minute countdown!
+    $student->save();
+
+    return back()->with('success', 'Student status has been reset to active successfully!');
+})->middleware('auth')->where('regNo', '.*');// 👈 This allows forward slashes in the registration number!
 // ==========================================
 // 6. DEFAULT AUTH SYSTEM FILE LOADER
 // ==========================================
