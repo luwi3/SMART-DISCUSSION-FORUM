@@ -9,6 +9,8 @@ use App\Http\Controllers\QuizController;
 use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\ParticipationController; 
 use App\Http\Controllers\TopicController;        
+use App\Http\Controllers\TopicController;
+use App\Http\Controllers\GroupDiscussionController;
 
 // ==========================================
 // 1. ROOT & CORE SWITCHBOARD
@@ -93,6 +95,18 @@ Route::middleware('auth')->group(function () {
     Route::post('/quizzes/{quizID}/submit', [QuizController::class, 'submit'])->name('quizzes.submit');
     
     // 💬 Forum Workspace Routes
+
+    // Topic creation
+Route::get('/topics/create', [TopicController::class, 'create'])
+    ->name('topics.create');
+Route::post('/topics/create', [TopicController::class, 'store'])
+    ->name('topics.store');
+
+// Group creation
+Route::get('/groups/create', [GroupDiscussionController::class, 'create'])
+    ->name('groups.create');
+
+    // Forum Workspace Routes
     Route::get('/forum-workspace/{type?}/{id?}', [ForumChatController::class, 'index'])->name('chat.index');
     Route::post('/forum-workspace/{type}/{id}', [ForumChatController::class, 'store'])->name('chat.store');
 
