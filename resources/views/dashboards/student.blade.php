@@ -158,80 +158,6 @@
                     <p class="welcome-sub">Always keep learning and stay active.</p>
                 </div>
 
-<<<<<<< HEAD
-                <section class="cards-row">
-                    <div class="metric-card">
-                        <div class="m-title">Participation Marks</div>
-                        <div class="m-val">85%</div>
-                        <div class="m-sub">Great Job! 🚀</div>
-                        <div class="progress-line"><div class="progress-fill"></div></div>
-                    </div>
-                    <div class="metric-card" style="width:160px;">
-                        <div class="m-title" style="color:#1e293b;">Status</div>
-                        <div class="status-check">✓</div>
-                        <div class="m-sub">Account Active</div>
-                    </div>
-                    <div class="metric-card" style="width:240px;">
-                        <div class="m-title" style="color:#7c3aed;">Recommended Topic</div>
-                        <div class="m-val" style="font-size:18px; margin-top:10px; margin-bottom:15px;">Database Design</div>
-                        <a href="#" class="btn-topic-action">VIEW TOPICS</a>
-                    </div>
-                </section>
-                
-                <div class="dashboard-grid">
-                    <div class="left-column">
-                        <section style="display:flex; gap:20px; flex-wrap:wrap;">
-                            <a href="{{ route('topics.create') }}" style="background:#2563eb; color:white; padding:20px; border-radius:12px; text-decoration:none; width:260px; display:flex; align-items:center; gap:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); transition:0.2s;" onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563eb'">
-                                <div style="background:white; color:#2563eb; width:45px; height:45px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px;">💬</div>
-                                <div>
-                                    <h3 style="font-size:16px; font-weight:700; margin-bottom:5px;">Create Topic</h3>
-                                    <p style="font-size:12px; opacity:0.9;">Start a new discussion</p>
-                                </div>
-                            </a>
-
-                            <a href="{{ route('groups.create') }}" style="background:#10b981; color:white; padding:20px; border-radius:12px; text-decoration:none; width:260px; display:flex; align-items:center; gap:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); transition:0.2s;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
-                                <div style="background:white; color:#10b981; width:45px; height:45px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px;">👥</div>
-                                <div>
-                                    <h3 style="font-size:16px; font-weight:700; margin-bottom:5px;">Create Group</h3>
-                                    <p style="font-size:12px; opacity:0.9;">Create a discussion group</p>
-                                </div>
-                            </a>
-                        </section>
-
-                        <section class="content-panel" style="margin-top: 10px;">
-                            <h3 class="panel-title">✍️ Available Assessments</h3>
-                            @if(isset($activeQuizzes) && count($activeQuizzes) > 0)
-                                <p style="color: #10b981; font-size: 14px; margin-bottom: 15px; font-weight: 600;">✅ Your registered course streams have active evaluation windows open.</p>
-                                @foreach($activeQuizzes as $activeQuiz)
-                                    <div class="list-row-item">
-                                        <div class="item-info-meta">
-                                            <span class="item-info-title">{{ $activeQuiz->title }}</span>
-                                            <span class="item-info-badge">{{ $activeQuiz->courseCode }} • {{ $activeQuiz->duration }} Mins</span>
-                                        </div>
-                                        <a href="{{ route('quizzes.show', ['quizID' => $activeQuiz->quizID ?? $activeQuiz->id]) }}" style="display: inline-block; padding: 8px 16px; background: #10b981; color: white; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px;">✍️ Attempt Quiz</a>
-                                    </div>
-                                @endforeach
-                            @else
-                                <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">No active evaluation windows are currently open for your course stream.</p>
-                                <div class="list-row-item" style="opacity: 0.6; background: #f1f5f9;">
-                                    <div class="item-info-meta">
-                                        <span class="item-info-title" style="color: #94a3b8;">No Evaluation Scheduled</span>
-                                        <span class="item-info-badge" style="background: #cbd5e1; color: #64748b;">-- • 0 Mins</span>
-                                    </div>
-                                    <button disabled style="display: inline-block; padding: 8px 16px; background: #94a3b8; color: #e2e8f0; border-radius: 6px; border: none; font-weight: bold; font-size: 13px; cursor: not-allowed;">🔒 Attempt Quiz</button>
-                                </div>
-                            @endif
-                        </section>
-                    </div>
-
-                    <div class="right-column">
-                        <section class="content-panel">
-                            <div class="panel-title">📢 Recent Announcements</div>
-                            <div class="feed-list" id="live-announcements-container">
-                                <div class="feed-item">
-                                    <div class="feed-avatar">D</div>
-                                    <div><div class="feed-msg-title">New quiz available: Software Engineering</div><div class="feed-time">2 hours ago</div></div>
-=======
             <section class="cards-row">
                 <div class="metric-card">
                     <div class="m-title">🤖 Forum Participation</div>
@@ -304,7 +230,6 @@
                                             ✍️ Attempt Quiz
                                         </a>
                                     @endif
->>>>>>> bcc95f50ac45ac2324e2135a6317a7dc46122df5
                                 </div>
                                 <div class="feed-item">
                                     <div class="feed-avatar">D</div>
@@ -315,8 +240,6 @@
                         </section>
                     </div>
                 </div>
-<<<<<<< HEAD
-=======
 
                 <div class="right-column">
                     <section class="content-panel">
@@ -339,7 +262,6 @@
                     </section>
                 </div>
 
->>>>>>> bcc95f50ac45ac2324e2135a6317a7dc46122df5
             </div>
 
             <div id="profile-view" class="dashboard-screen">
