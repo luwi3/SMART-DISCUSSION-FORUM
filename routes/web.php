@@ -10,8 +10,10 @@ use App\Http\Controllers\AdminDashboardController;
 use App\Models\Student;
 use Carbon\Carbon;
 use App\Http\Controllers\ResourceController;
-use App\Http\Controllers\ParticipationController; // Added for the student participation feature
-use App\Http\Controllers\TopicController;       // Added for the dedicated topic builder engine
+use App\Http\Controllers\ParticipationController; 
+use App\Http\Controllers\TopicController;        
+use App\Http\Controllers\TopicController;
+use App\Http\Controllers\GroupDiscussionController;
 
 // ==========================================
 // 1. ROOT & CORE SWITCHBOARD
@@ -20,7 +22,7 @@ Route::get('/', function () {
     return redirect('login');
 });
 
-// 🚦 The Switchboard: Handles Laravel's default dashboard redirects
+// 🚦 The Switchboard: Dynamic Routing based purely on string matching values
 Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
     $user = $request->user();
     
@@ -29,7 +31,7 @@ Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
     
     if ($user->role === 'administrator') {
         return redirect()->route('admin.dashboard');
-    } elseif ($user->lecturer()->exists()) {
+    } elseif ($user->role === 'lecturer') {
         return redirect()->route('lecturer.dashboard');
     }
     
@@ -38,7 +40,7 @@ Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
 
 
 // ==========================================
-// 2. DASHBOARD PANELS (ROLEBASED)
+// 2. DASHBOARD PANELS (ROLE-BASED)
 // ==========================================
 
 // 🎓 Student Dashboard Route
@@ -99,10 +101,22 @@ Route::middleware('auth')->group(function () {
     Route::post('/quizzes/{quizID}/submit', [QuizController::class, 'submit'])->name('quizzes.submit');
     
     // 💬 Forum Workspace Routes
+
+    // Topic creation
+Route::get('/topics/create', [TopicController::class, 'create'])
+    ->name('topics.create');
+Route::post('/topics/create', [TopicController::class, 'store'])
+    ->name('topics.store');
+
+// Group creation
+Route::get('/groups/create', [GroupDiscussionController::class, 'create'])
+    ->name('groups.create');
+
+    // Forum Workspace Routes
     Route::get('/forum-workspace/{type?}/{id?}', [ForumChatController::class, 'index'])->name('chat.index');
     Route::post('/forum-workspace/{type}/{id}', [ForumChatController::class, 'store'])->name('chat.store');
 
-    // 📝 Dedicated Topic Action Handlers (Keeps your dashboard buttons perfectly mapped)
+    // 📝 Dedicated Topic Action Handlers
     Route::get('/topics/create', [TopicController::class, 'create'])->name('topics.create');
     Route::post('/topics', [TopicController::class, 'store'])->name('topics.store');
 });
