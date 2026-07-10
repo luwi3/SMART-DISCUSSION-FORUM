@@ -59,12 +59,12 @@
 
         /* Top Grid Metrics */
         .cards-row { display: flex; gap: 20px; flex-wrap: wrap; }
-        .metric-card { background: white; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; width: 220px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
-        .m-title { font-size: 13px; font-weight: 700; color: #16a34a; margin-bottom: 12px; }
-        .m-val { font-size: 32px; font-weight: 800; color: #0f172a; margin-bottom: 8px; }
+        .metric-card { background: white; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; width: 240px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+        .m-title { font-size: 13px; font-weight: 700; color: #2563eb; margin-bottom: 12px; }
+        .m-val { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 8px; }
         .m-sub { font-size: 12px; color: #64748b; }
         .progress-line { width: 100%; height: 6px; background: #e2e8f0; border-radius: 4px; margin-top: 10px; overflow: hidden; }
-        .progress-fill { background: #16a34a; height: 100%; width: 85%; }
+        .progress-fill { background: #2563eb; height: 100%; }
 
         .status-check { width: 36px; height: 36px; background: #dcfce7; color: #15803d; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; margin: 10px 0; }
         .btn-topic-action { background: #1d4ed8; color: white; border: none; width: 100%; padding: 10px; font-weight: 700; border-radius: 6px; font-size: 12px; cursor: pointer; margin-top: 12px; text-align: center; text-decoration: none; display: block; transition: background 0.2s; }
@@ -117,6 +117,8 @@
                 <li class="menu-item" onclick="switchDashboardScreen(this, 'profile-view')"><a href="#">Profile</a></li>
                 <li class="menu-item" onclick="switchDashboardScreen(this, 'marks-view')"><a href="#">Marks</a></li>
                 
+                <li class="menu-item active"><a href="#">Profile</a></li>
+                <li class="menu-item"><a href="{{ route('student.marks') }}">Marks</a></li>
                 <li class="menu-item"><a href="{{ route('chat.index') }}">Chats</a></li>
                 
                 <li class="menu-item" onclick="switchDashboardScreen(this, 'notifications-view')"><a href="#">Notifications <span class="badge">3</span></a></li>
@@ -156,6 +158,7 @@
                     <p class="welcome-sub">Always keep learning and stay active.</p>
                 </div>
 
+<<<<<<< HEAD
                 <section class="cards-row">
                     <div class="metric-card">
                         <div class="m-title">Participation Marks</div>
@@ -228,6 +231,80 @@
                                 <div class="feed-item">
                                     <div class="feed-avatar">D</div>
                                     <div><div class="feed-msg-title">New quiz available: Software Engineering</div><div class="feed-time">2 hours ago</div></div>
+=======
+            <section class="cards-row">
+                <div class="metric-card">
+                    <div class="m-title">🤖 Forum Participation</div>
+                    <div class="m-val">
+                        @if($maxPossibleMarks > 0)
+                            {{ $totalParticipationScore }} <span style="font-size: 16px; color: #64748b; font-weight: 500;">/ {{ $maxPossibleMarks }}</span>
+                        @else
+                            0 <span style="font-size: 14px; color: #94a3b8;">Marks</span>
+                        @endif
+                    </div>
+                    <div class="m-sub">
+                        @if($maxPossibleMarks > 0)
+                            Live Contribution Progress
+                        @else
+                            No discussion active yet
+                        @endif
+                    </div>
+                    <div class="progress-line">
+                        @php 
+                            $percent = $maxPossibleMarks > 0 ? min(($totalParticipationScore / $maxPossibleMarks) * 100, 100) : 0; 
+                        @endphp
+                        <div class="progress-fill" style="width: {{ $percent }}%;"></div>
+                    </div>
+                </div>
+
+                <div class="metric-card" style="width:160px;">
+                    <div class="m-title" style="color:#1e293b;">Status</div>
+                    <div class="status-check">✓</div>
+                    <div class="m-sub">Account Active</div>
+                </div>
+                
+                <div class="metric-card" style="width:240px;">
+                    <div class="m-title" style="color:#7c3aed;">Recommended Topic</div>
+                    <div class="m-val" style="font-size:18px; margin-top:10px; margin-bottom:15px;">Database Design</div>
+                    <a href="#" class="btn-topic-action">VIEW TOPICS</a>
+                </div>
+            </section>
+
+            <div class="dashboard-grid">
+                
+                <div class="left-column">
+                    <section class="content-panel">
+                        <h3 class="panel-title">✍️ Available Assessments</h3>
+                        
+                        @if(isset($activeQuizzes) && count($activeQuizzes) > 0)
+                            <p style="color: #10b981; font-size: 14px; margin-bottom: 15px; font-weight: 600;">✅ Your registered course streams have active evaluation windows open.</p>
+                            
+                            @foreach($activeQuizzes as $activeQuiz)
+                                @php
+                                    $currentQuizId = $activeQuiz->quizID ?? $activeQuiz->id;
+                                    
+                                    // Verify if this quiz matches any completed records passed from the controller
+                                    $hasCompleted = isset($completedQuizzes) && $completedQuizzes->contains(function($completed) use ($currentQuizId) {
+                                        return ($completed->quizID ?? $completed->id) == $currentQuizId;
+                                    });
+                                @endphp
+
+                                <div class="list-row-item">
+                                    <div class="item-info-meta">
+                                        <span class="item-info-title">{{ $activeQuiz->title }}</span>
+                                        <span class="item-info-badge">{{ $activeQuiz->courseCode }} • {{ $activeQuiz->duration }} Mins</span>
+                                    </div>
+                                    
+                                    @if($hasCompleted)
+                                        <span style="display: inline-block; padding: 8px 16px; background: #e2e8f0; color: #475569; border-radius: 6px; font-weight: bold; font-size: 13px; border: 1px solid #cbd5e1;">
+                                            ✓ Completed
+                                        </span>
+                                    @else
+                                        <a href="{{ route('quizzes.show', ['quizID' => $currentQuizId]) }}" style="display: inline-block; padding: 8px 16px; background: #10b981; color: white; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px;">
+                                            ✍️ Attempt Quiz
+                                        </a>
+                                    @endif
+>>>>>>> bcc95f50ac45ac2324e2135a6317a7dc46122df5
                                 </div>
                                 <div class="feed-item">
                                     <div class="feed-avatar">D</div>
@@ -238,6 +315,31 @@
                         </section>
                     </div>
                 </div>
+<<<<<<< HEAD
+=======
+
+                <div class="right-column">
+                    <section class="content-panel">
+                        <div class="panel-title">📢 Recent Announcements</div>
+                        <div class="feed-list">
+                            <div class="feed-item">
+                                <div class="feed-avatar">D</div>
+                                <div><div class="feed-msg-title">New quiz available: Software Engineering</div><div class="feed-time">2 hours ago</div></div>
+                            </div>
+                            <div class="feed-item">
+                                <div class="feed-avatar">D</div>
+                                <div><div class="feed-msg-title">Department meeting on Friday</div><div class="feed-time">1 day ago</div></div>
+                            </div>
+                            <div class="feed-item">
+                                <div class="feed-avatar">D</div>
+                                <div><div class="feed-msg-title">Submit your group project</div><div class="feed-time">2 days ago</div></div>
+                            </div>
+                        </div>
+                        <button class="btn-view-all">VIEW ALL</button>
+                    </section>
+                </div>
+
+>>>>>>> bcc95f50ac45ac2324e2135a6317a7dc46122df5
             </div>
 
             <div id="profile-view" class="dashboard-screen">
