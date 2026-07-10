@@ -81,7 +81,24 @@ class ForumChatController extends Controller
             ], 422);
         }
 
-        return back()->withErrors(['message' => 'You have been blocked from using the chat due to inactivity until further notice.']);
+        if ($type === 'group' && $id !== 'general' && $groupColumn) {
+            $message->{$groupColumn} = $id;
+        }
+        if ($type === 'topic' && $id !== 'general' && Schema::hasColumn('messages', 'topic_id')) {
+            $message->topic_id = $id;
+        }
+
+        $message->save();
+        $message->load('user'); 
+
+        broadcast(new \App\Events\MessageSent($message))->toOthers();
+        
+        // 🌟 UX Optimization: Send an encouraging confirmation if a student participates in an graded topic
+        if ($type === 'topic' && auth()->user()->role === 'student') {
+            return back()->with('success', 'Your reply has been posted! Live participation marks have synced.');
+        }
+
+        return back();
     }
 
     $message = new Message();

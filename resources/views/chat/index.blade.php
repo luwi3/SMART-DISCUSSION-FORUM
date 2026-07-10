@@ -23,23 +23,38 @@
         
         <div class="flex-1 overflow-y-auto p-4 space-y-6">
             <!-- Active Courses Sidebar Collection Container -->
-            <div>
-                <h2 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase mb-2 flex items-center">
-                    <i class="fa-solid fa-graduation-cap text-sky-400 mr-2"></i> Active Courses
-                </h2>
-                <ul class="space-y-1">
-                    @foreach($topics as $topic)
-                        <li>
-                            <a href="{{ url('/forum-workspace/topic/' . $topic->id) }}" 
-                               class="flex items-center space-x-2 px-2 py-1.5 text-xs rounded-md transition-colors hover:bg-slate-800 hover:text-white 
-                               {{ ($type === 'topic' && $id == $topic->id) ? 'bg-slate-800 text-white font-medium' : '' }}">
-                                <i class="fa-solid fa-book-bookmark text-blue-400"></i>
-                                <span class="truncate">{{ $topic->course_code ?? $topic->title }}</span>
-                            </a>
-                        </li>
-                    @endforeach
-                </ul>
-            </div>
+<div>
+    <h2 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase mb-2 flex items-center">
+        <i class="fa-solid fa-graduation-cap text-sky-400 mr-2"></i> Active Courses
+    </h2>
+    <ul class="space-y-1">
+        @foreach($topics as $topic)
+            <li>
+                <a href="{{ url('/forum-workspace/topic/' . $topic->id) }}" 
+                   class="flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors hover:bg-slate-800 hover:text-white 
+                   {{ ($type === 'topic' && $id == $topic->id) ? 'bg-slate-800 text-white font-medium' : '' }}">
+                    
+                    <!-- Left Side: Icon and Title (Keeps your exact logic) -->
+                    <div class="flex items-center space-x-2 truncate mr-2">
+                        <i class="fa-solid fa-book-bookmark text-blue-400 shrink-0"></i>
+                        <span class="truncate">{{ $topic->course_code ?? $topic->title }}</span>
+                    </div>
+
+                    <!-- Right Side: Download Icon Link (Isolated Feature) -->
+                    <object>
+                        <a href="{{ route('topics.export-pdf', $topic->id) }}" 
+                           title="Export to PDF" 
+                           class="text-slate-400 hover:text-sky-400 transition-colors p-0.5 shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3.5 h-3.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                            </svg>
+                        </a>
+                    </object>
+                </a>
+            </li>
+        @endforeach
+    </ul>
+</div>
 
             <!-- Recent Group Discussions Sidebar Collection Container -->
             <div>

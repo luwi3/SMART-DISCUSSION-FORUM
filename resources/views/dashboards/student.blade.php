@@ -20,19 +20,19 @@
         .logout-btn { width: 100%; background: none; border: none; padding: 14px 24px; color: #f43f5e; text-align: left; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: auto; border-top: 1px solid rgba(255,255,255,0.05); }
 
         /* Dashboard Container */
-        .main-content { flex-grow: 1; padding: 40px; }
-        .welcome-header { margin-bottom: 24px; }
+        .main-content { flex-grow: 1; padding: 40px; display: flex; flex-direction: column; gap: 30px; }
+        .welcome-header { margin-bottom: -10px; }
         .welcome-txt { font-size: 26px; font-weight: 700; color: #0f172a; }
         .welcome-sub { font-size: 14px; color: #64748b; margin-top: 4px; }
 
         /* Notification Banner Component */
-        .alert-banner { background-color: #eff6ff; border-left: 4px solid #2563eb; color: #1e3a8a; padding: 16px 20px; border-radius: 8px; margin-bottom: 24px; font-size: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); display: flex; align-items: flex-start; gap: 12px; }
+        .alert-banner { background-color: #eff6ff; border-left: 4px solid #2563eb; color: #1e3a8a; padding: 16px 20px; border-radius: 8px; font-size: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); display: flex; align-items: flex-start; gap: 12px; }
         .alert-icon { font-size: 18px; line-height: 1; }
         .alert-heading { margin: 0; font-weight: 700; color: #1e293b; }
         .alert-body { margin: 4px 0 0 0; color: #2563eb; font-weight: 600; }
 
         /* Top Grid Metrics */
-        .cards-row { display: flex; gap: 20px; margin-bottom: 30px; }
+        .cards-row { display: flex; gap: 20px; flex-wrap: wrap; }
         .metric-card { background: white; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; width: 220px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
         .m-title { font-size: 13px; font-weight: 700; color: #16a34a; margin-bottom: 12px; }
         .m-val { font-size: 32px; font-weight: 800; color: #0f172a; margin-bottom: 8px; }
@@ -43,9 +43,14 @@
         .status-check { width: 36px; height: 36px; background: #dcfce7; color: #15803d; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; margin: 10px 0; }
         .btn-topic-action { background: #1d4ed8; color: white; border: none; width: 100%; padding: 10px; font-weight: 700; border-radius: 6px; font-size: 12px; cursor: pointer; margin-top: 12px; text-align: center; text-decoration: none; display: block; }
 
-        /* Feed Timelines */
-        .feed-container { background: white; border-radius: 12px; padding: 24px; border: 1px solid #e2e8f0; max-width: 460px; }
-        .feed-title { font-size: 15px; font-weight: 700; color: #1e293b; margin-bottom: 20px; }
+        /* Main Workspace Split Layout */
+        .dashboard-grid { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+        .left-column { flex: 1; min-width: 400px; display: flex; flex-direction: column; gap: 24px; }
+        .right-column { width: 400px; display: flex; flex-direction: column; gap: 24px; }
+
+        /* Feed Timelines & Blocks */
+        .content-panel { background: white; border-radius: 12px; padding: 24px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+        .panel-title { font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
         .feed-list { display: flex; flex-direction: column; gap: 18px; }
         .feed-item { display: flex; gap: 14px; padding-bottom: 14px; border-bottom: 1px solid #f1f5f9; }
         .feed-item:last-child { border: none; padding-bottom: 0; }
@@ -54,11 +59,19 @@
         .feed-time { font-size: 11px; color: #94a3b8; margin-top: 2px; }
         .btn-view-all { width: 100%; background: #1d4ed8; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; margin-top: 20px; }
 
-        /* Assessment Card List Items styling */
-        .quiz-row-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 10px; }
-        .quiz-info-meta { display: flex; flex-direction: column; gap: 4px; }
-        .quiz-info-title { font-size: 14px; font-weight: 700; color: #334155; }
-        .quiz-info-badge { font-size: 11px; color: #64748b; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-weight: 600; width: fit-content; }
+        /* List Items styling */
+        .list-row-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 10px; }
+        .list-row-item:last-child { margin-bottom: 0; }
+        .item-info-meta { display: flex; flex-direction: column; gap: 4px; }
+        .item-info-title { font-size: 14px; font-weight: 700; color: #334155; }
+        .item-info-badge { font-size: 11px; color: #64748b; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-weight: 600; width: fit-content; }
+        
+        /* Grade Score Tags */
+        .grade-display { text-align: right; }
+        .grade-score { font-size: 16px; font-weight: 800; color: #0f172a; }
+        .grade-total { font-size: 12px; color: #64748b; font-weight: 500; }
+        .grade-status-passed { color: #16a34a; font-size: 11px; font-weight: 700; display: block; margin-top: 2px; }
+        .grade-status-failed { color: #dc2626; font-size: 11px; font-weight: 700; display: block; margin-top: 2px; }
     </style>
 </head>
 <body>
@@ -67,16 +80,7 @@
         <aside class="sidebar">
             <ul class="sidebar-menu">
                 <li class="menu-item active"><a href="#">Profile</a></li>
-                
-                <!-- Dynamic Marks Action Button mapping natively to evaluation controller gradebook sheets -->
-                <li class="menu-item">
-                    @if(isset($activeQuizzes) && count($activeQuizzes) > 0)
-                        <a href="{{ url('/quizzes/' . ($activeQuizzes[0]->quizID ?? $activeQuizzes[0]->id) . '/grades') }}">Marks</a>
-                    @else
-                        <a href="#" onclick="alert('No completed assessments or marks are available yet.')">Marks</a>
-                    @endif
-                </li>
-                
+                <li class="menu-item"><a href="#grades-section">Marks</a></li>
                 <li class="menu-item"><a href="{{ route('chat.index') }}">Chats</a></li>
                 <li class="menu-item"><a href="#">Notifications <span class="badge">3</span></a></li>
                 <li class="menu-item"><a href="#">Announcements</a></li>
@@ -131,58 +135,101 @@
                 </div>
             </section>
 
-            <section class="feed-container">
-                <div class="feed-title">Recent Announcements</div>
-                <div class="feed-list">
-                    <div class="feed-item">
-                        <div class="feed-avatar">D</div>
-                        <div><div class="feed-msg-title">New quiz available: Software Engineering</div><div class="feed-time">2 hours ago</div></div>
-                    </div>
-                    <div class="feed-item">
-                        <div class="feed-avatar">D</div>
-                        <div><div class="feed-msg-title">Department meeting on Friday</div><div class="feed-time">1 day ago</div></div>
-                    </div>
-                    <div class="feed-item">
-                        <div class="feed-avatar">D</div>
-                        <div><div class="feed-msg-title">Submit your group project</div><div class="feed-time">2 days ago</div></div>
-                    </div>
-                </div>
-                <button class="btn-view-all">VIEW ALL</button>
-            </section>
-            
-            <!-- ✍️ Available Assessments Block -->
-            <div style="background: white; padding: 20px; border-radius: 8px; margin-top: 20px; border: 1px solid #e2e8f0;">
-                <h3 style="color: #1e293b; margin-bottom: 10px;">✍️ Available Assessments</h3>
+            <!-- Main Split Layout Grid -->
+            <div class="dashboard-grid">
                 
-                @if(isset($activeQuizzes) && count($activeQuizzes) > 0)
-                    <!-- CASE 1: Active quizzes found for the student -->
-                    <p style="color: #10b981; font-size: 14px; margin-bottom: 15px; font-weight: 600;">✅ Your registered course streams have active evaluation windows open.</p>
+                <!-- Left Side: Assessments and Marks View -->
+                <div class="left-column">
                     
-                    @foreach($activeQuizzes as $activeQuiz)
-                        <div class="quiz-row-item">
-                            <div class="quiz-info-meta">
-                                <span class="quiz-info-title">{{ $activeQuiz->title }}</span>
-                                <span class="quiz-info-badge">{{ $activeQuiz->courseCode }} • {{ $activeQuiz->duration }} Mins</span>
+                    <!-- 📊 Assessment Grades & Marks Section -->
+                    <section id="grades-section" class="content-panel">
+                        <h3 class="panel-title">📊 Assessment Performance & Marks</h3>
+                        
+                        @if(isset($completedQuizzes) && count($completedQuizzes) > 0)
+                            <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">Review your scores and feedback from completed assessments.</p>
+                            
+                            @foreach($completedQuizzes as $quiz)
+                                <div class="list-row-item">
+                                    <div class="item-info-meta">
+                                        <span class="item-info-title">{{ $quiz->title }}</span>
+                                        <span class="item-info-badge">{{ $quiz->courseCode ?? 'Course' }} • Completed {{ \Carbon\Carbon::parse($quiz->pivot->updated_at ?? now())->diffForHumans() }}</span>
+                                    </div>
+                                    <div class="grade-display">
+                                        <span class="grade-score">{{ $quiz->pivot->score ?? $quiz->score }}</span>
+                                        <span class="grade-total">/ {{ $quiz->total_marks ?? 100 }}</span>
+                                        
+                                        @if(($quiz->pivot->score ?? $quiz->score) >= ($quiz->passing_marks ?? 50))
+                                            <span class="grade-status-passed">Passed ✓</span>
+                                        @else
+                                            <span class="grade-status-failed">Failed ✕</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endforeach
+                        @else
+                            <!-- Fallback if no quizzes have been evaluated yet -->
+                            <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">No completed evaluation results are registered to your gradebook yet.</p>
+                            <div class="list-row-item" style="opacity: 0.6; background: #f1f5f9; justify-content: center; padding: 20px;">
+                                <span style="color: #94a3b8; font-size: 13px; font-weight: 600;">No Academic Transcripts Formed</span>
                             </div>
-                            <a href="{{ route('quizzes.show', ['quizID' => $activeQuiz->quizID ?? $activeQuiz->id]) }}" style="display: inline-block; padding: 8px 16px; background: #10b981; color: white; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px;">
-                                ✍️ Attempt Quiz
-                            </a>
+                        @endif
+                    </section>
+
+                    <!-- ✍️ Available Assessments Block -->
+                    <section class="content-panel">
+                        <h3 class="panel-title">✍️ Available Assessments</h3>
+                        
+                        @if(isset($activeQuizzes) && count($activeQuizzes) > 0)
+                            <p style="color: #10b981; font-size: 14px; margin-bottom: 15px; font-weight: 600;">✅ Your registered course streams have active evaluation windows open.</p>
+                            
+                            @foreach($activeQuizzes as $activeQuiz)
+                                <div class="list-row-item">
+                                    <div class="item-info-meta">
+                                        <span class="item-info-title">{{ $activeQuiz->title }}</span>
+                                        <span class="item-info-badge">{{ $activeQuiz->courseCode }} • {{ $activeQuiz->duration }} Mins</span>
+                                    </div>
+                                    <a href="{{ route('quizzes.show', ['quizID' => $activeQuiz->quizID ?? $activeQuiz->id]) }}" style="display: inline-block; padding: 8px 16px; background: #10b981; color: white; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px;">
+                                        ✍️ Attempt Quiz
+                                    </a>
+                                </div>
+                            @endforeach
+                        @else
+                            <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">No active evaluation windows are currently open for your course stream.</p>
+                            <div class="list-row-item" style="opacity: 0.6; background: #f1f5f9;">
+                                <div class="item-info-meta">
+                                    <span class="item-info-title" style="color: #94a3b8;">No Evaluation Scheduled</span>
+                                    <span class="item-info-badge" style="background: #cbd5e1; color: #64748b;">-- • 0 Mins</span>
+                                </div>
+                                <button disabled style="display: inline-block; padding: 8px 16px; background: #94a3b8; color: #e2e8f0; border-radius: 6px; border: none; font-weight: bold; font-size: 13px; cursor: not-allowed;">
+                                    🔒 Attempt Quiz
+                                </button>
+                            </div>
+                        @endif
+                    </section>
+                </div>
+
+                <!-- Right Side: Recent Announcements -->
+                <div class="right-column">
+                    <section class="content-panel">
+                        <div class="panel-title">📢 Recent Announcements</div>
+                        <div class="feed-list">
+                            <div class="feed-item">
+                                <div class="feed-avatar">D</div>
+                                <div><div class="feed-msg-title">New quiz available: Software Engineering</div><div class="feed-time">2 hours ago</div></div>
+                            </div>
+                            <div class="feed-item">
+                                <div class="feed-avatar">D</div>
+                                <div><div class="feed-msg-title">Department meeting on Friday</div><div class="feed-time">1 day ago</div></div>
+                            </div>
+                            <div class="feed-item">
+                                <div class="feed-avatar">D</div>
+                                <div><div class="feed-msg-title">Submit your group project</div><div class="feed-time">2 days ago</div></div>
+                            </div>
                         </div>
-                    @endforeach
-                @else
-                    <!-- CASE 2: No active quizzes are available right now -->
-                    <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">No active evaluation windows are currently open for your course stream.</p>
-                    
-                    <div class="quiz-row-item" style="opacity: 0.6; background: #f1f5f9;">
-                        <div class="quiz-info-meta">
-                            <span class="quiz-info-title" style="color: #94a3b8;">No Evaluation Scheduled</span>
-                            <span class="quiz-info-badge" style="background: #cbd5e1; color: #64748b;">-- • 0 Mins</span>
-                        </div>
-                        <button disabled style="display: inline-block; padding: 8px 16px; background: #94a3b8; color: #e2e8f0; border-radius: 6px; border: none; font-weight: bold; font-size: 13px; cursor: not-allowed;">
-                            🔒 Attempt Quiz
-                        </button>
-                    </div>
-                @endif
+                        <button class="btn-view-all">VIEW ALL</button>
+                    </section>
+                </div>
+
             </div>
         </main>
     </div>

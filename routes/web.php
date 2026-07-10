@@ -9,6 +9,10 @@ use App\Http\Controllers\QuizController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Models\Student;
 use Carbon\Carbon;
+use App\Http\Controllers\ResourceController;
+use App\Http\Controllers\ParticipationController; // Added for the student participation feature
+use App\Http\Controllers\TopicController;       // Added for the dedicated topic builder engine
+
 // ==========================================
 // 1. ROOT & CORE SWITCHBOARD
 // ==========================================
@@ -37,15 +41,20 @@ Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
 // 2. DASHBOARD PANELS (ROLEBASED)
 // ==========================================
 
-// 🎓 Student Dashboard Route -> FIXED: Points safely to QuizController to handle active quizzes
+// 🎓 Student Dashboard Route
 Route::get('/student/dashboard', [QuizController::class, 'dashboard'])
     ->middleware(['auth', 'verified'])
     ->name('student.dashboard');
 
 // 👨‍🏫 Lecturer Dashboard Route
-Route::get('/lecturer/dashboard', function () {
-    return view('dashboards.lecturer');
-})->middleware(['auth', 'verified'])->name('lecturer.dashboard');
+Route::get('/lecturer/dashboard', [QuizController::class, 'lecturerDashboard'])
+    ->middleware(['auth', 'verified'])
+    ->name('lecturer.dashboard');
+
+// 📋 Standalone Lecturer Quiz List & Submissions Workspace Page
+Route::get('/lecturer/quizzes', [QuizController::class, 'quizzesIndex'])
+    ->middleware(['auth', 'verified'])
+    ->name('lecturer.quizzes.index');
 
 // 🔑 Administrator Dashboard Route
 // 🔑 Administrator Dashboard Route
@@ -74,25 +83,34 @@ Route::middleware('auth')->group(function () {
     
     // 📝 Quiz Module Engine Paths
     Route::get('/quizzes/create', [QuizController::class, 'create'])->name('quizzes.create');
-    
-    // 🔑 FOLLOW-UP NOTE: Restored back to '/quizzes/store' to exactly match your lecturer form action 
-    // and eliminate the 404 error seen in image_dc1387.png.
     Route::post('/quizzes/store', [QuizController::class, 'store'])->name('quizzes.store');
     
-    // 🎯 FIXED FIX: Standardized parameter keys to handle both dynamic routing lookups natively
+    // 📁 Course Resource Document Paths
+    Route::get('/resources', [ResourceController::class, 'index'])->name('resources.index');
+    Route::post('/resources', [ResourceController::class, 'store'])->name('resources.store');
+    Route::delete('/resources/{id}', [ResourceController::class, 'destroy'])->name('resources.destroy');
+    
+    // 📊 Student Participation Grade Matrix Paths
+    Route::get('/participation', [ParticipationController::class, 'index'])->name('participation.index');
+    Route::post('/participation/save', [ParticipationController::class, 'store'])->name('participation.store');
+    
+    // 🎯 Dynamic Assessment Handlers
     Route::get('/quizzes/{quizID}', [QuizController::class, 'show'])->name('quizzes.show');
     Route::post('/quizzes/{quizID}/submit', [QuizController::class, 'submit'])->name('quizzes.submit');
     
     // 💬 Forum Workspace Routes
     Route::get('/forum-workspace/{type?}/{id?}', [ForumChatController::class, 'index'])->name('chat.index');
     Route::post('/forum-workspace/{type}/{id}', [ForumChatController::class, 'store'])->name('chat.store');
+
+    // 📝 Dedicated Topic Action Handlers (Keeps your dashboard buttons perfectly mapped)
+    Route::get('/topics/create', [TopicController::class, 'create'])->name('topics.create');
+    Route::post('/topics', [TopicController::class, 'store'])->name('topics.store');
 });
 
 
 // ==========================================
 // 5. INDEPENDENT MODULE TESTING ROUTES
 // ==========================================
-// These bypass core features check blocks so you can monitor layouts live right now!
 Route::get('/quizzes/{quizID}/grades', [QuizController::class, 'viewGrades'])->name('quizzes.grades');
 
 Route::get('/test-quiz-create', function() { 
@@ -152,4 +170,12 @@ Route::post('/admin/students/{regNo}/activate', function ($regNo) {
 // ==========================================
 // 6. DEFAULT AUTH SYSTEM FILE LOADER
 // ==========================================
+
+use App\Http\Controllers\TopicExportController;
+
+// Safely added for PDF generation functionality
+Route::get('/topics/{id}/export-pdf', [TopicExportController::class, 'export'])
+    ->name('topics.export-pdf')
+    ->middleware('auth');
+
 require __DIR__.'/auth.php';
