@@ -10,6 +10,7 @@
 <?php $component->withAttributes([]); ?>
 <?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::processComponentKey($component); ?>
 
+    
     <div class="min-h-screen flex w-screen bg-gray-100 overflow-x-hidden">
         
         <div class="hidden lg:flex lg:w-1/2 bg-slate-900 flex-col justify-center p-12 text-white relative">
@@ -204,104 +205,105 @@
 <?php unset($__componentOriginalf94ed9c5393ef72725d159fe01139746); ?>
 <?php endif; ?>
 
-                <form method="POST" action="<?php echo e(route('register')); ?>" class="space-y-4">
-    <?php echo csrf_field(); ?>
+                <form id="registrationForm" method="POST" action="<?php echo e(route('register')); ?>" class="space-y-4">
+                    <?php echo csrf_field(); ?>
 
-    <div>
-        <label for="name" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Full Name</label>
-        <div class="relative mt-1 shadow-sm">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
-                <i class="fas fa-id-card text-gray-400 text-sm"></i>
-            </span>
-            <input id="name" type="text" name="name" value="<?php echo e(old('name')); ?>" required autofocus 
-                class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="Enter your full name">
-        </div>
+                    <div>
+                        <label for="name" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Full Name</label>
+                        <div class="relative mt-1 shadow-sm">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
+                                <i class="fas fa-id-card text-gray-400 text-sm"></i>
+                            </span>
+                            <input id="name" type="text" name="name" value="<?php echo e(old('name')); ?>" required autofocus 
+                                class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="Enter your full name">
+                        </div>
+                    </div>
 
-    <div>
-        <label for="username" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Username</label>
-        <div class="relative mt-1 shadow-sm">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
-                <i class="fas fa-user text-gray-400 text-sm"></i>
-            </span>
-            <input id="username" type="text" name="username" value="<?php echo e(old('username')); ?>" required 
-                class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="Choose a unique username">
-        </div>
-    </div>
+                    <div>
+                        <label for="username" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Username</label>
+                        <div class="relative mt-1 shadow-sm">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
+                                <i class="fas fa-user text-gray-400 text-sm"></i>
+                            </span>
+                            <input id="username" type="text" name="username" value="<?php echo e(old('username')); ?>" required 
+                                class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="Choose a unique username">
+                        </div>
+                    </div>
 
-    <div>
-        <label for="email" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Email Address</label>
-        <div class="relative mt-1 shadow-sm">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
-                <i class="fas fa-envelope text-gray-400 text-sm"></i>
-            </span>
-            <input id="email" type="email" name="email" value="<?php echo e(old('email')); ?>" required 
-                class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="Enter university email">
-        </div>
-    </div>
+                    <div>
+                        <label for="email" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Email Address</label>
+                        <div class="relative mt-1 shadow-sm">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
+                                <i class="fas fa-envelope text-gray-400 text-sm"></i>
+                            </span>
+                            <input id="email" type="email" name="email" value="<?php echo e(old('email')); ?>" required 
+                                class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="Enter university email">
+                        </div>
+                    </div>
 
-    <div>
-        <label for="phone" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Contact Number</label>
-        <div class="relative mt-1 shadow-sm">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
-                <i class="fas fa-phone text-gray-400 text-sm"></i>
-            </span>
-            <input id="phone" type="text" name="phone" value="<?php echo e(old('phone')); ?>" required 
-                class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="e.g. +256700000000">
-        </div>
-    </div>
+                    <div>
+                        <label for="phone" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Contact Number</label>
+                        <div class="relative mt-1 shadow-sm">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
+                                <i class="fas fa-phone text-gray-400 text-sm"></i>
+                            </span>
+                            <input id="phone" type="text" name="phone" value="<?php echo e(old('phone')); ?>" required 
+                                class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="e.g. +256700000000">
+                        </div>
+                    </div>
 
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div>
-            <label for="password" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Password</label>
-            <div class="relative mt-1 shadow-sm">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
-                    <i class="fas fa-lock text-gray-400 text-sm"></i>
-                </span>
-                <input id="password" type="password" name="password" required 
-                    class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="Min 8 chars">
-            </div>
-        </div>
-        <div>
-            <label for="password_confirmation" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Confirm</label>
-            <div class="relative mt-1 shadow-sm">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
-                    <i class="fas fa-shield text-gray-400 text-sm"></i>
-                </span>
-                <input id="password_confirmation" type="password" name="password_confirmation" required 
-                    class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="Confirm">
-            </div>
-        </div>
-    </div>
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                            <label for="password" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Password</label>
+                            <div class="relative mt-1 shadow-sm">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
+                                    <i class="fas fa-lock text-gray-400 text-sm"></i>
+                                </span>
+                                <input id="password" type="password" name="password" required 
+                                    class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="Min 8 chars">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="password_confirmation" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Confirm</label>
+                            <div class="relative mt-1 shadow-sm">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
+                                    <i class="fas fa-shield text-gray-400 text-sm"></i>
+                                </span>
+                                <input id="password_confirmation" type="password" name="password_confirmation" required 
+                                    class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="Confirm">
+                            </div>
+                        </div>
+                    </div>
 
-    <div class="space-y-4 pt-2 border-t border-gray-100 mt-4">
-        <div>
-            <label for="course_code" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Course Code</label>
-            <div class="relative mt-1 shadow-sm">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
-                    <i class="fas fa-graduation-cap text-gray-400 text-sm"></i>
-                </span>
-                <input id="course_code" type="text" name="course_code" value="<?php echo e(old('course_code')); ?>" required
-                    class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="e.g. BCS">
-            </div>
-        </div>
-        <div>
-            <label for="reg_no" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Registration Number</label>
-            <div class="relative mt-1 shadow-sm">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
-                    <i class="fas fa-address-card text-gray-400 text-sm"></i>
-                </span>
-                <input id="reg_no" type="text" name="reg_no" value="<?php echo e(old('reg_no')); ?>" required
-                    class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="e.g. 26/U/1234/PS">
-            </div>
-        </div>
-    </div>
+                    <div id="student-fields" class="space-y-4">
+                        <div>
+                            <label for="course_code" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Course Code</label>
+                            <div class="relative mt-1 shadow-sm">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
+                                    <i class="fas fa-graduation-cap text-gray-400 text-sm"></i>
+                                </span>
+                                <input id="course_code" type="text" name="course_code" value="<?php echo e(old('course_code')); ?>" required
+                                    class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="e.g. BCS">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="reg_no" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Registration Number</label>
+                            <div class="relative mt-1 shadow-sm">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
+                                    <i class="fas fa-address-card text-gray-400 text-sm"></i>
+                                </span>
+                                <input id="reg_no" type="text" name="reg_no" value="<?php echo e(old('reg_no')); ?>" required
+                                    class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="e.g. 26/U/1234/PS">
+                            </div>
+                        </div>
+                    </div>
 
-    <div class="pt-1">
-        <label class="flex items-center cursor-pointer">
-            <input type="checkbox" name="agreed_to_rules" value="1" required class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-            <span class="ml-2 text-xs font-medium text-gray-600 select-none">I agree to the community regulations</span>
-        </label>
-    </div>
+                    <div class="pt-1">
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" name="agreed_to_rules" value="1" required class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="ml-2 text-xs font-medium text-gray-600 select-none">I agree to the community regulations</span>
+                        </label>
+                    </div>
 
                     <div class="flex items-center justify-between gap-4 pt-2">
                         <a href="/" class="w-1/2 text-center px-4 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 transition font-bold text-xs uppercase tracking-wider">
@@ -333,7 +335,20 @@
             </div>
         </div>
     </div>
-   
+
+   <!--script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const form = document.getElementById('registrationForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const targetUrl = form.getAttribute('action');
+                alert("DEBUG INTERCEPT!\n\nForm action endpoint: " + targetUrl);
+            });
+        }
+    });
+</script--->
  <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginal69dc84650370d1d4dc1b42d016d7226b)): ?>
@@ -343,5 +358,4 @@
 <?php if (isset($__componentOriginal69dc84650370d1d4dc1b42d016d7226b)): ?>
 <?php $component = $__componentOriginal69dc84650370d1d4dc1b42d016d7226b; ?>
 <?php unset($__componentOriginal69dc84650370d1d4dc1b42d016d7226b); ?>
-<?php endif; ?>
-<?php /**PATH C:\Users\dell\Herd\first-app\resources\views/auth/register.blade.php ENDPATH**/ ?>
+<?php endif; ?><?php /**PATH C:\Users\dell\Herd\first-app\resources\views/auth/register.blade.php ENDPATH**/ ?>

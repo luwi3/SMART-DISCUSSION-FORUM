@@ -117,30 +117,14 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div class="pt-2 border-t border-gray-100 mt-4">
-                            <label for="role" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Account Role</label>
-                            <div class="relative mt-1 shadow-sm">
-                                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
-                                    <i class="fas fa-user-gear text-gray-400 text-sm"></i>
-                                </span>
-                                <select id="role" name="role" required onchange="toggleRoleFields(this.value)"
-                                    class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200">
-                                    <option value="student" {{ old('role') == 'student' ? 'selected' : '' }}>Student Profile Workspace</option>
-                                    <option value="lecturer" {{ old('role') == 'lecturer' ? 'selected' : '' }}>Lecturer / Faculty Workspace</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="student-fields" class="space-y-4 transition-all duration-300">
+                    <div id="student-fields" class="space-y-4">
                         <div>
                             <label for="course_code" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Course Code</label>
                             <div class="relative mt-1 shadow-sm">
                                 <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
                                     <i class="fas fa-graduation-cap text-gray-400 text-sm"></i>
                                 </span>
-                                <input id="course_code" type="text" name="course_code" value="{{ old('course_code') }}"
+                                <input id="course_code" type="text" name="course_code" value="{{ old('course_code') }}" required
                                     class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="e.g. BCS">
                             </div>
                         </div>
@@ -150,7 +134,7 @@
                                 <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
                                     <i class="fas fa-address-card text-gray-400 text-sm"></i>
                                 </span>
-                                <input id="reg_no" type="text" name="reg_no" value="{{ old('reg_no') }}"
+                                <input id="reg_no" type="text" name="reg_no" value="{{ old('reg_no') }}" required
                                     class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="e.g. 26/U/1234/PS">
                             </div>
                         </div>
@@ -194,41 +178,17 @@
         </div>
     </div>
 
-    <script>
-        // STEP 2 INTERCEPTOR: Traps the submit action to reveal the target endpoint
-        document.addEventListener("DOMContentLoaded", function() {
-            const form = document.getElementById('registrationForm');
-            if (form) {
-                form.addEventListener('submit', function(e) {
-                    e.preventDefault(); // HALT execution
-                    
-                    const targetUrl = form.getAttribute('action');
-                    const selectedRole = document.getElementById('role').value;
-                    
-                    alert("DEBUG INTERCEPT!\n\nForm action endpoint: " + targetUrl + "\nSelected Role in UI: " + selectedRole);
-                });
-            }
-        });
-
-        function toggleRoleFields(role) {
-            const studentFields = document.getElementById('student-fields');
-            const courseInput = document.getElementById('course_code');
-            const regInput = document.getElementById('reg_no');
-
-            if (role === 'lecturer') {
-                studentFields.classList.add('hidden');
-                courseInput.removeAttribute('required');
-                regInput.removeAttribute('required');
-            } else {
-                studentFields.classList.remove('hidden');
-                courseInput.setAttribute('required', 'required');
-                regInput.setAttribute('required', 'required');
-            }
+   <!--script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const form = document.getElementById('registrationForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const targetUrl = form.getAttribute('action');
+                alert("DEBUG INTERCEPT!\n\nForm action endpoint: " + targetUrl);
+            });
         }
-        ol
-        window.addEventListener('DOMContentLoaded', () => {
-            const currentRole = document.getElementById('role').value;
-            toggleRoleFields(currentRole);
-        });
-    </script>
+    });
+</script--->
 </x-guest-layout>

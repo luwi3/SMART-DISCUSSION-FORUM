@@ -58,7 +58,7 @@ class User extends Authenticatable
 {
     return $this->hasOne(Lecturer::class);
 }
-}
+
 
 /**
  * Link from User to Student profile.
