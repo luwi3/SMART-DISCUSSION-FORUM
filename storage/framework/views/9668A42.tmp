@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forum Workspace</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/css/app.css', 'resources/js/app.js']); ?>
+</head>
+<body class="h-full overflow-hidden flex flex-col">
+
+    <div class="flex-1 flex min-h-0">
+        <aside class="w-64 bg-gray-900 text-gray-300 flex flex-col p-4 shadow-xl">
+            <h2 class="text-[10px] font-black uppercase text-gray-500 mb-4 px-2">Workspaces</h2>
+            <div class="space-y-1">
+                <?php $__currentLoopData = $groups; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $group): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <a href="<?php echo e(url('/forum-workspace/group/' . $group->id)); ?>" 
+                       class="flex items-center px-3 py-2 rounded-lg text-xs font-medium transition <?php echo e((isset($type) && $type == 'group' && $id == $group->id) ? 'bg-emerald-600 text-white' : 'hover:bg-gray-800'); ?>">
+                        <i class="fa-regular fa-folder-open mr-2"></i> <?php echo e($group->name); ?>
+
+                    </a>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </div>
+        </aside>
+
+        <main class="flex-1 bg-white flex flex-col min-h-0">
+            <?php if(isset($currentStreamTarget)): ?>
+                <div id="chat-window" class="flex-1 overflow-y-auto p-6 space-y-4">
+                    <?php $__currentLoopData = $messages; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $msg): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <div class="flex items-start space-x-3">
+                            <div class="h-8 w-8 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold">
+                                <?php echo e(strtoupper(substr($msg->user->name ?? 'U', 0, 2))); ?>
+
+                            </div>
+                            <div class="flex-1">
+                                <span class="text-xs font-bold text-gray-900"><?php echo e($msg->user->name); ?></span>
+                                <div class="mt-1 text-xs text-gray-700 bg-gray-50 p-2 rounded-xl border"><?php echo e($msg->body); ?></div>
+                            </div>
+                        </div>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                </div>
+
+                <div class="p-4 border-t border-gray-200 bg-white">
+                    <form id="chat-form" class="flex items-center">
+                        <?php echo csrf_field(); ?>
+                        <input type="text" id="message-input" name="body" required autocomplete="off" placeholder="Type a message..." 
+                               class="w-full pl-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 outline-none">
+                        <button type="submit" id="send-btn" class="ml-2 bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold text-[10px] hover:bg-emerald-700 transition">SEND</button>
+                    </form>
+                </div>
+            <?php else: ?>
+                <div class="flex-1 flex flex-col items-center justify-center text-gray-400 p-8">
+                    <i class="fa-solid fa-comments text-6xl opacity-20 mb-4"></i>
+                    <h2 class="text-sm font-bold text-gray-600">Select a Workspace</h2>
+                    <p class="text-xs mt-2">Pick a directory to begin collaborating.</p>
+                </div>
+            <?php endif; ?>
+        </main>
+    </div>
+
+    <script type="module">
+        <?php if(isset($type) && isset($id)): ?>
+            // 1. Listen for incoming messages
+            window.Echo.channel('chat.<?php echo e($type); ?>.<?php echo e($id); ?>')
+                .listen('MessageSent', (e) => {
+                    const chatWindow = document.getElementById('chat-window');
+                    chatWindow.insertAdjacentHTML('beforeend', `
+                        <div class="flex items-start space-x-3 mt-4">
+                            <div class="h-8 w-8 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold">
+                                ${e.message.user.name.substring(0, 2).toUpperCase()}
+                            </div>
+                            <div class="flex-1">
+                                <span class="text-xs font-bold text-gray-900">${e.message.user.name}</span>
+                                <div class="mt-1 text-xs text-gray-700 bg-gray-50 p-2 rounded-xl border">${e.message.body}</div>
+                            </div>
+                        </div>`);
+                    chatWindow.scrollTop = chatWindow.scrollHeight;
+                });
+
+            // 2. Prevent form reload and submit via AJAX
+            document.getElementById('chat-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const input = document.getElementById('message-input');
+                const formData = new FormData(this);
+
+                fetch("<?php echo e(url('/forum-workspace/' . $type . '/' . $id)); ?>", {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                }).then(() => {
+                    input.value = ''; // Clear input only after successful request
+                });
+            });
+        <?php endif; ?>
+    </script>
+</body>
+</html><?php /**PATH C:\Users\dell\Herd\first-app\resources\views/chat/index.blade.php ENDPATH**/ ?>
