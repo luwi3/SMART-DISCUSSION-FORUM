@@ -7,11 +7,19 @@ use App\Models\Topic;
 use App\Models\Message;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use App\Models\User;
+use App\Notifications\NewTopicNotification;
 
 class ForumChatController extends Controller
 {
-    public function index($type = null, $id = null)
+    public function index(Request $request, $type = null, $id = null)
     {
+        // 🎯 FIX: Check if incoming request arrived from a notification via query parameter (?topic=ID)
+        if ($request->has('topic')) {
+            $type = 'topic';
+            $id = $request->query('topic');
+        }
+
         // Fetch all groups for the sidebar
         
         
@@ -88,7 +96,16 @@ class ForumChatController extends Controller
         }
 
         $message->save();
-        $message->load('user'); 
+        $message->load('user');
+
+        // Send notification to every other user
+        $users = User::where('id', '!=', auth()->id())->get();
+
+        foreach ($users as $user) {
+            $user->notify(new NewMessageNotification());
+        }
+
+        // Broadcast the message
 
         broadcast(new \App\Events\MessageSent($message))->toOthers();
         

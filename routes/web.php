@@ -9,8 +9,8 @@ use App\Http\Controllers\QuizController;
 use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\ParticipationController; 
 use App\Http\Controllers\TopicController;        
-use App\Http\Controllers\TopicController;
 use App\Http\Controllers\GroupDiscussionController;
+use App\Http\Controllers\NotificationController;
 
 // ==========================================
 // 1. ROOT & CORE SWITCHBOARD
@@ -31,6 +31,12 @@ Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
     
     return redirect()->route('student.dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
+
+//notifications
+Route::get('/notifications',
+[NotificationController::class,'index'])
+->middleware('auth')
+->name('notifications');
 
 
 // ==========================================
@@ -95,20 +101,32 @@ Route::middleware('auth')->group(function () {
     Route::post('/quizzes/{quizID}/submit', [QuizController::class, 'submit'])->name('quizzes.submit');
     
     // 💬 Forum Workspace Routes
+    Route::post('/student/notifications/mark-as-read', function () {
+        auth()->user()->unreadNotifications->markAsRead();
+        return response()->json(['status' => 'success']);
+    })->middleware('auth');
 
-    // Topic creation
-Route::get('/topics/create', [TopicController::class, 'create'])
-    ->name('topics.create');
-Route::post('/topics/create', [TopicController::class, 'store'])
-    ->name('topics.store');
+    // Topic creation deleted
 
-// Group creation
-Route::get('/groups/create', [GroupDiscussionController::class, 'create'])
-    ->name('groups.create');
+    // Group creation
+    Route::get('/groups/create', [GroupDiscussionController::class, 'create'])
+        ->name('groups.create');
 
     // Forum Workspace Routes
     Route::get('/forum-workspace/{type?}/{id?}', [ForumChatController::class, 'index'])->name('chat.index');
     Route::post('/forum-workspace/{type}/{id}', [ForumChatController::class, 'store'])->name('chat.store');
+
+    /**
+     * 🟢 FIX: THE ALIAS ROUTE CATCH-NET
+     * If any part of your code attempts to access /chat?topic=X, this fallback route 
+     * intercepts it automatically and routes it back cleanly to your original controller layout.
+     */
+    Route::get('/chat', function(\Illuminate\Http\Request $request) {
+        if ($request->has('topic')) {
+            return redirect('/forum-workspace/topic/' . $request->query('topic'));
+        }
+        return redirect()->route('chat.index');
+    });
 
     // 📝 Dedicated Topic Action Handlers
     Route::get('/topics/create', [TopicController::class, 'create'])->name('topics.create');

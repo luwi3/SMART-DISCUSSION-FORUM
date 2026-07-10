@@ -4,14 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Dashboard - Smart Discussion Forum</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    @vite(['resources/js/app.js'])
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
         body { background-color: #f8fafc; min-height: 100vh; display: flex; flex-direction: column; }
         
-        .top-brand-bar { background-color: #0c2340; color: white; padding: 18px 30px; font-weight: 700; font-size: 16px; letter-spacing: 0.5px; }
+        .top-brand-bar { 
+            background-color: #0c2340; 
+            color: white; 
+            padding: 14px 30px; 
+            font-weight: 700; 
+            font-size: 16px; 
+            letter-spacing: 0.5px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+        }
         .workspace-layout { display: flex; flex-grow: 1; }
 
-        /* Left Navbar - Stays sticky and visible */
         .sidebar { width: 260px; background-color: #0a1931; color: white; display: flex; flex-direction: column; flex-shrink: 0; }
         .sidebar-menu { list-style: none; padding: 24px 0; }
         
@@ -27,12 +38,10 @@
             transition: background-color 0.15s ease, color 0.15s ease;
         }
         
-        /* Active Menu State */
         .menu-item.active a { 
             color: white; 
         }
 
-        /* Hover Highlight Block */
         .menu-item a:hover {
             color: white !important;
             background-color: #2563eb; 
@@ -42,22 +51,19 @@
         .logout-btn { width: 100%; background: none; border: none; padding: 14px 24px; color: #f43f5e; text-align: left; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: auto; border-top: 1px solid rgba(255,255,255,0.05); transition: background 0.2s; }
         .logout-btn:hover { background: rgba(244, 63, 94, 0.1); }
 
-        /* Content Frames & View Triggers */
         .main-content { flex-grow: 1; padding: 40px; display: flex; flex-direction: column; gap: 30px; }
-        .dashboard-screen { display: none; width: 100%; } /* Hidden by default */
-        .dashboard-screen.active-view { display: flex; flex-direction: column; gap: 30px; } /* Toggle Target class */
+        .dashboard-screen { display: none; width: 100%; } 
+        .dashboard-screen.active-view { display: flex; flex-direction: column; gap: 30px; } 
 
         .welcome-header { margin-bottom: -10px; }
         .welcome-txt { font-size: 26px; font-weight: 700; color: #0f172a; }
         .welcome-sub { font-size: 14px; color: #64748b; margin-top: 4px; }
 
-        /* Notification Banner Component */
         .alert-banner { background-color: #eff6ff; border-left: 4px solid #2563eb; color: #1e3a8a; padding: 16px 20px; border-radius: 8px; font-size: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); display: flex; align-items: flex-start; gap: 12px; }
         .alert-icon { font-size: 18px; line-height: 1; }
         .alert-heading { margin: 0; font-weight: 700; color: #1e293b; }
         .alert-body { margin: 4px 0 0 0; color: #2563eb; font-weight: 600; }
 
-        /* Top Grid Metrics */
         .cards-row { display: flex; gap: 20px; flex-wrap: wrap; }
         .metric-card { background: white; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; width: 220px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
         .m-title { font-size: 13px; font-weight: 700; color: #16a34a; margin-bottom: 12px; }
@@ -70,15 +76,18 @@
         .btn-topic-action { background: #1d4ed8; color: white; border: none; width: 100%; padding: 10px; font-weight: 700; border-radius: 6px; font-size: 12px; cursor: pointer; margin-top: 12px; text-align: center; text-decoration: none; display: block; transition: background 0.2s; }
         .btn-topic-action:hover { background: #1e40af; }
 
-        /* Main Workspace Split Layout */
         .dashboard-grid { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
         .left-column { flex: 1; min-width: 400px; display: flex; flex-direction: column; gap: 24px; }
         .right-column { width: 400px; display: flex; flex-direction: column; gap: 24px; }
 
-        /* Feed Timelines & Blocks */
         .content-panel { background: white; border-radius: 12px; padding: 24px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
         .panel-title { font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
         .feed-list { display: flex; flex-direction: column; gap: 18px; }
+        
+        /* Interactive clickable rows for alerts */
+        .feed-item-link { text-decoration: none; display: block; border-radius: 8px; transition: transform 0.1s ease, box-shadow 0.15s ease; }
+        .feed-item-link:hover { transform: translateY(-1px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        
         .feed-item { display: flex; gap: 14px; padding-bottom: 14px; border-bottom: 1px solid #f1f5f9; }
         .feed-item:last-child { border: none; padding-bottom: 0; }
         .feed-avatar { width: 32px; height: 32px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #2563eb; font-size: 13px; }
@@ -88,39 +97,60 @@
         .btn-view-all { width: 100%; background: #1d4ed8; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; margin-top: 20px; transition: background 0.2s; }
         .btn-view-all:hover { background: #1e40af; }
 
-        /* List Items styling */
         .list-row-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 10px; }
         .list-row-item:last-child { margin-bottom: 0; }
         .item-info-meta { display: flex; flex-direction: column; gap: 4px; }
         .item-info-title { font-size: 14px; font-weight: 700; color: #334155; }
         .item-info-badge { font-size: 11px; color: #64748b; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-weight: 600; width: fit-content; }
         
-        /* Grade Score Tags */
         .grade-display { text-align: right; }
         .grade-score { font-size: 16px; font-weight: 800; color: #0f172a; }
         .grade-total { font-size: 12px; color: #64748b; font-weight: 500; }
         .grade-status-passed { color: #16a34a; font-size: 11px; font-weight: 700; display: block; margin-top: 2px; }
         .grade-status-failed { color: #dc2626; font-size: 11px; font-weight: 700; display: block; margin-top: 2px; }
 
-        /* Placeholder Screen Content Styling */
         .placeholder-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 30px; max-width: 600px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
         .placeholder-card h2 { color: #0f172a; margin-bottom: 10px; font-size: 20px; }
         .placeholder-card p { color: #64748b; font-size: 14px; line-height: 1.6; }
     </style>
 </head>
 <body>
-    <div class="top-brand-bar">SMART DISCUSSION FORUM</div>
+    @php
+        try {
+            $initialUnread = auth()->user()->unreadNotifications()->count();
+        } catch (\Exception $e) {
+            $initialUnread = 0;
+        }
+    @endphp
+
+    <div class="top-brand-bar">
+        <span>SMART DISCUSSION FORUM</span>
+        
+        <div id="notification-dropdown" style="position: relative; display: inline-block;">
+            <button onclick="triggerNotificationViewFromBell()" style="background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; position: relative;">
+                <svg style="width: 22px; height: 22px; stroke: #94a3b8; fill: none; transition: stroke 0.2s;" onmouseover="this.style.stroke='#ffffff'" onmouseout="this.style.stroke='#94a3b8'" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                </svg>
+                <span id="notification-count" style="position: absolute; top: -2px; right: -2px; background: #ef4444; color: white; border-radius: 9999px; padding: 2px 6px; font-size: 9px; font-weight: bold; line-height: 1; display: {{ $initialUnread > 0 ? 'inline-block' : 'none' }};">
+                    {{ $initialUnread }}
+                </span>
+            </button>
+        </div>
+    </div>
+
     <div class="workspace-layout">
         <aside class="sidebar">
             <ul class="sidebar-menu">
-                <li class="menu-item active" onclick="switchDashboardScreen(this, 'main-menu-view')"><a href="#">Main Menu</a></li>
-                <li class="menu-item" onclick="switchDashboardScreen(this, 'profile-view')"><a href="#">Profile</a></li>
-                <li class="menu-item" onclick="switchDashboardScreen(this, 'marks-view')"><a href="#">Marks</a></li>
-                
+                <li id="menu-main-menu-view" class="menu-item active" onclick="switchDashboardScreen(this, 'main-menu-view')"><a href="#">Main Menu</a></li>
+                <li id="menu-profile-view" class="menu-item" onclick="switchDashboardScreen(this, 'profile-view')"><a href="#">Profile</a></li>
+                <li id="menu-marks-view" class="menu-item" onclick="switchDashboardScreen(this, 'marks-view')"><a href="#">Marks</a></li>
                 <li class="menu-item"><a href="{{ route('chat.index') }}">Chats</a></li>
-                
-                <li class="menu-item" onclick="switchDashboardScreen(this, 'notifications-view')"><a href="#">Notifications <span class="badge">3</span></a></li>
-                <li class="menu-item" onclick="switchDashboardScreen(this, 'announcements-view')"><a href="#">Announcements</a></li>
+                <li id="menu-notifications-view" class="menu-item" onclick="switchDashboardScreen(this, 'notifications-view')">
+                    <a href="#">Notifications 
+                        <span class="badge" id="sidebar-badge-counter" style="display: {{ $initialUnread > 0 ? 'inline-block' : 'none' }};">{{ $initialUnread }}</span>
+                    </a>
+                </li>
+                <li id="menu-announcements-view" class="menu-item" onclick="switchDashboardScreen(this, 'announcements-view')"><a href="#">Announcements</a></li>
             </ul>
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
@@ -129,7 +159,6 @@
         </aside>
         
         <main class="main-content">
-            
             @if(session('quiz_result'))
                 <div class="alert-banner">
                     <span class="alert-icon">🔔</span>
@@ -234,7 +263,7 @@
                                     <div><div class="feed-msg-title">Department meeting on Friday</div><div class="feed-time">1 day ago</div></div>
                                 </div>
                             </div>
-                            <button class="btn-view-all" onclick="document.querySelector('[onclick*=\'announcements-view\']').click()">VIEW ALL</button>
+                            <button class="btn-view-all" onclick="document.getElementById('menu-announcements-view').click()">VIEW ALL</button>
                         </section>
                     </div>
                 </div>
@@ -319,7 +348,43 @@
 
             <div id="notifications-view" class="dashboard-screen">
                 <div class="welcome-header"><h1 class="welcome-txt">Notifications</h1></div>
-                <div class="placeholder-card"><h2>Alert Logs</h2><p>Real-time notifications will stream live here.</p></div>
+                <div class="placeholder-card" style="max-width: 100%;">
+                    <h2>Alert Logs</h2>
+                    <p style="margin-bottom: 20px;">Review your recent forum updates and alerts below.</p>
+                    
+                    <div id="live-notifications-list" class="feed-list">
+                        @php
+                            try {
+                                $dbNotifications = auth()->user()->unreadNotifications;
+                            } catch (\Exception $e) {
+                                $dbNotifications = [];
+                            }
+                        @endphp
+
+                        @if(count($dbNotifications) > 0)
+                            @foreach($dbNotifications as $notification)
+                                @php
+                                    // Dynamically build link if a topic ID or model reference exists in payload
+                                    $topicId = $notification->data['topic_id'] ?? ($notification->data['id'] ?? null);
+                                    $targetUrl = $topicId ? url('/chat?topic=' . $topicId) : route('chat.index');
+                                @endphp
+                                <a href="{{ $targetUrl }}" class="feed-item-link">
+                                    <div class="feed-item" style="padding: 14px; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #0284c7;">
+                                        <div class="feed-avatar" style="background: #e0f2fe; color: #0284c7;">💬</div>
+                                        <div>
+                                            <div class="feed-msg-title" style="color: #0369a1;">
+                                                {{ $notification->data['message'] ?? ($notification->data['text'] ?? 'New notification received') }}
+                                            </div>
+                                            <div class="feed-time">{{ $notification->created_at->diffForHumans() }}</div>
+                                        </div>
+                                    </div>
+                                </a>
+                            @endforeach
+                        @else
+                            <p id="no-notifications-fallback" style="color: #64748b; font-size: 14px;">Real-time notifications will stream live here.</p>
+                        @endif
+                    </div>
+                </div>
             </div>
 
             <div id="announcements-view" class="dashboard-screen">
@@ -330,18 +395,110 @@
         </main>
     </div>
 
-    <script>
-        function switchDashboardScreen(element, targetScreenId) {
-            // Remove active classes from sidebar items
-            document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
-            // Add active class to clicked sidebar item
-            element.classList.add('active');
+   <script>
+    function switchDashboardScreen(element, targetScreenId) {
+        document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
+        element.classList.add('active');
 
-            // Hide all dashboard view screens
-            document.querySelectorAll('.dashboard-screen').forEach(screen => screen.classList.remove('active-view'));
-            // Display targeted view screen
-            document.getElementById(targetScreenId).classList.add('active-view');
+        document.querySelectorAll('.dashboard-screen').forEach(screen => screen.classList.remove('active-view'));
+        document.getElementById(targetScreenId).classList.add('active-view');
+
+        if (targetScreenId === 'notifications-view') {
+            clearBadgesInstantaneously();
         }
-    </script>
+    }
+
+    function triggerNotificationViewFromBell() {
+        const notificationsTabButton = document.getElementById('menu-notifications-view');
+        if(notificationsTabButton) {
+            notificationsTabButton.click();
+        }
+    }
+
+    function clearBadgesInstantaneously() {
+        const topBadge = document.getElementById('notification-count');
+        const sidebarBadge = document.getElementById('sidebar-badge-counter');
+
+        if (topBadge) topBadge.style.display = 'none';
+        if (sidebarBadge) sidebarBadge.style.display = 'none';
+
+        fetch("{{ url('/student/notifications/mark-as-read') }}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        })
+        .then(response => response.json())
+        .then(data => console.log("Database notifications synchronized successfully:", data))
+        .catch(err => console.error("Database sync notice:", err));
+    }
+
+    // REAL-TIME WEBSOCKET CONNECTION
+    document.addEventListener('DOMContentLoaded', function () {
+        const userId = "{{ auth()->id() }}";
+        const topBadge = document.getElementById('notification-count');
+        const sidebarBadge = document.getElementById('sidebar-badge-counter');
+        const logsContainer = document.getElementById('live-notifications-list');
+        
+        let unreadCount = parseInt("{{ $initialUnread }}") || 0;
+
+        if (userId && typeof Echo !== 'undefined') {
+            Echo.private(`App.Models.User.${userId}`)
+                .notification((notification) => {
+                    console.log('Real-time topic notification caught:', notification);
+                    
+                    const activeScreen = document.querySelector('.dashboard-screen.active-view');
+                    if (!activeScreen || activeScreen.id !== 'notifications-view') {
+                        unreadCount++;
+                        if (topBadge) { topBadge.innerText = unreadCount; topBadge.style.display = 'inline-block'; }
+                        if (sidebarBadge) { sidebarBadge.innerText = unreadCount; sidebarBadge.style.display = 'inline-block'; }
+                    } else {
+                        clearBadgesInstantaneously();
+                    }
+
+                    if(logsContainer) {
+                        const fallbackText = document.getElementById('no-notifications-fallback');
+                        if (fallbackText) {
+                            fallbackText.remove();
+                        }
+
+                        // Extract parameters safely across mixed structural formats
+                        const topicId = notification.topic_id || notification.id || (notification.data ? notification.data.topic_id : '');
+                        
+                        // Fallback safely back to index layout if a dynamic ID isn't provided
+                        let targetChatUrl = "{{ route('chat.index') }}";
+                        
+                        if (topicId) {
+                            // If your chat route uses traditional query styles:
+                            targetChatUrl = `${targetChatUrl}?topic=${topicId}`;
+                            
+                            // NOTE: If your route format uses /chat/{id}, comment out the line above 
+                            // and uncomment the line below instead:
+                            // targetChatUrl = `${targetChatUrl}/${topicId}`;
+                        }
+
+                        const newLinkWrapper = document.createElement('a');
+                        newLinkWrapper.href = targetChatUrl;
+                        newLinkWrapper.className = 'feed-item-link';
+                        
+                        newLinkWrapper.innerHTML = `
+                            <div class="feed-item" style="padding: 14px; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #0284c7;">
+                                <div class="feed-avatar" style="background: #e0f2fe; color: #0284c7;">💬</div>
+                                <div>
+                                    <div class="feed-msg-title" style="color: #0369a1;">
+                                        ${notification.message || (notification.data ? notification.data.message : 'New notification received')}
+                                    </div>
+                                    <div class="feed-time">Just now</div>
+                                </div>
+                            </div>
+                        `;
+
+                        logsContainer.insertBefore(newLinkWrapper, logsContainer.firstChild);
+                    }
+                });
+        }
+    });
+</script>
 </body>
 </html>

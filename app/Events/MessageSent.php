@@ -24,13 +24,20 @@ class MessageSent implements ShouldBroadcast
 
 
 
-   public function broadcastOn()
+  public function broadcastOn()
 {
+    if ($this->message->topic_id) {
+
+        return new Channel(
+            'chat.topic.' . $this->message->topic_id
+        );
+
+    }
+
     return new Channel(
-        'chat.topic.' . $this->message->topic_id
+        'chat.broadcast.general'
     );
 }
-
 
 
    public function broadcastWith(): array

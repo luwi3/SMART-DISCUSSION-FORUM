@@ -1,5 +1,4 @@
 <x-guest-layout>
-    
     <div class="min-h-screen flex w-screen bg-gray-100 overflow-x-hidden">
         
         <div class="hidden lg:flex lg:w-1/2 bg-slate-900 flex-col justify-center p-12 text-white relative">
@@ -13,7 +12,7 @@
                 <div class="space-y-4 text-sm text-slate-300">
                     <div class="flex items-start gap-3">
                         <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-500/10 text-xs font-bold text-blue-400 border border-blue-500/20">1</span>
-                        <p><strong class="text-white block font-semibold">Respect Professional Boundaries</strong> Maintain academic courtesy across all active student and lecturer panels.</p>
+                        <p><strong class="text-white block font-semibold">Respect Professional Boundaries</strong> Maintain academic courtesy across all active student panels.</p>
                     </div>
                     <div class="flex items-start gap-3">
                         <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-500/10 text-xs font-bold text-blue-400 border border-blue-500/20">2</span>
@@ -36,7 +35,7 @@
                 
                 <div class="text-center space-y-1">
                     <h2 class="text-3xl font-extrabold tracking-tight text-gray-900">Create Account</h2>
-                    <p class="text-sm text-gray-500">Join the smart discussion platform</p>
+                    <p class="text-sm text-gray-500">Join the smart student platform</p>
                 </div>
 
                 <x-input-error :messages="$errors->get('name')" class="text-xs text-red-500" />
@@ -44,11 +43,12 @@
                 <x-input-error :messages="$errors->get('email')" class="text-xs text-red-500" />
                 <x-input-error :messages="$errors->get('phone')" class="text-xs text-red-500" />
                 <x-input-error :messages="$errors->get('password')" class="text-xs text-red-500" />
-                <x-input-error :messages="$errors->get('role')" class="text-xs text-red-500" />
                 <x-input-error :messages="$errors->get('agreed_to_rules')" class="text-xs text-red-500" />
 
                 <form id="registrationForm" method="POST" action="{{ route('register') }}" class="space-y-4">
                     @csrf
+
+                    <input type="hidden" name="role" value="student">
 
                     <div>
                         <label for="name" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Full Name</label>
@@ -117,30 +117,14 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div class="pt-2 border-t border-gray-100 mt-4">
-                            <label for="role" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Account Role</label>
-                            <div class="relative mt-1 shadow-sm">
-                                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
-                                    <i class="fas fa-user-gear text-gray-400 text-sm"></i>
-                                </span>
-                                <select id="role" name="role" required onchange="toggleRoleFields(this.value)"
-                                    class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200">
-                                    <option value="student" {{ old('role') == 'student' ? 'selected' : '' }}>Student Profile Workspace</option>
-                                    <option value="lecturer" {{ old('role') == 'lecturer' ? 'selected' : '' }}>Lecturer / Faculty Workspace</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="student-fields" class="space-y-4 transition-all duration-300">
+                    <div class="space-y-4">
                         <div>
                             <label for="course_code" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Course Code</label>
                             <div class="relative mt-1 shadow-sm">
                                 <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
                                     <i class="fas fa-graduation-cap text-gray-400 text-sm"></i>
                                 </span>
-                                <input id="course_code" type="text" name="course_code" value="{{ old('course_code') }}"
+                                <input id="course_code" type="text" name="course_code" value="{{ old('course_code') }}" required
                                     class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="e.g. BCS">
                             </div>
                         </div>
@@ -150,7 +134,7 @@
                                 <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
                                     <i class="fas fa-address-card text-gray-400 text-sm"></i>
                                 </span>
-                                <input id="reg_no" type="text" name="reg_no" value="{{ old('reg_no') }}"
+                                <input id="reg_no" type="text" name="reg_no" value="{{ old('reg_no') }}" required
                                     class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="e.g. 26/U/1234/PS">
                             </div>
                         </div>
@@ -193,42 +177,4 @@
             </div>
         </div>
     </div>
-
-    <script>
-        // STEP 2 INTERCEPTOR: Traps the submit action to reveal the target endpoint
-        document.addEventListener("DOMContentLoaded", function() {
-            const form = document.getElementById('registrationForm');
-            if (form) {
-                form.addEventListener('submit', function(e) {
-                    e.preventDefault(); // HALT execution
-                    
-                    const targetUrl = form.getAttribute('action');
-                    const selectedRole = document.getElementById('role').value;
-                    
-                    alert("DEBUG INTERCEPT!\n\nForm action endpoint: " + targetUrl + "\nSelected Role in UI: " + selectedRole);
-                });
-            }
-        });
-
-        function toggleRoleFields(role) {
-            const studentFields = document.getElementById('student-fields');
-            const courseInput = document.getElementById('course_code');
-            const regInput = document.getElementById('reg_no');
-
-            if (role === 'lecturer') {
-                studentFields.classList.add('hidden');
-                courseInput.removeAttribute('required');
-                regInput.removeAttribute('required');
-            } else {
-                studentFields.classList.remove('hidden');
-                courseInput.setAttribute('required', 'required');
-                regInput.setAttribute('required', 'required');
-            }
-        }
-        ol
-        window.addEventListener('DOMContentLoaded', () => {
-            const currentRole = document.getElementById('role').value;
-            toggleRoleFields(currentRole);
-        });
-    </script>
 </x-guest-layout>
