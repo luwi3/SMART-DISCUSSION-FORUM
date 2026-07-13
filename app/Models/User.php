@@ -27,6 +27,7 @@ class User extends Authenticatable
         'role',
         'agreed_to_rules',
         'status',
+        'lastCommDate',
         'blacklist_until',
         'student_category',
     ];
@@ -53,23 +54,22 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    /**
+     * Get the lecturer profile associated with the user.
+     */
     public function lecturer()
-{
-    return $this->hasOne(Lecturer::class);
-}
+    {
+        return $this->hasOne(Lecturer::class, 'user_id', 'id');
+    }
 
-/**
- * Link from User to Student profile.
- * We must specify 'user_id' as the foreign key on the students table,
- * and 'id' as the local key on our users table.
- */
-public function student()
-{
-    return $this->hasOne(Student::class, 'user_id', 'id');
-
-}
-/**
- * Get the lecturer profile associated with the user.
- */
-
+    /**
+     * Link from User to Student profile.
+     * We must specify 'user_id' as the foreign key on the students table,
+     * and 'id' as the local key on our users table.
+     */
+    public function student()
+    {
+        return $this->hasOne(Student::class, 'user_id', 'id');
+    }
 }

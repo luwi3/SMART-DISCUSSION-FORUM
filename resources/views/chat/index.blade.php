@@ -80,6 +80,16 @@
     <div class="flex-1 flex flex-col h-full bg-[#f8fafc] relative">
         
         <div id="chat-messages-container" class="flex-1 overflow-y-auto px-8 py-6 space-y-4 pb-24 scroll-smooth">
+            @if ($errors->any())
+    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl m-4 shadow-sm flex items-start space-x-2">
+        <i class="fa-solid fa-circle-exclamation mt-0.5 text-red-500"></i>
+        <ul class="list-disc list-inside text-xs font-medium">
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
             @if(count($messages) > 0)
                 @foreach($messages as $msg)
                     <div class="flex items-end space-x-3 {{ $msg->user_id === auth()->id() ? 'flex-row-reverse space-x-reverse' : '' }} mb-1">
@@ -160,17 +170,25 @@
                         </div>
                     </div>
                 </div>
-
-                <div class="flex-1 relative flex items-center">
-                    <input type="text" id="message-input" name="body" required autocomplete="off" placeholder="Write an answer or update workspace thread..." 
-                           class="w-full text-sm px-4 py-2.5 bg-white rounded-xl focus:outline-none focus:ring-1 focus:ring-slate-800 transition-all text-slate-800 placeholder-slate-400 shadow-sm border border-slate-200">
-                </div>
-
-                <button type="submit" id="send-btn" class="w-10 h-10 bg-[#0b1329] hover:bg-slate-800 text-slate-200 rounded-full transition-all shadow active:scale-95 flex items-center justify-center shrink-0">
-                    <i class="fa-solid fa-paper-plane text-xs"></i>
-                </button>
-            </form>
         </div>
+
+        @if($currentStudent && $currentStudent->status === 'blacklisted')
+            <div class="flex-1 flex items-center justify-center py-2.5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-medium shadow-sm">
+                <i class="fa-solid fa-circle-exclamation text-red-500 mr-2"></i>
+                <span>Your messaging privileges have been suspended due to inactivity.</span>
+            </div>
+        @else
+            <div class="flex-1 relative flex items-center">
+                <input type="text" id="message-input" name="body" required autocomplete="off" placeholder="Write an answer or update workspace thread..." 
+                       class="w-full text-sm px-4 py-2.5 bg-white rounded-xl focus:outline-none focus:ring-1 focus:ring-slate-800 transition-all text-slate-800 placeholder-slate-400 shadow-sm border border-slate-200">
+            </div>
+
+            <button type="submit" id="send-btn" class="w-10 h-10 bg-[#0b1329] hover:bg-slate-800 text-slate-200 rounded-full transition-all shadow active:scale-95 flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-paper-plane text-xs"></i>
+            </button>
+        @endif
+    </form>
+</div>
     </div>
 </div>
 
