@@ -1,6 +1,5 @@
 <?php
 
-namespace App\Models; // Laravel 11+ structural reference placeholder
 namespace App\Http\Controllers;
 
 use App\Models\GroupDiscussion;
@@ -25,6 +24,13 @@ class ForumChatController extends Controller
         // Fetch all topics for the sidebar
         $topics = Topic::orderBy('title', 'asc')->get(); 
         
+        // 🎯 UPDATE: Fetch joined groups for the authenticated student to pass down to the sidebar loop
+        $sidebarGroups = collect();
+        if (auth()->check()) {
+            // Adjust this if your user-to-groups relationship uses a different name (e.g., joinedGroups)
+            $sidebarGroups = auth()->user()->groups ?? collect(); 
+        }
+        
         $messages = collect();
         $currentStreamTarget = null;
 
@@ -40,7 +46,13 @@ class ForumChatController extends Controller
         // Check if a specific group or topic is being viewed (Ignore fallback 'general' ID)
         if ($type && $id && $id !== 'general' && $type !== 'broadcast') {
             if ($type === 'group') {
-                $currentStreamTarget = GroupDiscussion::findOrFail($id);
+                // Look for either GroupDiscussion or standard Group model matching your structural database naming
+                if (class_exists(\App\Models\GroupDiscussion::class)) {
+                    $currentStreamTarget = GroupDiscussion::findOrFail($id);
+                } else {
+                    $currentStreamTarget = \App\Models\Group::findOrFail($id);
+                }
+
                 if ($groupColumn) {
                     $messages = Message::where($groupColumn, $id)->with('user')->orderBy('created_at', 'asc')->get();
                 }
@@ -69,7 +81,7 @@ class ForumChatController extends Controller
         $currentStudent = Student::where('user_id', auth()->id())->first();
 
         // Pass all variables cleanly to the Blade view in a single return statement
-        return view('chat.index', compact('topics', 'currentStreamTarget', 'messages', 'type', 'id', 'currentStudent'));
+        return view('chat.index', compact('topics', 'sidebarGroups', 'currentStreamTarget', 'messages', 'type', 'id', 'currentStudent'));
     }
 
     public function store(Request $request, $type = null, $id = null)
@@ -128,7 +140,7 @@ class ForumChatController extends Controller
 
         $message->load('user'); 
 
-        // Live broad-cast updates to active connections
+        // Live broadcast updates to active connections
         broadcast(new \App\Events\MessageSent($message))->toOthers();
         
         // 🌟 UX Optimization: Send an encouraging confirmation if a student participates in a graded topic

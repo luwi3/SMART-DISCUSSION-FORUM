@@ -13,49 +13,44 @@ class MessageSent implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-
     public $message;
-
 
     public function __construct(Message $message)
     {
         $this->message = $message;
     }
 
+    public function broadcastOn()
+    {
+        // 1. Check if the message belongs to a course topic
+        if ($this->message->topic_id) {
+            return new Channel('chat.topic.' . $this->message->topic_id);
+        }
 
+        // 2. Check for any of your potential group column names
+        $groupColumns = ['group_discussion_id', 'group_id', 'discussion_id'];
+        foreach ($groupColumns as $column) {
+            if (isset($this->message->{$column}) && $this->message->{$column}) {
+                return new Channel('chat.group.' . $this->message->{$column});
+            }
+        }
 
-  public function broadcastOn()
-{
-    if ($this->message->topic_id) {
-
-        return new Channel(
-            'chat.topic.' . $this->message->topic_id
-        );
-
+        // 3. Fallback to the global main chat broadcast channel
+        return new Channel('chat.broadcast.general');
     }
 
-    return new Channel(
-        'chat.broadcast.general'
-    );
-}
-
-
-   public function broadcastWith(): array
-{
-    return [
-        'message' => [
-            'id' => $this->message->id,
-            'body' => $this->message->body,
-
-            'user' => [
-                'name' => $this->message->user->name
-            ],
-
-            'user_id' => $this->message->user_id,
-
-            'created_at' => $this->message->created_at
-        ]
-    ];
-}
-
+    public function broadcastWith(): array
+    {
+        return [
+            'message' => [
+                'id' => $this->message->id,
+                'body' => $this->message->body,
+                'user' => [
+                    'name' => $this->message->user->name ?? 'Peer User'
+                ],
+                'user_id' => $this->message->user_id,
+                'created_at' => $this->message->created_at
+            ]
+        ];
+    }
 }

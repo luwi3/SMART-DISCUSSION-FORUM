@@ -151,7 +151,45 @@
                     </a>
                 </li>
                 <li id="menu-announcements-view" class="menu-item" onclick="switchDashboardScreen(this, 'announcements-view')"><a href="#">Announcements</a></li>
-            </ul>
+            
+                
+                
+               
+
+                
+                <li class="menu-item" x-data="{ open: false }" style="display: block; height: auto; padding-bottom: 0;">
+                    <div @click="open = !open" style="display: flex; justify-content: space-between; align-items: center; width: 100%; cursor: pointer;">
+                        <a href="#" @click.prevent style="flex-grow: 1; display: inline-block;">Groups</a>
+                        <svg :class="{ 'rotate-180': open }" class="transform transition-transform duration-150" style="width: 14px; height: 14px; fill: currentColor; transition: transform 0.2s; margin-right: 20px; color: #a0aec0;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+
+                    <ul x-show="open" x-transition class="nested-groups-drawer" style="list-style-type: none; padding-left: 24px; padding-bottom: 12px; margin-top: 4px; display: none;">
+                        @if(isset($sidebarGroups) && $sidebarGroups->count() > 0)
+                            @foreach($sidebarGroups as $group)
+                                <li style="padding: 6px 0;">
+                                    <a href="{{ route('chat.index', ['type' => 'group', 'id' => $group->id]) }}" style="color: #a0aec0; text-decoration: none; font-size: 0.9em; transition: color 0.2s;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#a0aec0'">
+                                        # {{ $group->name }}
+                                    </a>
+                                </li>
+                            @endforeach
+                        @else
+                            <li style="padding: 6px 0; font-size: 0.85em; color: #718096; font-style: italic;">No groups found</li>
+                        @endif
+
+                        <li style="padding: 8px 0 0 0; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.08);">
+                            <a href="{{ route('groups.create') }}" style="color: #10b981; font-weight: bold; font-size: 0.85em; text-decoration: none; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                                + New Group
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                </ul> 
+
+
+
+ </ul>
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button type="submit" class="logout-btn">Logout</button>
@@ -207,6 +245,7 @@
                 <div class="dashboard-grid">
                     <div class="left-column">
                         <section style="display:flex; gap:20px; flex-wrap:wrap;">
+                            <!-- 🔵 Create Topic Card -->
                             <a href="{{ route('topics.create') }}" style="background:#2563eb; color:white; padding:20px; border-radius:12px; text-decoration:none; width:260px; display:flex; align-items:center; gap:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); transition:0.2s;" onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563eb'">
                                 <div style="background:white; color:#2563eb; width:45px; height:45px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px;">💬</div>
                                 <div>
@@ -215,6 +254,7 @@
                                 </div>
                             </a>
 
+                            <!-- 🟢 Create Group Card -->
                             <a href="{{ route('groups.create') }}" style="background:#10b981; color:white; padding:20px; border-radius:12px; text-decoration:none; width:260px; display:flex; align-items:center; gap:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); transition:0.2s;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
                                 <div style="background:white; color:#10b981; width:45px; height:45px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px;">👥</div>
                                 <div>
@@ -222,8 +262,16 @@
                                     <p style="font-size:12px; opacity:0.9;">Create a discussion group</p>
                                 </div>
                             </a>
-                        </section>
 
+                            <!-- 🟣 NEW: View Groups Card -->
+                            <a href="{{ route('groups.index') }}" style="background:#6366f1; color:white; padding:20px; border-radius:12px; text-decoration:none; width:260px; display:flex; align-items:center; gap:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); transition:0.2s;" onmouseover="this.style.background='#4f46e5'" onmouseout="this.style.background='#6366f1'">
+                                <div style="background:white; color:#6366f1; width:45px; height:45px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px;">🌐</div>
+                                <div>
+                                    <h3 style="font-size:16px; font-weight:700; margin-bottom:5px;">View Groups</h3>
+                                    <p style="font-size:12px; opacity:0.9;">Explore & join groups</p>
+                                </div>
+                            </a>
+                        </section>
                         <section class="content-panel" style="margin-top: 10px;">
                             <h3 class="panel-title">✍️ Available Assessments</h3>
                             @if(isset($activeQuizzes) && count($activeQuizzes) > 0)

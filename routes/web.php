@@ -15,6 +15,25 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Models\Student;
 use Carbon\Carbon;
+use App\Models\Group;
+
+Broadcast::channel('chat.{type}.{id}', function ($user, $type, $id) {
+    // If it's a public broadcast stream, everyone authenticated gets access
+    if ($type === 'broadcast') {
+        return true;
+    }
+
+    // If it's a study group, verify the student is actually a joined member
+    if ($type === 'group') {
+        return Group::where('id', $id)
+            ->whereHas('members', function ($query) use ($user) {
+                $query->where('users.id', $user->id);
+            })->exists();
+    }
+
+    // Fallback or course topic validation rules (adjust if courses require authorization)
+    return true;
+});
 // ==========================================
 // 1. ROOT & CORE SWITCHBOARD
 // ==========================================
@@ -35,11 +54,10 @@ Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
     return redirect()->route('student.dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-//notifications
-Route::get('/notifications',
-[NotificationController::class,'index'])
-->middleware('auth')
-->name('notifications');
+// Notifications
+Route::get('/notifications', [NotificationController::class, 'index'])
+    ->middleware('auth')
+    ->name('notifications');
 
 
 // ==========================================
@@ -62,10 +80,10 @@ Route::get('/lecturer/quizzes', [QuizController::class, 'quizzesIndex'])
     ->name('lecturer.quizzes.index');
 
 // 🔑 Administrator Dashboard Route
-// 🔑 Administrator Dashboard Route
 Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('admin.dashboard');
+
 
 // ==========================================
 // 3. ADMIN MANAGEMENT ROUTES
@@ -109,11 +127,17 @@ Route::middleware('auth')->group(function () {
         return response()->json(['status' => 'success']);
     })->middleware('auth');
 
-    // Topic creation deleted
+    // 👥 Group creation views & submission processing
+    Route::get('/groups/create', [GroupDiscussionController::class, 'create'])->name('groups.create');
+    Route::post('/groups', [GroupDiscussionController::class, 'store'])->name('groups.store');
 
-    // Group creation
-    Route::get('/groups/create', [GroupDiscussionController::class, 'create'])
-        ->name('groups.create');
+    // 🌐 Group Browsing & Joining Core Directory Panel
+    Route::get('/groups', [GroupDiscussionController::class, 'index'])->name('groups.index');
+    Route::post('/groups/{id}/join', [GroupDiscussionController::class, 'join'])->name('groups.join');
+    
+    // 🎛️ Creator Moderation Controls (Delete group / Kick individual user)
+    Route::delete('/groups/{id}', [GroupDiscussionController::class, 'destroy'])->name('groups.destroy');
+    Route::delete('/groups/{groupId}/remove-user/{userId}', [GroupDiscussionController::class, 'removeUser'])->name('groups.remove_user');
 
     // Forum Workspace Routes
     Route::get('/forum-workspace/{type?}/{id?}', [ForumChatController::class, 'index'])->name('chat.index');
@@ -121,8 +145,6 @@ Route::middleware('auth')->group(function () {
 
     /**
      * 🟢 FIX: THE ALIAS ROUTE CATCH-NET
-     * If any part of your code attempts to access /chat?topic=X, this fallback route 
-     * intercepts it automatically and routes it back cleanly to your original controller layout.
      */
     Route::get('/chat', function(\Illuminate\Http\Request $request) {
         if ($request->has('topic')) {
@@ -142,39 +164,30 @@ Route::middleware('auth')->group(function () {
 // ==========================================
 Route::get('/quizzes/{quizID}/grades', [QuizController::class, 'viewGrades'])->name('quizzes.grades');
 
-Route::get('/test-quiz-create', function() { 
-    return view('quizzes.create'); 
-});
+Route::get('/test-quiz-create', function() { return view('quizzes.create'); });
+Route::get('/test-quiz-show', function() { return view('quizzes.show'); });
 
-Route::get('/test-quiz-show', function() { 
-    return view('quizzes.show'); 
-});
 Route::get('/test-blacklist', function () {
-    // 📅 1. Calculate both cutoff dates
     $blacklistCutoff = today()->subDays(3)->toDateString(); 
     $warningCutoff = today()->subDays(2)->toDateString();   
 
-    // ⚠️ 2. WARNING: Inactive communication for 2 days (but not yet 3)
     Student::where('status', 'active')
         ->whereNotNull('lastCommDate')
         ->whereDate('lastCommDate', '<', $warningCutoff)
         ->whereDate('lastCommDate', '>=', $blacklistCutoff)
         ->update(['status' => 'warning']);
 
-    // ⚠️ 3. WARNING: Registered 2 days ago, never communicated
     Student::where('status', 'active')
         ->whereNull('lastCommDate')
         ->whereDate('created_at', '<', $warningCutoff)
         ->whereDate('created_at', '>=', $blacklistCutoff)
         ->update(['status' => 'warning']);
 
-    // 🔴 4. BLACKLIST: Inactive communication for 3+ days
     Student::where('status', 'active')
         ->whereNotNull('lastCommDate')
         ->whereDate('lastCommDate', '<', $blacklistCutoff)
         ->update(['status' => 'blacklisted']);
 
-    // 🔴 5. BLACKLIST: Registered 3+ days ago, never communicated
     Student::where('status', 'active')
         ->whereNull('lastCommDate')
         ->whereDate('created_at', '<', $blacklistCutoff)
@@ -188,14 +201,13 @@ Route::get('/test-blacklist', function () {
 
 Route::post('/admin/students/{regNo}/activate', function ($regNo) {
     $student = Student::where('regNo', $regNo)->firstOrFail();
-    
-    // 🔄 Reset status and update the communication date to right now
     $student->status = 'active';
-    $student->lastCommDate = now(); // 👈 This resets the 5-minute countdown!
+    $student->lastCommDate = now(); 
     $student->save();
 
     return back()->with('success', 'Student status has been reset to active successfully!');
-})->middleware('auth')->where('regNo', '.*');// 👈 This allows forward slashes in the registration number!
+})->middleware('auth')->where('regNo', '.*');
+
 // ==========================================
 // 6. DEFAULT AUTH SYSTEM FILE LOADER
 // ==========================================
