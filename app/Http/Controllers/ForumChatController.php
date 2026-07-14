@@ -1,5 +1,6 @@
 <?php
 
+namespace App\Models; // Laravel 11+ structural reference placeholder
 namespace App\Http\Controllers;
 
 use App\Models\GroupDiscussion;
@@ -7,14 +8,20 @@ use App\Models\Topic;
 use App\Models\Message;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use App\Models\User;
+use App\Notifications\NewTopicNotification;
+use App\Models\Student;
 
 class ForumChatController extends Controller
 {
-    public function index($type = null, $id = null)
+    public function index(Request $request, $type = null, $id = null)
     {
-        // Fetch all groups for the sidebar
-        $groups = GroupDiscussion::orderBy('name', 'asc')->get();
-        
+        // 🎯 FIX: Check if incoming request arrived from a notification via query parameter (?topic=ID)
+        if ($request->has('topic')) {
+            $type = 'topic';
+            $id = $request->query('topic');
+        }
+
         // Fetch all topics for the sidebar
         $topics = Topic::orderBy('title', 'asc')->get(); 
         
@@ -58,14 +65,33 @@ class ForumChatController extends Controller
             $messages = $query->with('user')->orderBy('created_at', 'asc')->get();
         }
 
-        // Pass all variables, including the new $topics, to the Blade view
-        return view('chat.index', compact('groups', 'topics', 'currentStreamTarget', 'messages', 'type', 'id'));
+        // Fetch the active student profile to prevent undefined variable errors in Blade
+        $currentStudent = Student::where('user_id', auth()->id())->first();
+
+        // Pass all variables cleanly to the Blade view in a single return statement
+        return view('chat.index', compact('topics', 'currentStreamTarget', 'messages', 'type', 'id', 'currentStudent'));
     }
 
     public function store(Request $request, $type = null, $id = null)
     {
+        // 1. Validate the incoming message
         $request->validate(['body' => 'required|string|max:3000']);
 
+        // 2. Fetch the student record for the logged-in user
+        $student = Student::where('user_id', auth()->id())->first();
+
+        // 3. Check if they are blacklisted
+        if ($student && $student->status === 'blacklisted') {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'errors' => ['message' => ['You have been blocked from using the chat due to inactivity until further notice.']]
+                ], 422);
+            }
+
+            return back()->withErrors(['message' => 'You have been blocked from using the chat due to inactivity until further notice.']);
+        }
+
+        // 4. Create and map the new message entries
         $message = new Message();
         $message->user_id = auth()->id();
         $message->body = $request->body;
@@ -87,11 +113,25 @@ class ForumChatController extends Controller
         }
 
         $message->save();
+
+        // ⏱️ Update communication timestamp and reset warnings
+        if ($student) {
+            $student->lastCommDate = now();
+
+            // 🔄 Automatically bring warned students back to active status
+            if ($student->status === 'warning') {
+                $student->status = 'active';
+            }
+
+            $student->save();
+        }
+
         $message->load('user'); 
 
+        // Live broad-cast updates to active connections
         broadcast(new \App\Events\MessageSent($message))->toOthers();
         
-        // 🌟 UX Optimization: Send an encouraging confirmation if a student participates in an graded topic
+        // 🌟 UX Optimization: Send an encouraging confirmation if a student participates in a graded topic
         if ($type === 'topic' && auth()->user()->role === 'student') {
             return back()->with('success', 'Your reply has been posted! Live participation marks have synced.');
         }

@@ -3,46 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create New Topic - Smart Discussion Forum</title>
+    <title>Create Topic - Smart Discussion Forum</title>
+
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
-        body { background-color: #f4f7fc; padding: 40px 20px; color: #334155; }
-        .form-card { max-width: 600px; margin: 0 auto; background: white; padding: 32px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03); }
-        .form-heading { color: #0b2265; font-size: 22px; font-weight: 700; margin-bottom: 6px; }
-        .form-desc { font-size: 14px; color: #64748b; margin-bottom: 24px; }
-        .form-group { margin-bottom: 20px; display: flex; flex-direction: column; gap: 6px; }
-        .form-label { font-size: 14px; font-weight: 600; color: #0f172a; }
-        .form-control { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; }
-        .form-control:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
-        .btn-submit { padding: 12px 24px; background: #059669; color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; }
-        .btn-submit:hover { background: #047857; }
-        .back-btn { color: #64748b; text-decoration: none; font-size: 14px; font-weight: 600; }
+        *{
+            box-sizing:border-box;
+            margin:0;
+            padding:0;
+            font-family:'Segoe UI',sans-serif;
+        }
+
+        body{
+            background:#f8fafc;
+            min-height:100vh;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+        }
+
+        .container{
+            background:white;
+            width:500px;
+            padding:35px;
+            border-radius:16px;
+            box-shadow:0 5px 20px rgba(0,0,0,0.08);
+            border:1px solid #e2e8f0;
+        }
+
+        h1{
+            color:#0f172a;
+            margin-bottom:8px;
+        }
+
+        p{
+            color:#64748b;
+            font-size:14px;
+            margin-bottom:25px;
+        }
+
+        label{
+            display:block;
+            color:#334155;
+            font-size:13px;
+            font-weight:700;
+            margin-bottom:6px;
+        }
+
+        input, textarea{
+            width:100%;
+            padding:12px;
+            border:1px solid #cbd5e1;
+            border-radius:8px;
+            margin-bottom:20px;
+            outline:none;
+            font-size:14px;
+        }
+
+        textarea{
+            height:120px;
+            resize:none;
+        }
+
+        input:focus, textarea:focus{
+            border-color:#2563eb;
+        }
+
+        button{
+            width:100%;
+            padding:12px;
+            border:none;
+            background:#2563eb;
+            color:white;
+            border-radius:8px;
+            font-weight:700;
+            cursor:pointer;
+        }
+
+        button:hover{
+            background:#1d4ed8;
+        }
+
+        .back{
+            display:block;
+            text-align:center;
+            margin-top:15px;
+            color:#64748b;
+            text-decoration:none;
+            font-size:14px;
+        }
+
     </style>
+
 </head>
+
 <body>
 
-    <div class="form-card">
-        <h2 class="form-heading">📝 Create Discussion Topic</h2>
-        <p class="form-desc">Publish a new discussion focus window. Student engagements will be calculated right into your grades ledger.</p>
+<div class="container">
 
-        <form action="{{ route('topics.store') }}" method="POST">
-            @csrf
-            <div class="form-group">
-                <label class="form-label">Topic Title</label>
-                <input type="text" name="title" class="form-control" placeholder="e.g., Understanding Object-Oriented Principles" required>
-            </div>
+    <h1>💬 Create Topic</h1>
 
-            <div class="form-group">
-                <label class="form-label">Discussion Prompt / Instructions</label>
-                <textarea name="description" class="form-control" rows="5" placeholder="Provide background info or question tasks for students..." required></textarea>
-            </div>
+    <p>
+        Start a new discussion and allow members to participate.
+    </p>
 
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 28px;">
-                <a href="{{ route('lecturer.dashboard') }}" class="back-btn">Cancel</a>
-                <button type="submit" class="btn-submit">Publish Topic</button>
-            </div>
-        </form>
-    </div>
+
+    <form method="POST" action="{{ route('topics.store') }}">
+    @csrf
+
+    <input type="text" name="title">
+
+    <textarea name="description"></textarea>
+
+    <button type="submit">
+        Create Topic
+    </button>
+
+</form>
+
+    <a class="back" href="{{ route('student.dashboard') }}">
+        ← Back to Dashboard
+    </a>
+
+</div>
+
 
 </body>
 </html>

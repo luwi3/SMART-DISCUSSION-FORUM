@@ -38,6 +38,7 @@ class LecturerController extends Controller
             'staffNo' => $validated['staffNo'],
             'user_id' => $user->id, // 🔗 Links the lecturer to the newly created user ID
             'department' => $validated['department'],
+            'role' => 'lecturer',
         ]);
 
         // 4. Redirect back with a success message

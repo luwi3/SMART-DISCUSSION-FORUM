@@ -7,9 +7,14 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\LecturerController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\ResourceController;
-use App\Http\Controllers\ParticipationController; // Added for the student participation feature
-use App\Http\Controllers\TopicController;       // Added for the dedicated topic builder engine
+use App\Http\Controllers\ParticipationController; 
+use App\Http\Controllers\TopicController;        
+use App\Http\Controllers\GroupDiscussionController;
+use App\Http\Controllers\NotificationController;
 
+use App\Http\Controllers\AdminDashboardController;
+use App\Models\Student;
+use Carbon\Carbon;
 // ==========================================
 // 1. ROOT & CORE SWITCHBOARD
 // ==========================================
@@ -17,25 +22,28 @@ Route::get('/', function () {
     return redirect('login');
 });
 
-// 🚦 The Switchboard: Handles Laravel's default dashboard redirects
+// 🚦 The Switchboard: Dynamic Routing based purely on string matching values
 Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
     $user = $request->user();
     
-    // 🛠️ Temporary debug line:
-    //dd($user, $user->lecturer);
-    
-    if ($user->role === 'administrator') {
+    if ($user->role === 'administrator' || $user->role === 'admin') {
         return redirect()->route('admin.dashboard');
-    } elseif ($user->lecturer()->exists()) {
+    } elseif ($user->role === 'lecturer') {
         return redirect()->route('lecturer.dashboard');
     }
     
     return redirect()->route('student.dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
+//notifications
+Route::get('/notifications',
+[NotificationController::class,'index'])
+->middleware('auth')
+->name('notifications');
+
 
 // ==========================================
-// 2. DASHBOARD PANELS (ROLEBASED)
+// 2. DASHBOARD PANELS (ROLE-BASED)
 // ==========================================
 
 // 🎓 Student Dashboard Route
@@ -54,10 +62,10 @@ Route::get('/lecturer/quizzes', [QuizController::class, 'quizzesIndex'])
     ->name('lecturer.quizzes.index');
 
 // 🔑 Administrator Dashboard Route
-Route::get('/admin/dashboard', function () {
-    return view('dashboards.admin');
-})->middleware(['auth', 'verified'])->name('admin.dashboard');
-
+// 🔑 Administrator Dashboard Route
+Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('admin.dashboard');
 
 // ==========================================
 // 3. ADMIN MANAGEMENT ROUTES
@@ -96,10 +104,34 @@ Route::middleware('auth')->group(function () {
     Route::post('/quizzes/{quizID}/submit', [QuizController::class, 'submit'])->name('quizzes.submit');
     
     // 💬 Forum Workspace Routes
+    Route::post('/student/notifications/mark-as-read', function () {
+        auth()->user()->unreadNotifications->markAsRead();
+        return response()->json(['status' => 'success']);
+    })->middleware('auth');
+
+    // Topic creation deleted
+
+    // Group creation
+    Route::get('/groups/create', [GroupDiscussionController::class, 'create'])
+        ->name('groups.create');
+
+    // Forum Workspace Routes
     Route::get('/forum-workspace/{type?}/{id?}', [ForumChatController::class, 'index'])->name('chat.index');
     Route::post('/forum-workspace/{type}/{id}', [ForumChatController::class, 'store'])->name('chat.store');
 
-    // 📝 Dedicated Topic Action Handlers (Keeps your dashboard buttons perfectly mapped)
+    /**
+     * 🟢 FIX: THE ALIAS ROUTE CATCH-NET
+     * If any part of your code attempts to access /chat?topic=X, this fallback route 
+     * intercepts it automatically and routes it back cleanly to your original controller layout.
+     */
+    Route::get('/chat', function(\Illuminate\Http\Request $request) {
+        if ($request->has('topic')) {
+            return redirect('/forum-workspace/topic/' . $request->query('topic'));
+        }
+        return redirect()->route('chat.index');
+    });
+
+    // 📝 Dedicated Topic Action Handlers
     Route::get('/topics/create', [TopicController::class, 'create'])->name('topics.create');
     Route::post('/topics', [TopicController::class, 'store'])->name('topics.store');
 });
@@ -117,8 +149,53 @@ Route::get('/test-quiz-create', function() {
 Route::get('/test-quiz-show', function() { 
     return view('quizzes.show'); 
 });
+Route::get('/test-blacklist', function () {
+    // 📅 1. Calculate both cutoff dates
+    $blacklistCutoff = today()->subDays(3)->toDateString(); 
+    $warningCutoff = today()->subDays(2)->toDateString();   
 
+    // ⚠️ 2. WARNING: Inactive communication for 2 days (but not yet 3)
+    Student::where('status', 'active')
+        ->whereNotNull('lastCommDate')
+        ->whereDate('lastCommDate', '<', $warningCutoff)
+        ->whereDate('lastCommDate', '>=', $blacklistCutoff)
+        ->update(['status' => 'warning']);
 
+    // ⚠️ 3. WARNING: Registered 2 days ago, never communicated
+    Student::where('status', 'active')
+        ->whereNull('lastCommDate')
+        ->whereDate('created_at', '<', $warningCutoff)
+        ->whereDate('created_at', '>=', $blacklistCutoff)
+        ->update(['status' => 'warning']);
+
+    // 🔴 4. BLACKLIST: Inactive communication for 3+ days
+    Student::where('status', 'active')
+        ->whereNotNull('lastCommDate')
+        ->whereDate('lastCommDate', '<', $blacklistCutoff)
+        ->update(['status' => 'blacklisted']);
+
+    // 🔴 5. BLACKLIST: Registered 3+ days ago, never communicated
+    Student::where('status', 'active')
+        ->whereNull('lastCommDate')
+        ->whereDate('created_at', '<', $blacklistCutoff)
+        ->update(['status' => 'blacklisted']);
+
+    return response()->json([
+        'status' => 'success',
+        'message' => 'Admin scan complete. Warning and blacklist statuses updated.',
+    ]);
+})->middleware('auth');
+
+Route::post('/admin/students/{regNo}/activate', function ($regNo) {
+    $student = Student::where('regNo', $regNo)->firstOrFail();
+    
+    // 🔄 Reset status and update the communication date to right now
+    $student->status = 'active';
+    $student->lastCommDate = now(); // 👈 This resets the 5-minute countdown!
+    $student->save();
+
+    return back()->with('success', 'Student status has been reset to active successfully!');
+})->middleware('auth')->where('regNo', '.*');// 👈 This allows forward slashes in the registration number!
 // ==========================================
 // 6. DEFAULT AUTH SYSTEM FILE LOADER
 // ==========================================

@@ -3,20 +3,26 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Topic extends Model
 {
-    protected $fillable = ['title', 'user_id'];
 
-    public function creator(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'user_id');
-    }
+protected $fillable = [
+'title',
+'description',
+'user_id'
+];
 
-    public function messages(): HasMany
-    {
-        return $this->hasMany(Message::class);
-    }
+
+public function user()
+{
+    return $this->belongsTo(User::class);
+}
+
+
+public function messages()
+{
+    return $this->hasMany(Message::class);
+}
+
 }

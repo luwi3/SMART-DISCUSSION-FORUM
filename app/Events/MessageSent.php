@@ -13,30 +13,49 @@ class MessageSent implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
+
     public $message;
+
 
     public function __construct(Message $message)
     {
         $this->message = $message;
     }
 
-    public function broadcastOn()
-    {
-        $type = $this->message->group_discussion_id ? 'group' : 'topic';
-        $id = $this->message->group_discussion_id ?? $this->message->topic_id;
-        return new Channel('chat.' . $type . '.' . $id);
+
+
+  public function broadcastOn()
+{
+    if ($this->message->topic_id) {
+
+        return new Channel(
+            'chat.topic.' . $this->message->topic_id
+        );
+
     }
 
-    // This ensures the JS receives the user data in the JSON payload
-    public function broadcastWith(): array
-    {
-        return [
-            'message' => [
-                'body' => $this->message->body,
-                'user' => [
-                    'name' => $this->message->user->name
-                ]
-            ]
-        ];
-    }
+    return new Channel(
+        'chat.broadcast.general'
+    );
+}
+
+
+   public function broadcastWith(): array
+{
+    return [
+        'message' => [
+            'id' => $this->message->id,
+            'body' => $this->message->body,
+
+            'user' => [
+                'name' => $this->message->user->name
+            ],
+
+            'user_id' => $this->message->user_id,
+
+            'created_at' => $this->message->created_at
+        ]
+    ];
+}
+
 }

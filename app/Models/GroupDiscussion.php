@@ -3,14 +3,30 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class GroupDiscussion extends Model
 {
-    protected $fillable = ['name'];
 
-    public function messages(): HasMany
-    {
-        return $this->hasMany(Message::class);
-    }
+
+protected $fillable = [
+
+'name',
+'description',
+'user_id'
+
+];
+
+
+public function user()
+{
+    return $this->belongsTo(User::class);
+}
+
+
+public function messages()
+{
+    return $this->hasMany(Message::class);
+}
+
+
 }
