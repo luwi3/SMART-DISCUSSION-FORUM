@@ -31,6 +31,7 @@ class LecturerController extends Controller
             'username' => $validated['username'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
+             'role' => 'lecturer',
         ]);
 
         // 3. Step Two: Create the Lecturer record linked to that User
@@ -38,6 +39,7 @@ class LecturerController extends Controller
             'staffNo' => $validated['staffNo'],
             'user_id' => $user->id, // 🔗 Links the lecturer to the newly created user ID
             'department' => $validated['department'],
+           
         ]);
 
         // 4. Redirect back with a success message

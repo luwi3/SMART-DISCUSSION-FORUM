@@ -30,19 +30,20 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        // 1. Validate user and student profile inputs 📝
+        // 1. Cleaned validation: role must be student; course and reg number are strictly required.
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'username' => ['required', 'string', 'max:255', 'unique:'.User::class], 
             'phone' => ['required', 'string', 'max:20'], 
+            'role' => ['required', 'string', 'in:student'], 
             'course_code' => ['required', 'string', 'max:50'], 
             'reg_no' => ['required', 'string', 'max:50'],      
             'agreed_to_rules' => ['required', 'accepted'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        // 2. Create the main user account defaulting to 'student' 🎓
+        // 2. Create the main user account
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
@@ -54,7 +55,7 @@ class RegisteredUserController extends Controller
             'status' => 'active',
         ]);
 
-        // 3. Populate the student tracking table directly 📊
+        // 3. Populate the student profile table directly (Lecturer branch removed)
         Student::create([
             'user_id' => $user->id,
             'regNo' => $request->reg_no,          

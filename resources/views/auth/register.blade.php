@@ -1,5 +1,4 @@
 <x-guest-layout>
-    
     <div class="min-h-screen flex w-screen bg-gray-100 overflow-x-hidden">
         
         <div class="hidden lg:flex lg:w-1/2 bg-slate-900 flex-col justify-center p-12 text-white relative">
@@ -13,7 +12,7 @@
                 <div class="space-y-4 text-sm text-slate-300">
                     <div class="flex items-start gap-3">
                         <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-500/10 text-xs font-bold text-blue-400 border border-blue-500/20">1</span>
-                        <p><strong class="text-white block font-semibold">Respect Professional Boundaries</strong> Maintain academic courtesy across all active student and lecturer panels.</p>
+                        <p><strong class="text-white block font-semibold">Respect Professional Boundaries</strong> Maintain academic courtesy across all active student panels.</p>
                     </div>
                     <div class="flex items-start gap-3">
                         <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-500/10 text-xs font-bold text-blue-400 border border-blue-500/20">2</span>
@@ -36,7 +35,7 @@
                 
                 <div class="text-center space-y-1">
                     <h2 class="text-3xl font-extrabold tracking-tight text-gray-900">Create Account</h2>
-                    <p class="text-sm text-gray-500">Join the smart discussion platform</p>
+                    <p class="text-sm text-gray-500">Join the smart student platform</p>
                 </div>
 
                 <x-input-error :messages="$errors->get('name')" class="text-xs text-red-500" />
@@ -44,11 +43,12 @@
                 <x-input-error :messages="$errors->get('email')" class="text-xs text-red-500" />
                 <x-input-error :messages="$errors->get('phone')" class="text-xs text-red-500" />
                 <x-input-error :messages="$errors->get('password')" class="text-xs text-red-500" />
-                <x-input-error :messages="$errors->get('role')" class="text-xs text-red-500" />
                 <x-input-error :messages="$errors->get('agreed_to_rules')" class="text-xs text-red-500" />
 
                 <form id="registrationForm" method="POST" action="{{ route('register') }}" class="space-y-4">
                     @csrf
+
+                    <input type="hidden" name="role" value="student">
 
                     <div>
                         <label for="name" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Full Name</label>
@@ -117,7 +117,7 @@
                         </div>
                     </div>
 
-                    <div id="student-fields" class="space-y-4">
+                    <div class="space-y-4">
                         <div>
                             <label for="course_code" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Course Code</label>
                             <div class="relative mt-1 shadow-sm">
@@ -177,18 +177,4 @@
             </div>
         </div>
     </div>
-
-   <!--script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const form = document.getElementById('registrationForm');
-        if (form) {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const targetUrl = form.getAttribute('action');
-                alert("DEBUG INTERCEPT!\n\nForm action endpoint: " + targetUrl);
-            });
-        }
-    });
-</script--->
 </x-guest-layout>

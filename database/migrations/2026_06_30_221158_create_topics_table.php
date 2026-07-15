@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::create('topics', function (Blueprint $table) {
            $table->id();
-        $table->string('title'); // The student's question title
+        $table->string('title'); 
+        $table->text('description');// The student's question title
         $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Tracks who started it
         $table->timestamps();    // Crucial! This tracks the 24-hour lifetime mark
         });
