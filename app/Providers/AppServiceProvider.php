@@ -3,6 +3,9 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Auth;
+use App\Models\GroupDiscussion;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +22,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Share joined groups with the sidebar menu globally across all views
+        View::composer('*', function ($view) {
+            if (Auth::check()) {
+                $joinedGroups = GroupDiscussion::whereHas('members', function ($query) {
+                    $query->where('users.id', Auth::id());
+                })->get();
+                
+                $view->with('sidebarGroups', $joinedGroups);
+            }
+        });
     }
 }

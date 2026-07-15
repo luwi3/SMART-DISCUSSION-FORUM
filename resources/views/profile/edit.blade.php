@@ -1,3 +1,5 @@
+
+
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center justify-between border-b border-sky-500/20 pb-4 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -40,7 +42,30 @@
                 <div class="p-6">
                     <section class="max-w-2xl">
                         
-                        @if(Auth::user()->role === 'student')
+                        @if(Auth::user()->role === 'lecturer' || Auth::user()->lecturer)
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                <div class="space-y-1.5">
+                                    <x-input-label for="staffNo" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider" :value="__('Staff Identification Number')" />
+                                    <x-text-input id="staffNo" type="text" class="mt-0.5 block w-full bg-[#172033]/60 border border-slate-700/60 text-sky-200 rounded-xl px-3 py-2.5 cursor-not-allowed opacity-80 font-mono text-xs tracking-wide focus:ring-0" :value="Auth::user()->lecturer->staffNo ?? 'N/A'" disabled />
+                                </div>
+
+                                <div class="space-y-1.5">
+                                    <x-input-label for="department" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider" :value="__('Assigned Department')" />
+                                    <x-text-input id="department" type="text" class="mt-0.5 block w-full bg-[#172033]/60 border border-slate-700/60 text-sky-200 rounded-xl px-3 py-2.5 cursor-not-allowed opacity-80 text-xs focus:ring-0" :value="Auth::user()->lecturer->department ?? 'Faculty of Computing'" disabled />
+                                </div>
+
+                                <div class="space-y-1.5">
+                                    <x-input-label for="username" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider" :value="__('Username')" />
+                                    <x-text-input id="username" type="text" class="mt-0.5 block w-full bg-[#172033]/60 border border-slate-700/60 text-sky-200 rounded-xl px-3 py-2.5 cursor-not-allowed opacity-80 text-xs focus:ring-0" :value="Auth::user()->username" disabled />
+                                </div>
+
+                                <div class="space-y-1.5">
+                                    <x-input-label for="role" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider" :value="__('Account Role')" />
+                                    <x-text-input id="role" type="text" class="mt-0.5 block w-full bg-[#172033]/60 border border-slate-700/60 text-sky-200 rounded-xl px-3 py-2.5 cursor-not-allowed opacity-80 text-xs focus:ring-0" :value="ucfirst(Auth::user()->role)" disabled />
+                                </div>
+                            </div>
+
+                        @elseif(Auth::user()->role === 'student')
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                                 <div class="space-y-1.5">
                                     <x-input-label for="registrationNumber" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider" :value="__('Registration Number')" />
@@ -68,29 +93,6 @@
                                         <x-text-input id="studentCategory" type="text" class="mt-0.5 block w-full bg-[#172033]/60 border border-slate-700/60 text-sky-200 rounded-xl pl-3 pr-8 py-2.5 cursor-not-allowed opacity-80 text-xs focus:ring-0" :value="ucfirst(Auth::user()->student->status ?? 'Active')" disabled />
                                         <span class="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full {{ (Auth::user()->student->status ?? 'active') === 'active' ? 'bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.7)]' : 'bg-amber-400' }}"></span>
                                     </div>
-                                </div>
-
-                                <div class="space-y-1.5">
-                                    <x-input-label for="role" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider" :value="__('Account Role')" />
-                                    <x-text-input id="role" type="text" class="mt-0.5 block w-full bg-[#172033]/60 border border-slate-700/60 text-sky-200 rounded-xl px-3 py-2.5 cursor-not-allowed opacity-80 text-xs focus:ring-0" :value="ucfirst(Auth::user()->role)" disabled />
-                                </div>
-                            </div>
-
-                        @elseif(Auth::user()->role === 'lecturer')
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                                <div class="space-y-1.5">
-                                    <x-input-label for="staffNo" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider" :value="__('Staff Identification Number')" />
-                                    <x-text-input id="staffNo" type="text" class="mt-0.5 block w-full bg-[#172033]/60 border border-slate-700/60 text-sky-200 rounded-xl px-3 py-2.5 cursor-not-allowed opacity-80 font-mono text-xs tracking-wide focus:ring-0" :value="Auth::user()->lecturer->staffNo ?? 'N/A'" disabled />
-                                </div>
-
-                                <div class="space-y-1.5">
-                                    <x-input-label for="department" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider" :value="__('Assigned Department')" />
-                                    <x-text-input id="department" type="text" class="mt-0.5 block w-full bg-[#172033]/60 border border-slate-700/60 text-sky-200 rounded-xl px-3 py-2.5 cursor-not-allowed opacity-80 text-xs focus:ring-0" :value="Auth::user()->lecturer->department ?? 'Faculty of Computing'" disabled />
-                                </div>
-
-                                <div class="space-y-1.5">
-                                    <x-input-label for="username" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider" :value="__('Username')" />
-                                    <x-text-input id="username" type="text" class="mt-0.5 block w-full bg-[#172033]/60 border border-slate-700/60 text-sky-200 rounded-xl px-3 py-2.5 cursor-not-allowed opacity-80 text-xs focus:ring-0" :value="Auth::user()->username" disabled />
                                 </div>
 
                                 <div class="space-y-1.5">

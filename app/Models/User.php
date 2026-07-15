@@ -7,6 +7,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class User extends Authenticatable
 {
@@ -53,6 +54,19 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Get the study groups associated with the user for broadcast channel validation.
+     */
+    public function groups(): BelongsToMany
+    {
+        // Fallback target check depending on whether your model is Group or GroupDiscussion
+        if (class_exists(\App\Models\GroupDiscussion::class)) {
+            return $this->belongsToMany(GroupDiscussion::class, 'group_memberships', 'user_id', 'group_discussion_id');
+        }
+        
+        return $this->belongsToMany(Group::class, 'group_memberships', 'user_id', 'group_id');
     }
 
     /**
