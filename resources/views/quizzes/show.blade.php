@@ -55,13 +55,14 @@
 
     <div class="timer-bar">
         <div class="timer-label">Time Remaining</div>
-        <div class="timer-display" id="clock">--:--</div>
+        <div class="timer-display" id="clock">--:--:--</div>
     </div>
 
     <div class="meta-grid">
         <div class="meta-item">
             <label>Quiz ID</label>
-            <input type="text" value="{{ $quiz->quizID }}">
+            <!-- 🛠️ FIX: Handled dynamic resolution key here safely -->
+            <input type="text" value="{{ $quiz->quizID ?? $quiz->id }}">
         </div>
         <div class="meta-item">
             <label>Course Code</label>
@@ -82,8 +83,11 @@
         <div class="instruction-text">Ensure you track your timer constraint. Do not refresh or exit the submission layout once active.</div>
     </div>
 
-    <form id="quizForm" method="POST" action="/quizzes/{{ $quiz->quizID }}/submit">
+    <!-- 🛠️ FIX: Handled primary key ambiguity gracefully in form submission action URL path target -->
+    <form id="quizForm" method="POST" action="/quizzes/{{ $quiz->quizID ?? $quiz->id }}/submit">
         @csrf
+        
+        <input type="hidden" name="auto_submit" id="autoSubmitInput" value="0">
         
         @foreach($questions as $index => $question)
             <div class="question-block">
@@ -117,33 +121,46 @@
 </div>
 
 <script>
-    // Countdown Timer logic based on structural database duration setup
-    let totalSeconds = {{ $quiz->duration }} * 60;
+    let totalSeconds = parseInt("{{ $remainingSeconds ?? -1 }}");
+
+    if (totalSeconds === -1) {
+        const startTime = new Date("{{ \Carbon\Carbon::parse($quiz->startTime)->toIso8601String() }}").getTime();
+        const durationMinutes = {{ $quiz->duration }};
+        const endTime = startTime + (durationMinutes * 60 * 1000);
+        totalSeconds = Math.floor((endTime - new Date().getTime()) / 1000);
+    }
+
     const display = document.getElementById('clock');
 
     function startTimer() {
         const timerInterval = setInterval(() => {
+            if (totalSeconds <= 0) {
+                clearInterval(timerInterval);
+                display.textContent = "00:00:00";
+                document.getElementById('autoSubmitInput').value = "1";
+                
+                document.querySelectorAll('input[type="radio"]').forEach(radio => {
+                    radio.removeAttribute('required');
+                });
+
+                alert("The quiz session has officially closed! Submitting your work now.");
+                document.getElementById('quizForm').submit();
+                return;
+            }
+
             let hours = Math.floor(totalSeconds / 3600);
             let minutes = Math.floor((totalSeconds % 3600) / 60);
             let seconds = totalSeconds % 60;
 
-            // Pad values with a leading zero if single digit
             hours = hours < 10 ? "0" + hours : hours;
             minutes = minutes < 10 ? "0" + minutes : minutes;
             seconds = seconds < 10 ? "0" + seconds : seconds;
 
             display.textContent = `${hours}:${minutes}:${seconds}`;
-
-            if (totalSeconds <= 0) {
-                clearInterval(timerInterval);
-                alert("Time is up! Your quiz will now submit automatically.");
-                document.getElementById('quizForm').submit();
-            }
             totalSeconds--;
         }, 1000);
     }
 
-    // Trigger timer automatically when interface loads
     window.onload = startTimer;
 </script>
 

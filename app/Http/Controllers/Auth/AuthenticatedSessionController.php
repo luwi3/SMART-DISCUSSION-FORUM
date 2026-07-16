@@ -22,15 +22,21 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request): RedirectResponse
-    {
-        $request->authenticate();
+   public function store(LoginRequest $request): RedirectResponse
+{
+    $request->authenticate();
 
-        $request->session()->regenerate();
+    $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
-    }
+    $user = $request->user();
 
+    if ($user->role === 'administrator') {
+        return redirect()->route('admin.dashboard');
+    } elseif ($user->lecturer()->exists()) { // 👨‍🏫 Check the relationship instead of the role
+    return redirect()->route('lecturer.dashboard');
+}
+    return redirect()->route('student.dashboard');
+}
     /**
      * Destroy an authenticated session.
      */
@@ -42,6 +48,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerateToken();
 
-        return redirect('/');
+        return redirect()->intended(route('chat.index'));
+
     }
 }

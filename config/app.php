@@ -65,7 +65,11 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    //'timezone' => 'UTC',
+    // config/app.php
+
+// Change 'UTC' to your exact local region timezone
+   'timezone' => 'Africa/Kampala',
 
     /*
     |--------------------------------------------------------------------------
