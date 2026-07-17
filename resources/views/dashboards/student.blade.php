@@ -295,10 +295,12 @@
                             @else
                                 <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">No active evaluation windows are currently open for your course stream.</p>
                                 <div class="list-row-item" style="opacity: 0.6; background: #f1f5f9;">
-                                    <div class="item-info-meta">
-                                        <span class="item-info-title">{{ $activeQuiz->title }}</span>
-                                        <span class="item-info-badge">{{ $activeQuiz->courseCode }} • {{ $activeQuiz->duration }} Mins</span>
-                                    </div>
+                                  @foreach($activeQuizzes as $activeQuiz)
+    <div class="item-info-meta">
+        <span class="item-info-title">{{ $activeQuiz->title }}</span>
+        <span class="item-info-badge">{{ $activeQuiz->courseCode }} • {{ $activeQuiz->duration }} Mins</span>
+    </div>
+@endforeach
                                     <button disabled style="display: inline-block; padding: 8px 16px; background: #94a3b8; color: #e2e8f0; border-radius: 6px; border: none; font-weight: bold; font-size: 13px; cursor: not-allowed;">🔒 Attempt Quiz</button>
                                 </div>
                             @endif
