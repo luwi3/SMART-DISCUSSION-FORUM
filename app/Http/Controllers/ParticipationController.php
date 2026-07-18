@@ -64,7 +64,7 @@ class ParticipationController extends Controller
     /**
      * 🎓 Render Student Dashboard with synchronized Forum Participation Marks
      */
-    public function studentDashboard()
+    public function studentDashboard(Request $request)
     {
         $userId = Auth::id();
         if (!$userId) {
@@ -105,13 +105,17 @@ class ParticipationController extends Controller
             ->get();
 
         $completedQuizzes = collect(); 
-
-        return view('dashboards.student', compact(
+        $data=compact(
             'activeQuizzes', 
             'completedQuizzes',
             'totalParticipationScore', 
             'maxPossibleMarks'
-        ));
+        );
+ if ($request->wantsJson()) {
+        return response()->json($data);
+    }
+
+        return view('dashboards.student',$data);
     }
 
     /**
