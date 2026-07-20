@@ -105,6 +105,12 @@ Route::middleware('auth')->group(function () {
     // 📝 Dedicated Topic Action Handlers
     Route::get('/topics/create', [TopicController::class, 'create'])->name('topics.create');
     Route::post('/topics', [TopicController::class, 'store'])->name('topics.store');
+
+    // 📢 Standalone Announcements Workspace Route
+    Route::get('/announcements', function() {
+        $announcements = \App\Models\Announcement::latest()->get();
+        return view('announcements.index', compact('announcements'));
+    })->name('announcements.index');
 });
 
 

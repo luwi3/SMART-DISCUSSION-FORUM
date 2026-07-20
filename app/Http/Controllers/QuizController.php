@@ -7,6 +7,7 @@ use App\Models\Question;
 use App\Models\Student;
 use App\Models\Lecturer;
 use App\Models\User;
+use App\Models\Announcement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -72,7 +73,7 @@ class QuizController extends Controller
     }
 
     /**
-     * 👨‍🏫 3. Store the quiz and questions together (Supports Manual & Pre-Filtered CSV Pools)
+     * 👨‍🏫 3. Store the quiz, create its announcement, and handle questions
      */
     public function store(Request $request)
     {
@@ -112,7 +113,7 @@ class QuizController extends Controller
                 'expiryTime' => $validated['expiryTime'],
             ]);
 
-            $resolvedQuizID = $quiz->quizID ?? $quiz->id;
+            $resolvedQuizID = $quiz->quizID;
             $questionsToInsert = [];
 
             if ($validated['creation_method'] === 'manual') {
@@ -155,7 +156,18 @@ class QuizController extends Controller
                 Question::insert($questionsToInsert);
             }
 
-            return redirect()->route('lecturer.quizzes.index')->with('success', 'Quiz published successfully!');
+            // Automatically post an announcement for the students
+            Announcement::create([
+                'title' => 'New Quiz Available: ' . $quiz->title,
+                'courseCode' => strtoupper($quiz->courseCode),
+                'message' => "A new quiz for course {$quiz->courseCode} has been scheduled.\n" .
+                          "Title: {$quiz->title}\n" .
+                          "Duration: {$quiz->duration} minutes\n" .
+                          "Starts At: " . Carbon::parse($quiz->startTime)->format('M d, Y H:i') . "\n" .
+                          "Ends At: " . Carbon::parse($quiz->expiryTime)->format('M d, Y H:i'),
+            ]);
+
+            return redirect()->route('lecturer.quizzes.index')->with('success', 'Quiz published and announcement sent successfully!');
         });
     }
 
@@ -168,8 +180,8 @@ class QuizController extends Controller
             'csv_file' => 'required|file|mimes:csv,txt|max:2048',
         ]);
 
-        $quiz = Quiz::findOrFail($quizID);
-        $resolvedQuizID = $quiz->quizID ?? $quiz->id;
+        $quiz = Quiz::where('quizID', $quizID)->firstOrFail();
+        $resolvedQuizID = $quiz->quizID;
 
         $filePath = $request->file('csv_file')->getRealPath();
         if (($handle = fopen($filePath, 'r')) !== FALSE) {
@@ -200,11 +212,12 @@ class QuizController extends Controller
     }
 
     /**
-     * 🎓 4. Open a quiz for a student
+     * 🎓 4. Open a quiz for a student with strict window enforcement
      */
     public function show($quizID)
     {
-        $quiz = Quiz::findOrFail($quizID);
+        $quiz = Quiz::where('quizID', $quizID)->firstOrFail();
+        
         $userId = Auth::id();
         if (!$userId) {
             return redirect('/login')->with('error', 'Please log in to attempt the quiz.');
@@ -212,13 +225,27 @@ class QuizController extends Controller
         
         $student = Student::where('user_id', $userId)->first();
         $studentRegNo = $student ? $student->regNo : 'USR-' . $userId;
-        $studentCourse = $student ? $student->courseCode : $quiz->courseCode;
+        $studentCourse = $student ? trim(strtoupper($student->courseCode)) : null;
+        $quizCourse = trim(strtoupper($quiz->courseCode));
 
-        if ($studentCourse !== $quiz->courseCode) {
+        if ($studentCourse && $studentCourse !== $quizCourse) {
             return redirect('/dashboard')->with('error', 'You are not registered for this course quiz.');
         }
 
-        $resolvedQuizID = $quiz->quizID ?? $quiz->id;
+        $resolvedQuizID = $quiz->quizID;
+
+        // Check time constraints strictly before opening
+        $now = now();
+        $startTime = Carbon::parse($quiz->startTime);
+        $expiryTime = Carbon::parse($quiz->expiryTime);
+
+        if ($now->lessThan($startTime)) {
+            return redirect('/dashboard')->with('error', 'This quiz has not started yet. It opens at ' . $startTime->format('M d, Y H:i'));
+        }
+
+        if ($now->greaterThan($expiryTime)) {
+            return redirect('/dashboard')->with('error', 'This quiz session has already expired.');
+        }
 
         $submission = DB::table('quiz_submissions')
             ->where('quizID', $resolvedQuizID)
@@ -226,22 +253,11 @@ class QuizController extends Controller
             ->first();
 
         if ($submission) {
-            $expiryTime = Carbon::parse($quiz->expiryTime);
             $totalQuestionsCount = Question::where('quizID', $resolvedQuizID)->count();
-
-            if (now()->lessThan($expiryTime)) {
-                return redirect('/dashboard')->with('success', 'Your quiz has already been submitted successfully.');
-            }
             return redirect('/dashboard')->with('quiz_result', "Quiz finished! Your score: {$submission->marks} / {$totalQuestionsCount} marks.");
         }
 
-        $expiryTime = Carbon::parse($quiz->expiryTime);
-        $remainingSeconds = now()->diffInSeconds($expiryTime, false);
-
-        if ($remainingSeconds <= 0) {
-            return redirect('/dashboard')->with('error', 'This quiz session has already expired.');
-        }
-
+        $remainingSeconds = $now->diffInSeconds($expiryTime, false);
         $questions = Question::where('quizID', $resolvedQuizID)->get();
 
         return view('quizzes.show', compact('quiz', 'questions', 'remainingSeconds'));
@@ -252,8 +268,8 @@ class QuizController extends Controller
      */
     public function submit(Request $request, $quizID)
     {
-        $quiz = Quiz::findOrFail($quizID);
-        $resolvedQuizID = $quiz->quizID ?? $quiz->id;
+        $quiz = Quiz::where('quizID', $quizID)->firstOrFail();
+        $resolvedQuizID = $quiz->quizID;
         
         $userId = Auth::id();
         if (!$userId) {
@@ -311,8 +327,8 @@ class QuizController extends Controller
      */
     public function viewGrades($quizID)
     {
-        $quiz = Quiz::findOrFail($quizID);
-        $resolvedQuizID = $quiz->quizID ?? $quiz->id;
+        $quiz = Quiz::where('quizID', $quizID)->firstOrFail();
+        $resolvedQuizID = $quiz->quizID;
         $totalQuestionsCount = Question::where('quizID', $resolvedQuizID)->count();
 
         $submissions = DB::table('quiz_submissions')
@@ -355,11 +371,9 @@ class QuizController extends Controller
             return redirect('/login')->with('error', 'Please log in to check grades.');
         }
 
-        // Identify the registration signature of this student
         $student = Student::where('user_id', $userId)->first();
         $studentRegNo = $student ? $student->regNo : 'USR-' . $userId;
 
-        // Fetch completed quiz records compiled with direct title strings
         $grades = DB::table('quiz_submissions')
             ->join('quizzes', 'quiz_submissions.quizID', '=', 'quizzes.quizID')
             ->where('quiz_submissions.regNo', $studentRegNo)
