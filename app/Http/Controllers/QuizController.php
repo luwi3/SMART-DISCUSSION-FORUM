@@ -6,6 +6,7 @@ use App\Models\Quiz;
 use App\Models\Question;
 use App\Models\Student;
 use App\Models\Lecturer;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -13,72 +14,204 @@ use Carbon\Carbon;
 
 class QuizController extends Controller
 {
-    // 👨‍🏫 1. Show the form to create a quiz (For Lecturers)
+    /**
+     * 👨‍🏫 1. Render the clean main Lecturer Dashboard workspace.
+     */
+    public function lecturerDashboard()
+    {
+        return view('dashboards.lecturer');
+    }
+
+    /**
+     * 👨‍🏫 1b. Display the master Quiz List alongside Student Marks.
+     */
+    public function quizzesIndex()
+    {
+        $userId = Auth::id();
+        $lecturer = Lecturer::where('user_id', $userId)->first();
+        $staffNo = $lecturer ? $lecturer->staffNo : 'STAFF-TEST-01';
+
+        $quizMarks = DB::table('quizzes')
+            ->join('quiz_submissions', 'quizzes.quizID', '=', 'quiz_submissions.quizID')
+            ->leftJoin('students', 'quiz_submissions.regNo', '=', 'students.regNo')
+            ->leftJoin('users as u1', 'students.user_id', '=', 'u1.id')
+            ->leftJoin('users as u2', function($join) {
+                $join->on(DB::raw("CAST(REGEXP_REPLACE(quiz_submissions.regNo, '[^0-9]', '') AS UNSIGNED)"), '=', 'u2.id')
+                     ->where(function($query) {
+                         $query->where('quiz_submissions.regNo', 'LIKE', 'USR-%')
+                               ->orWhere('quiz_submissions.regNo', 'LIKE', 'REG-USER-%')
+                               ->orWhere('quiz_submissions.regNo', 'LIKE', 'REG-TEST-%');
+                     });
+            })
+            ->where('quizzes.staffNo', $staffNo)
+            ->select(
+                'quizzes.quizID',
+                'quizzes.title as quiz_title',
+                'quizzes.courseCode',
+                'quiz_submissions.regNo as student_reg',
+                'quiz_submissions.marks as score',
+                'quiz_submissions.timeSubmitted',
+                DB::raw('COALESCE(u1.name, u2.name, quiz_submissions.regNo) as student_name'),
+                DB::raw('(SELECT COUNT(*) FROM questions WHERE questions.quizID = quizzes.quizID) as total_questions')
+            )
+            ->orderBy('quizzes.quizID', 'asc')
+            ->orderBy('quiz_submissions.marks', 'desc')
+            ->get();
+
+        $groupedQuizzes = $quizMarks->groupBy('quizID');
+
+        return view('quizzes.index', compact('groupedQuizzes'));
+    }
+
+    /**
+     * 👨‍🏫 2. Show the form to create a quiz (For Lecturers)
+     */
     public function create()
     {
         return view('quizzes.create');
     }
 
-    // 👨‍🏫 2. Store the quiz and questions together (For Lecturers)
+    /**
+     * 👨‍🏫 3. Store the quiz and questions together (Supports Manual & Pre-Filtered CSV Pools)
+     */
     public function store(Request $request)
     {
-        // Fallback: If no lecturer record is found, assign a default staff number for testing stability
         $lecturer = Lecturer::where('user_id', Auth::id())->first();
         $staffNo = $lecturer ? $lecturer->staffNo : 'STAFF-TEST-01';
 
-        $validated = $request->validate([
+        $rules = [
             'title' => 'required|string|max:255',
             'courseCode' => 'required|string',
             'duration' => 'required|integer|min:1',
             'startTime' => 'required|date',
             'expiryTime' => 'required|date|after:startTime',
-            'questions' => 'required|array|min:1',
-            'questions.*.text' => 'required|string',
-            'questions.*.a' => 'required|string',
-            'questions.*.b' => 'required|string',
-            'questions.*.c' => 'required|string',
-            'questions.*.d' => 'required|string',
-            'questions.*.correct' => 'required|in:A,B,C,D',
-        ]);
+            'creation_method' => 'required|in:manual,csv',
+        ];
 
-        $quiz = Quiz::create([
-            'staffNo' => $staffNo,
-            'courseCode' => strtoupper($validated['courseCode']),
-            'title' => $validated['title'],
-            'duration' => $validated['duration'],
-            'startTime' => $validated['startTime'],
-            'expiryTime' => $validated['expiryTime'],
-        ]);
-
-        // Handles dynamic column naming check (quizID vs id) natively
-        $resolvedQuizID = $quiz->quizID ?? $quiz->id;
-
-        foreach ($validated['questions'] as $questionData) {
-            Question::create([
-                'quizID' => $resolvedQuizID,
-                'question_text' => $questionData['text'],
-                'option_a' => $questionData['a'],
-                'option_b' => $questionData['b'],
-                'option_c' => $questionData['c'],
-                'option_d' => $questionData['d'],
-                'correct_option' => $questionData['correct'],
-            ]);
+        if ($request->input('creation_method') === 'manual') {
+            $rules['questions'] = 'required|array|min:1';
+            $rules['questions.*.text'] = 'required|string';
+            $rules['questions.*.a'] = 'required|string';
+            $rules['questions.*.b'] = 'required|string';
+            $rules['questions.*.c'] = 'required|string';
+            $rules['questions.*.d'] = 'required|string';
+            $rules['questions.*.correct'] = 'required|in:A,B,C,D';
+        } else {
+            $rules['filtered_questions_json'] = 'required|string';
         }
 
-        return redirect('/dashboard')->with('success', 'Quiz published successfully!');
+        $validated = $request->validate($rules);
+
+        return DB::transaction(function () use ($validated, $staffNo, $request) {
+            $quiz = Quiz::create([
+                'staffNo' => $staffNo,
+                'courseCode' => strtoupper($validated['courseCode']),
+                'title' => $validated['title'],
+                'duration' => $validated['duration'],
+                'startTime' => $validated['startTime'],
+                'expiryTime' => $validated['expiryTime'],
+            ]);
+
+            $resolvedQuizID = $quiz->quizID ?? $quiz->id;
+            $questionsToInsert = [];
+
+            if ($validated['creation_method'] === 'manual') {
+                foreach ($validated['questions'] as $questionData) {
+                    $questionsToInsert[] = [
+                        'quizID' => $resolvedQuizID,
+                        'question_text' => $questionData['text'],
+                        'option_a' => $questionData['a'],
+                        'option_b' => $questionData['b'],
+                        'option_c' => $questionData['c'],
+                        'option_d' => $questionData['d'],
+                        'correct_option' => strtoupper(trim($questionData['correct'])),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
+            } else {
+                $decodedQuestions = json_decode($validated['filtered_questions_json'], true);
+
+                if (!is_array($decodedQuestions) || empty($decodedQuestions)) {
+                    return redirect()->back()->withErrors(['filtered_questions_json' => 'Failed to process selected question sets.']);
+                }
+
+                foreach ($decodedQuestions as $q) {
+                    $questionsToInsert[] = [
+                        'quizID' => $resolvedQuizID,
+                        'question_text' => $q['text'] ?? 'Missing Question Text',
+                        'option_a' => $q['a'] ?? '',
+                        'option_b' => $q['b'] ?? '',
+                        'option_c' => $q['c'] ?? '',
+                        'option_d' => $q['d'] ?? '',
+                        'correct_option' => strtoupper(trim($q['correct'] ?? 'A')),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
+            }
+
+            if (!empty($questionsToInsert)) {
+                Question::insert($questionsToInsert);
+            }
+
+            return redirect()->route('lecturer.quizzes.index')->with('success', 'Quiz published successfully!');
+        });
     }
 
-    // 🎓 3. Open a quiz for a student
+    /**
+     * 👨‍🏫 3b. Bulk Import Questions directly onto an Existing Quiz via spreadsheet
+     */
+    public function importCSV(Request $request, $quizID)
+    {
+        $request->validate([
+            'csv_file' => 'required|file|mimes:csv,txt|max:2048',
+        ]);
+
+        $quiz = Quiz::findOrFail($quizID);
+        $resolvedQuizID = $quiz->quizID ?? $quiz->id;
+
+        $filePath = $request->file('csv_file')->getRealPath();
+        if (($handle = fopen($filePath, 'r')) !== FALSE) {
+            fgetcsv($handle, 1000, ','); // Skip header row
+            $insertedCount = 0;
+
+            while (($row = fgetcsv($handle, 1000, ',')) !== FALSE) {
+                if (empty($row[0])) continue;
+
+                Question::create([
+                    'quizID'         => $resolvedQuizID,
+                    'question_text'  => $row[0],
+                    'option_a'       => $row[1],
+                    'option_b'       => $row[2],
+                    'option_c'       => $row[3],
+                    'option_d'       => $row[4],
+                    'correct_option' => strtoupper(trim($row[5])),
+                ]);
+                $insertedCount++;
+            }
+            fclose($handle);
+
+            return redirect()->route('lecturer.quizzes.index')
+                ->with('success', "Successfully imported {$insertedCount} questions!");
+        }
+
+        return redirect()->back()->with('error', 'Failed to open CSV.');
+    }
+
+    /**
+     * 🎓 4. Open a quiz for a student
+     */
     public function show($quizID)
     {
         $quiz = Quiz::findOrFail($quizID);
+        $userId = Auth::id();
+        if (!$userId) {
+            return redirect('/login')->with('error', 'Please log in to attempt the quiz.');
+        }
         
-        // Testing Fallback: If not logged in, act as John Doe
-        $userId = Auth::id() ?? DB::table('users')->where('email', 'john@test.com')->value('id');
-        
-        // Safety Fallback: Avoid throwing a 404 crash if student entry is missing during evaluation tests
         $student = Student::where('user_id', $userId)->first();
-        $studentRegNo = $student ? $student->regNo : 'REG-TEST-01';
+        $studentRegNo = $student ? $student->regNo : 'USR-' . $userId;
         $studentCourse = $student ? $student->courseCode : $quiz->courseCode;
 
         if ($studentCourse !== $quiz->courseCode) {
@@ -87,20 +220,24 @@ class QuizController extends Controller
 
         $resolvedQuizID = $quiz->quizID ?? $quiz->id;
 
-        $existingSubmission = DB::table('quiz_submissions')
+        $submission = DB::table('quiz_submissions')
             ->where('quizID', $resolvedQuizID)
             ->where('regNo', $studentRegNo)
-            ->exists();
+            ->first();
 
-        if ($existingSubmission) {
-            return redirect('/dashboard')->with('error', 'You have already submitted this quiz.');
+        if ($submission) {
+            $expiryTime = Carbon::parse($quiz->expiryTime);
+            $totalQuestionsCount = Question::where('quizID', $resolvedQuizID)->count();
+
+            if (now()->lessThan($expiryTime)) {
+                return redirect('/dashboard')->with('success', 'Your quiz has already been submitted successfully.');
+            }
+            return redirect('/dashboard')->with('quiz_result', "Quiz finished! Your score: {$submission->marks} / {$totalQuestionsCount} marks.");
         }
 
-        // ⏱️ STRICT TIME CONTROL: Calculate remaining seconds from right now until the hard expiry window closes
         $expiryTime = Carbon::parse($quiz->expiryTime);
         $remainingSeconds = now()->diffInSeconds($expiryTime, false);
 
-        // If the clock has passed the expiry time, block entry immediately with no extra time given
         if ($remainingSeconds <= 0) {
             return redirect('/dashboard')->with('error', 'This quiz session has already expired.');
         }
@@ -110,25 +247,29 @@ class QuizController extends Controller
         return view('quizzes.show', compact('quiz', 'questions', 'remainingSeconds'));
     }
 
-    // 🎓 4. Process and Securely Grade the Quiz Submission
+    /**
+     * 🎓 5. Process and Grade Quiz Submissions
+     */
     public function submit(Request $request, $quizID)
     {
         $quiz = Quiz::findOrFail($quizID);
         $resolvedQuizID = $quiz->quizID ?? $quiz->id;
         
-        // Testing Fallback
-        $userId = Auth::id() ?? DB::table('users')->where('email', 'john@test.com')->value('id');
+        $userId = Auth::id();
+        if (!$userId) {
+            return redirect('/login')->with('error', 'Session expired.');
+        }
+
         $student = Student::where('user_id', $userId)->first();
-        $studentRegNo = $student ? $student->regNo : 'REG-TEST-01';
+        $studentRegNo = $student ? $student->regNo : 'USR-' . $userId;
         
-        // Prevent double evaluation requests processing simultaneously
         $existingSubmission = DB::table('quiz_submissions')
             ->where('quizID', $resolvedQuizID)
             ->where('regNo', $studentRegNo)
             ->exists();
 
         if ($existingSubmission) {
-            return redirect()->to("/quizzes/{$resolvedQuizID}")->with('error', 'Submission already registered.');
+            return redirect('/dashboard')->with('error', 'Submission already registered.');
         }
 
         $questions = Question::where('quizID', $resolvedQuizID)->get();
@@ -139,9 +280,7 @@ class QuizController extends Controller
         $correctCount = 0;
 
         foreach ($questions as $question) {
-            // 🛠️ FIX: Standardized key lookup to target 'id' to exactly match your migration rules
             $questionKey = $question->id; 
-            
             $studentChoice = $studentAnswers[$questionKey] ?? null;
             if ($studentChoice !== null && strtoupper($studentChoice) === strtoupper($question->correct_option)) {
                 $correctCount++;
@@ -161,37 +300,39 @@ class QuizController extends Controller
         ]);
 
         if ($isAutoSubmit == 1 || $now->greaterThanOrEqualTo($expiryTime)) {
-            return redirect()->to("/quizzes/{$resolvedQuizID}")->with('quiz_result', "Quiz session closed! Your work has been auto-saved. You secured {$correctCount} / " . $questions->count() . " marks.");
-        } else {
-            return redirect()->to("/quizzes/{$resolvedQuizID}")->with('quiz_result', "Quiz submitted successfully! Your marks will be released automatically at " . $expiryTime->format('h:i A') . " once the session closes.");
+            return redirect('/dashboard')->with('quiz_result', "Quiz saved. Score: {$correctCount} / " . $questions->count());
         }
+
+        return redirect('/dashboard')->with('success', "Quiz submitted successfully!");
     }
 
-    // 👨‍🏫 5. View Gradebook Log Sheet (For Lecturers / Testing Engine)
+    /**
+     * 👨‍🏫 6. View Gradebook for an Individual Quiz
+     */
     public function viewGrades($quizID)
     {
         $quiz = Quiz::findOrFail($quizID);
         $resolvedQuizID = $quiz->quizID ?? $quiz->id;
+        $totalQuestionsCount = Question::where('quizID', $resolvedQuizID)->count();
 
-        // 🛠️ CHANGED TO LEFT JOIN: Prevents missing student details from blanking out the view
         $submissions = DB::table('quiz_submissions')
             ->leftJoin('students', 'quiz_submissions.regNo', '=', 'students.regNo')
             ->leftJoin('users', 'students.user_id', '=', 'users.id')
             ->where('quiz_submissions.quizID', $resolvedQuizID)
-            ->select('quiz_submissions.*', 'users.name as student_name')
+            ->select('quiz_submissions.*', DB::raw('COALESCE(users.name, quiz_submissions.regNo) as student_name'))
             ->orderBy('quiz_submissions.marks', 'desc')
             ->get();
 
-        return view('quizzes.grades', compact('quiz', 'submissions'));
+        return view('quizzes.grades', compact('quiz', 'submissions', 'totalQuestionsCount'));
     }
 
-    // 💻 6. Render Student Dashboard with Active Evaluation Stream Arrays
+    /**
+     * 💻 7. Render Student Dashboard with Active Evaluation Stream Arrays
+     */
     public function dashboard()
     {
-        $userId = Auth::id() ?? DB::table('users')->where('email', 'john@test.com')->value('id');
-        $student = Student::where('user_id', $userId)->first();
-        
-        // Match course streams or default cleanly for system stability
+        $userId = Auth::id();
+        $student = $userId ? Student::where('user_id', $userId)->first() : null;
         $studentCourse = $student ? $student->courseCode : null;
 
         $activeQuizzes = Quiz::when($studentCourse, function ($query, $course) {
@@ -201,7 +342,37 @@ class QuizController extends Controller
             ->where('expiryTime', '>=', now())
             ->get();
 
-        // 🛠️ FIXED VIEW PATH HERE: Targets resources/views/dashboards/student.blade.php
         return view('dashboards.student', compact('activeQuizzes'));
+    }
+
+    /**
+     * 🎓 8. Render Personal Performance Grade Sheets for Students
+     */
+    public function viewStudentGrades()
+    {
+        $userId = Auth::id();
+        if (!$userId) {
+            return redirect('/login')->with('error', 'Please log in to check grades.');
+        }
+
+        // Identify the registration signature of this student
+        $student = Student::where('user_id', $userId)->first();
+        $studentRegNo = $student ? $student->regNo : 'USR-' . $userId;
+
+        // Fetch completed quiz records compiled with direct title strings
+        $grades = DB::table('quiz_submissions')
+            ->join('quizzes', 'quiz_submissions.quizID', '=', 'quizzes.quizID')
+            ->where('quiz_submissions.regNo', $studentRegNo)
+            ->select(
+                'quizzes.title as quiz_title',
+                'quizzes.courseCode',
+                'quiz_submissions.marks as score',
+                'quiz_submissions.timeSubmitted',
+                DB::raw('(SELECT COUNT(*) FROM questions WHERE questions.quizID = quizzes.quizID) as total_questions')
+            )
+            ->orderBy('quiz_submissions.timeSubmitted', 'desc')
+            ->get();
+
+        return view('quizzes.student_marks', compact('grades'));
     }
 }

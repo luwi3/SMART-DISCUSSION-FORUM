@@ -51,45 +51,46 @@
         <div class="sidebar-brand">Smart Discussion Forum</div>
         <ul class="sidebar-menu">
             <li class="menu-item active"><a href="#">Dashboard</a></li>
-            <li class="menu-item"><a href="{{ route('profile.edit') }}">Profile</a></li>
-            <li class="menu-item"><a href="{{ route('chat.index') }}">Manage Discussion</a></li>
-            <li class="menu-item"><a href="{{ route('participation.index') }}">Participation Marks</a></li>
-            <li class="menu-item"><a href="{{ route('resources.index') }}">Upload Resources</a></li>
+            <li class="menu-item"><a href="<?php echo e(route('profile.edit')); ?>">Profile</a></li>
+            <li class="menu-item"><a href="<?php echo e(route('chat.index')); ?>">Manage Discussion</a></li>
+            <li class="menu-item"><a href="<?php echo e(route('participation.index')); ?>">Participation Marks</a></li>
+            <li class="menu-item"><a href="<?php echo e(route('resources.index')); ?>">Upload Resources</a></li>
         </ul>
         <div class="logout-form">
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
+            <form method="POST" action="<?php echo e(route('logout')); ?>">
+                <?php echo csrf_field(); ?>
                 <button type="submit" class="logout-btn">Logout</button>
             </form>
         </div>
     </aside>
 
     <main class="main-content">
-        @if(session('success'))
+        <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if(session('success')): ?>
             <div class="alert-banner">
-                ✓ {{ session('success') }}
+                ✓ <?php echo e(session('success')); ?>
+
             </div>
-        @endif
+        <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
 
         <div>
-            <h1 class="welcome-title">Welcome, {{ Auth::user()->name }}! 👋</h1>
+            <h1 class="welcome-title">Welcome, <?php echo e(Auth::user()->name); ?>! 👋</h1>
             <p class="welcome-subtitle">Here's your integrated overview for today.</p>
         </div>
 
         <section class="action-grid">
-            <a href="{{ route('topics.create') }}" class="action-card create-topic">
+            <a href="<?php echo e(route('topics.create')); ?>" class="action-card create-topic">
                 <div class="action-icon">📝</div>Create Topic
             </a>
             
-            <a href="{{ route('lecturer.quizzes.index') }}" class="action-card create-quiz">
+            <a href="<?php echo e(route('lecturer.quizzes.index')); ?>" class="action-card create-quiz">
                 <div class="action-icon">📋</div>Quiz Marks
             </a>
             
-            <a href="{{ route('resources.index') }}" class="action-card upload-resource">
+            <a href="<?php echo e(route('resources.index')); ?>" class="action-card upload-resource">
                 <div class="action-icon">📤</div>Upload Resource
             </a>
             
-            <a href="{{ route('participation.index') }}" class="action-card view-students">
+            <a href="<?php echo e(route('participation.index')); ?>" class="action-card view-students">
                 <div class="action-icon">👥</div>Participation Marks
             </a>
         </section>
@@ -99,7 +100,7 @@
                 <section class="content-panel">
                     <h3 class="panel-heading">🎯 Quiz Creation</h3>
                     <p class="panel-desc">Set up new course assessments, manage active timelines, and monitor student progress metrics.</p>
-                    <a href="{{ route('quizzes.create') }}" style="display: inline-block; padding: 10px 20px; background: #7c3aed; color: white; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 14px;">
+                    <a href="<?php echo e(route('quizzes.create')); ?>" style="display: inline-block; padding: 10px 20px; background: #7c3aed; color: white; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 14px;">
                         ➕ Setup & Publish New Quiz
                     </a>
                 </section>
@@ -107,4 +108,4 @@
         </div>
     </main>
 </body>
-</html>
+</html><?php /**PATH C:\xampp\xam\htdocs\smart-discussion-forum\resources\views/dashboards/lecturer.blade.php ENDPATH**/ ?>
