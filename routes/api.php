@@ -8,12 +8,14 @@ use App\Http\Controllers\QuizController;
 use App\Http\Controllers\GroupDiscussionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TopicController;
+use App\Http\Controllers\ForumChatController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
 });
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/student/dashboard-summary', [ParticipationController::class, 'studentDashboard']);
     Route::get('/student/quiz-marks', [QuizController::class, 'viewStudentGrades']);
@@ -38,4 +40,8 @@ Route::middleware('auth:sanctum')->group(function () {
         $request->user()->unreadNotifications->markAsRead();
         return response()->json(['status' => 'success']);
     });
+
+    Route::get('/forum-workspace/{type}/{id}', [ForumChatController::class, 'index']);
+    Route::post('/forum-workspace/{type}/{id}', [ForumChatController::class, 'store']);
+    
 });

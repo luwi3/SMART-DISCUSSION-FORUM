@@ -35,6 +35,11 @@ class TopicController extends Controller
         
         // Send the notification via database + Reverb broadcast pipeline
         Notification::send($usersToNotify, new NewTopicNotification($topic));
+        return response()->json([
+    'success' => true,
+    'message' => 'Topic created successfully!',
+    'topic' => $topic
+], 201);
 
         // 4. Redirect back to the switchboard dashboard
         return redirect()->route('dashboard')->with('success', 'Topic created successfully!');
