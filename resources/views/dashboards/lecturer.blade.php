@@ -12,8 +12,29 @@
         .sidebar { width: 260px; background-color: #0b2265; color: white; display: flex; flex-direction: column; flex-shrink: 0; }
         .sidebar-brand { padding: 24px 20px; font-size: 16px; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.1); }
         .sidebar-menu { list-style: none; padding: 20px 0; flex-grow: 1; display: flex; flex-direction: column; gap: 4px; }
-        .menu-item a { display: flex; align-items: center; gap: 12px; padding: 12px 20px; color: #94a3b8; text-decoration: none; font-size: 14px; font-weight: 600; }
-        .menu-item.active a { color: white; background: #2563eb; border-radius: 8px; margin: 0 10px; }
+        
+        /* Smooth hover-highlight movement setup */
+        .menu-item a { 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            padding: 12px 20px; 
+            color: #94a3b8; 
+            text-decoration: none; 
+            font-size: 14px; 
+            font-weight: 600; 
+            border-radius: 8px; /* Uniform radius on all items prevents layout jumps */
+            margin: 0 10px;     /* Pre-applied margin matches your mockup */
+            transition: background-color 0.2s ease, color 0.2s ease; /* Glides smoothly */
+        }
+        
+        /* Highlight turns blue ONLY on active state OR when cursor hovers over the button */
+        .menu-item.active a,
+        .menu-item a:hover { 
+            color: white !important; 
+            background: #2563eb !important; 
+        }
+        
         .logout-form { margin-top: auto; padding: 20px 0; border-top: 1px solid rgba(255,255,255,0.1); }
         .logout-btn { width: 100%; background: none; border: none; display: flex; align-items: center; gap: 12px; padding: 12px 20px; color: #cbd5e1; font-size: 14px; font-weight: 600; cursor: pointer; text-align: left; }
 
@@ -50,12 +71,27 @@
     <aside class="sidebar">
         <div class="sidebar-brand">Smart Discussion Forum</div>
         <ul class="sidebar-menu">
-            <li class="menu-item active"><a href="#">Dashboard</a></li>
-            <li class="menu-item"><a href="{{ route('profile.edit') }}">Profile</a></li>
-            <li class="menu-item"><a href="{{ route('chat.index') }}">Manage Discussion</a></li>
-            <li class="menu-item"><a href="{{ route('participation.index') }}">Participation Marks</a></li>
-            <li class="menu-item"><a href="{{ route('resources.index') }}">Upload Resources</a></li>
+            <li class="menu-item {{ request()->is('dashboard') || request()->is('lecturer/dashboard') || request()->is('/') ? 'active' : '' }}">
+                <a href="{{ route('dashboard') }}">Dashboard</a>
+            </li>
+            
+            <li class="menu-item {{ request()->is('profile*') ? 'active' : '' }}">
+                <a href="{{ route('profile.edit') }}">Profile</a>
+            </li>
+            
+            <li class="menu-item {{ request()->is('chat*') || request()->is('discussion*') ? 'active' : '' }}">
+                <a href="{{ route('chat.index') }}">Manage Discussion</a>
+            </li>
+            
+            <li class="menu-item {{ request()->is('participation*') ? 'active' : '' }}">
+                <a href="{{ route('participation.index') }}">Participation Marks</a>
+            </li>
+            
+            <li class="menu-item {{ request()->is('resources*') ? 'active' : '' }}">
+                <a href="{{ route('resources.index') }}">Upload Resources</a>
+            </li>
         </ul>
+        
         <div class="logout-form">
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
