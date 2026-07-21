@@ -13,5 +13,6 @@ class Announcement extends Model
         'title',
         'message',
         'courseCode',
+        'file_path', // <--- Add this field
     ];
 }

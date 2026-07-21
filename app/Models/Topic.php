@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Topic extends Model
 {
-    protected $fillable = ['title', 'user_id'];
+    protected $fillable = ['title', 'description', 'user_id'];
 
     public function creator(): BelongsTo
     {

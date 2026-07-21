@@ -79,74 +79,74 @@
     <div class="workspace-layout">
         <aside class="sidebar">
             <ul class="sidebar-menu">
-                <li class="menu-item {{ (!isset($currentTab) || $currentTab === 'main') ? 'active' : '' }}">
-                    <a href="{{ route('student.dashboard', ['tab' => 'main']) }}">Main Menu</a>
+                <li class="menu-item <?php echo e((!isset($currentTab) || $currentTab === 'main') ? 'active' : ''); ?>">
+                    <a href="<?php echo e(route('student.dashboard', ['tab' => 'main'])); ?>">Main Menu</a>
                 </li>
-                <li class="menu-item {{ (isset($currentTab) && $currentTab === 'profile') ? 'active' : '' }}">
-                    <a href="{{ route('student.dashboard', ['tab' => 'profile']) }}">Profile</a>
+                <li class="menu-item <?php echo e((isset($currentTab) && $currentTab === 'profile') ? 'active' : ''); ?>">
+                    <a href="<?php echo e(route('student.dashboard', ['tab' => 'profile'])); ?>">Profile</a>
                 </li>
-                <li class="menu-item"><a href="{{ route('student.marks') }}">Marks</a></li>
-                <li class="menu-item"><a href="{{ route('chat.index') }}">Chats</a></li>
+                <li class="menu-item"><a href="<?php echo e(route('student.marks')); ?>">Marks</a></li>
+                <li class="menu-item"><a href="<?php echo e(route('chat.index')); ?>">Chats</a></li>
                 <li class="menu-item"><a href="#">Notifications <span class="badge">3</span></a></li>
-                <li class="menu-item {{ (isset($currentTab) && $currentTab === 'announcements') ? 'active' : '' }}">
-                    <a href="{{ route('student.dashboard', ['tab' => 'announcements']) }}">Announcements</a>
+                <li class="menu-item <?php echo e((isset($currentTab) && $currentTab === 'announcements') ? 'active' : ''); ?>">
+                    <a href="<?php echo e(route('student.dashboard', ['tab' => 'announcements'])); ?>">Announcements</a>
                 </li>
             </ul>
-            <form method="POST" action="{{ route('logout') }}">@csrf
+            <form method="POST" action="<?php echo e(route('logout')); ?>"><?php echo csrf_field(); ?>
                 <button type="submit" class="logout-btn">Logout</button>
             </form>
         </aside>
         
         <main class="main-content">
-            @if(session('quiz_result'))
+            <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if(session('quiz_result')): ?>
                 <div class="alert-banner">
                     <span class="alert-icon">🔔</span>
                     <div>
                         <h4 class="alert-heading">Evaluation Center Update</h4>
-                        <p class="alert-body">{{ session('quiz_result') }}</p>
+                        <p class="alert-body"><?php echo e(session('quiz_result')); ?></p>
                     </div>
                 </div>
-            @endif
+            <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
 
-            @if(session('error'))
+            <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if(session('error')): ?>
                 <div class="alert-banner" style="background-color: #fef2f2; border-left-color: #ef4444; color: #991b1b;">
                     <span class="alert-icon">⚠️</span>
                     <div>
                         <h4 class="alert-heading" style="color: #991b1b;">System Notice</h4>
-                        <p class="alert-body" style="color: #ef4444;">{{ session('error') }}</p>
+                        <p class="alert-body" style="color: #ef4444;"><?php echo e(session('error')); ?></p>
                     </div>
                 </div>
-            @endif
+            <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
 
             <div class="welcome-header">
-                <h1 class="welcome-txt">Hello, {{ Auth::user()->name }}! 👋</h1>
+                <h1 class="welcome-txt">Hello, <?php echo e(Auth::user()->name); ?>! 👋</h1>
                 <p class="welcome-sub">Always keep learning and stay active.</p>
             </div>
 
-            @if(isset($currentTab) && $currentTab === 'profile')
+            <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if(isset($currentTab) && $currentTab === 'profile'): ?>
                 <!-- 👤 STUDENT DETAILS / PROFILE VIEW -->
                 <div class="content-panel">
                     <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center;">
                         <span>👤 Student Profile & Account Details</span>
-                        <a href="{{ route('student.dashboard', ['tab' => 'main']) }}" style="font-size: 13px; background: #e2e8f0; color: #334155; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-weight: 600;">← Main Menu</a>
+                        <a href="<?php echo e(route('student.dashboard', ['tab' => 'main'])); ?>" style="font-size: 13px; background: #e2e8f0; color: #334155; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-weight: 600;">← Main Menu</a>
                     </div>
                     
                     <div class="details-grid">
                         <div class="detail-box">
                             <div class="detail-label">Full Name</div>
-                            <div class="detail-value">{{ Auth::user()->name }}</div>
+                            <div class="detail-value"><?php echo e(Auth::user()->name); ?></div>
                         </div>
                         <div class="detail-box">
                             <div class="detail-label">Email Address</div>
-                            <div class="detail-value">{{ Auth::user()->email }}</div>
+                            <div class="detail-value"><?php echo e(Auth::user()->email); ?></div>
                         </div>
                         <div class="detail-box">
                             <div class="detail-label">Account Role</div>
-                            <div class="detail-value" style="text-transform: capitalize;">{{ Auth::user()->role ?? 'Student' }}</div>
+                            <div class="detail-value" style="text-transform: capitalize;"><?php echo e(Auth::user()->role ?? 'Student'); ?></div>
                         </div>
                         <div class="detail-box">
                             <div class="detail-label">Registration / ID</div>
-                            <div class="detail-value">{{ Auth::user()->regNo ?? Auth::user()->id }}</div>
+                            <div class="detail-value"><?php echo e(Auth::user()->regNo ?? Auth::user()->id); ?></div>
                         </div>
                         <div class="detail-box">
                             <div class="detail-label">Account Status</div>
@@ -154,62 +154,62 @@
                         </div>
                         <div class="detail-box">
                             <div class="detail-label">Member Since</div>
-                            <div class="detail-value">{{ Auth::user()->created_at ? Auth::user()->created_at->format('M d, Y') : 'N/A' }}</div>
+                            <div class="detail-value"><?php echo e(Auth::user()->created_at ? Auth::user()->created_at->format('M d, Y') : 'N/A'); ?></div>
                         </div>
                     </div>
                 </div>
 
-            @elseif(isset($currentTab) && $currentTab === 'announcements')
+            <?php elseif(isset($currentTab) && $currentTab === 'announcements'): ?>
                 <!-- 📢 FULL ANNOUNCEMENTS VIEW -->
                 <div class="content-panel">
                     <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center;">
                         <span>📢 All Department Announcements</span>
-                        <a href="{{ route('student.dashboard', ['tab' => 'main']) }}" style="font-size: 13px; background: #e2e8f0; color: #334155; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-weight: 600;">← Main Menu</a>
+                        <a href="<?php echo e(route('student.dashboard', ['tab' => 'main'])); ?>" style="font-size: 13px; background: #e2e8f0; color: #334155; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-weight: 600;">← Main Menu</a>
                     </div>
                     
                     <div class="feed-list" style="margin-top: 20px;">
-                        @if(isset($announcements) && count($announcements) > 0)
-                            @foreach($announcements as $announcement)
+                        <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if(isset($announcements) && count($announcements) > 0): ?>
+                            <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::openLoop(); ?><?php endif; ?><?php $__currentLoopData = $announcements; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $announcement): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::startLoopIteration(); ?><?php endif; ?>
                                 <div class="list-row-item" style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
                                     <div style="display: flex; justify-content: space-between; width: 100%;">
-                                        <span class="item-info-title" style="font-size: 16px;">{{ $announcement->title }}</span>
-                                        <span class="item-info-badge">{{ $announcement->courseCode }}</span>
+                                        <span class="item-info-title" style="font-size: 16px;"><?php echo e($announcement->title); ?></span>
+                                        <span class="item-info-badge"><?php echo e($announcement->courseCode); ?></span>
                                     </div>
                                     <!-- UPDATED TO UNESCAPED HTML TO RENDER DOWNLOAD BUTTON PROPERLY -->
-                                    <div style="font-size: 14px; color: #475569; line-height: 1.5; width: 100%;">{!! $announcement->message !!}</div>
-                                    <span style="font-size: 11px; color: #94a3b8;">Posted {{ $announcement->created_at ? $announcement->created_at->diffForHumans() : 'Recently' }}</span>
+                                    <div style="font-size: 14px; color: #475569; line-height: 1.5; width: 100%;"><?php echo $announcement->message; ?></div>
+                                    <span style="font-size: 11px; color: #94a3b8;">Posted <?php echo e($announcement->created_at ? $announcement->created_at->diffForHumans() : 'Recently'); ?></span>
                                 </div>
-                            @endforeach
-                        @else
+                            <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::endLoop(); ?><?php endif; ?><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::closeLoop(); ?><?php endif; ?>
+                        <?php else: ?>
                             <p style="color: #64748b; font-size: 14px;">No announcements found.</p>
-                        @endif
+                        <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                     </div>
                 </div>
 
-            @else
+            <?php else: ?>
                 <!-- 📊 MAIN MENU / DASHBOARD VIEW -->
                 <section class="cards-row">
                     <div class="metric-card">
                         <div class="m-title">🤖 Forum Participation</div>
                         <div class="m-val">
-                            @if(isset($maxPossibleMarks) && $maxPossibleMarks > 0)
-                                {{ $totalParticipationScore ?? 0 }} <span style="font-size: 16px; color: #64748b; font-weight: 500;">/ {{ $maxPossibleMarks }}</span>
-                            @else
+                            <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if(isset($maxPossibleMarks) && $maxPossibleMarks > 0): ?>
+                                <?php echo e($totalParticipationScore ?? 0); ?> <span style="font-size: 16px; color: #64748b; font-weight: 500;">/ <?php echo e($maxPossibleMarks); ?></span>
+                            <?php else: ?>
                                 0 <span style="font-size: 14px; color: #94a3b8;">Marks</span>
-                            @endif
+                            <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                         </div>
                         <div class="m-sub">
-                            @if(isset($maxPossibleMarks) && $maxPossibleMarks > 0)
+                            <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if(isset($maxPossibleMarks) && $maxPossibleMarks > 0): ?>
                                 Live Contribution Progress
-                            @else
+                            <?php else: ?>
                                 No discussion active yet
-                            @endif
+                            <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                         </div>
                         <div class="progress-line">
-                            @php 
+                            <?php 
                                 $percent = (isset($maxPossibleMarks) && $maxPossibleMarks > 0) ? min((($totalParticipationScore ?? 0) / $maxPossibleMarks) * 100, 100) : 0; 
-                            @endphp
-                            <div class="progress-fill" style="width: {{ $percent }}%;"></div>
+                            ?>
+                            <div class="progress-fill" style="width: <?php echo e($percent); ?>%;"></div>
                         </div>
                     </div>
 
@@ -222,7 +222,7 @@
                     <div class="metric-card" style="width:240px;">
                         <div class="m-title" style="color:#7c3aed;">Recommended Topic</div>
                         <div class="m-val" style="font-size:18px; margin-top:10px; margin-bottom:15px;">Database Design</div>
-                        <a href="{{ route('chat.index') }}" class="btn-topic-action">VIEW TOPICS</a>
+                        <a href="<?php echo e(route('chat.index')); ?>" class="btn-topic-action">VIEW TOPICS</a>
                     </div>
                 </section>
 
@@ -232,36 +232,36 @@
                         <section class="content-panel">
                             <h3 class="panel-title">✍️ Available Assessments</h3>
                             
-                            @if(isset($activeQuizzes) && count($activeQuizzes) > 0)
+                            <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if(isset($activeQuizzes) && count($activeQuizzes) > 0): ?>
                                 <p style="color: #10b981; font-size: 14px; margin-bottom: 15px; font-weight: 600;">✅ Your registered course streams have active evaluation windows open.</p>
                                 
-                                @foreach($activeQuizzes as $activeQuiz)
-                                    @php
+                                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::openLoop(); ?><?php endif; ?><?php $__currentLoopData = $activeQuizzes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $activeQuiz): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::startLoopIteration(); ?><?php endif; ?>
+                                    <?php
                                         $currentQuizId = $activeQuiz->quizID ?? $activeQuiz->id;
                                         
                                         $hasCompleted = isset($completedQuizzes) && $completedQuizzes->contains(function($completed) use ($currentQuizId) {
                                             return ($completed->quizID ?? $completed->id) == $currentQuizId;
                                         });
-                                    @endphp
+                                    ?>
 
                                     <div class="list-row-item">
                                         <div class="item-info-meta">
-                                            <span class="item-info-title">{{ $activeQuiz->title }}</span>
-                                            <span class="item-info-badge">{{ $activeQuiz->courseCode }} • {{ $activeQuiz->duration }} Mins</span>
+                                            <span class="item-info-title"><?php echo e($activeQuiz->title); ?></span>
+                                            <span class="item-info-badge"><?php echo e($activeQuiz->courseCode); ?> • <?php echo e($activeQuiz->duration); ?> Mins</span>
                                         </div>
                                         
-                                        @if($hasCompleted)
+                                        <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($hasCompleted): ?>
                                             <span style="display: inline-block; padding: 8px 16px; background: #e2e8f0; color: #475569; border-radius: 6px; font-weight: bold; font-size: 13px; border: 1px solid #cbd5e1;">
                                                 ✓ Completed
                                             </span>
-                                        @else
-                                            <a href="{{ route('quizzes.show', ['quizID' => $currentQuizId]) }}" style="display: inline-block; padding: 8px 16px; background: #10b981; color: white; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px;">
+                                        <?php else: ?>
+                                            <a href="<?php echo e(route('quizzes.show', ['quizID' => $currentQuizId])); ?>" style="display: inline-block; padding: 8px 16px; background: #10b981; color: white; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px;">
                                                 ✍️ Attempt Quiz
                                             </a>
-                                        @endif
+                                        <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                                     </div>
-                                @endforeach
-                            @else
+                                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::endLoop(); ?><?php endif; ?><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::closeLoop(); ?><?php endif; ?>
+                            <?php else: ?>
                                 <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">No active evaluation windows are currently open for your course stream.</p>
                                 <div class="list-row-item" style="opacity: 0.6; background: #f1f5f9;">
                                     <div class="item-info-meta">
@@ -272,7 +272,7 @@
                                         🔒 Attempt Quiz
                                     </button>
                                 </div>
-                            @endif
+                            <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                         </section>
                     </div>
 
@@ -280,33 +280,33 @@
                         <section class="content-panel">
                             <div class="panel-title">📢 Recent Announcements</div>
                             <div class="feed-list">
-                                @php
+                                <?php
                                     $sidebarAnnouncements = \App\Models\Announcement::latest()->take(3)->get();
-                                @endphp
+                                ?>
 
-                                @if($sidebarAnnouncements->count() > 0)
-                                    @foreach($sidebarAnnouncements as $announcement)
+                                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($sidebarAnnouncements->count() > 0): ?>
+                                    <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::openLoop(); ?><?php endif; ?><?php $__currentLoopData = $sidebarAnnouncements; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $announcement): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::startLoopIteration(); ?><?php endif; ?>
                                         <div class="feed-item">
-                                            <div class="feed-avatar">{{ strtoupper(substr($announcement->courseCode ?? 'D', 0, 1)) }}</div>
+                                            <div class="feed-avatar"><?php echo e(strtoupper(substr($announcement->courseCode ?? 'D', 0, 1))); ?></div>
                                             <div>
-                                                <div class="feed-msg-title">{{ $announcement->title }}</div>
+                                                <div class="feed-msg-title"><?php echo e($announcement->title); ?></div>
                                                 <!-- OPTIONAL: Renders links/formatting nicely if needed in sidebar too -->
-                                                <div style="font-size: 12px; color: #334155; margin-top: 2px;">{!! $announcement->message !!}</div>
-                                                <div class="feed-time">{{ $announcement->created_at ? $announcement->created_at->diffForHumans() : 'Recent' }}</div>
+                                                <div style="font-size: 12px; color: #334155; margin-top: 2px;"><?php echo $announcement->message; ?></div>
+                                                <div class="feed-time"><?php echo e($announcement->created_at ? $announcement->created_at->diffForHumans() : 'Recent'); ?></div>
                                             </div>
                                         </div>
-                                    @endforeach
-                                @else
+                                    <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::endLoop(); ?><?php endif; ?><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::closeLoop(); ?><?php endif; ?>
+                                <?php else: ?>
                                     <p style="color: #64748b; font-size: 13px;">No announcements posted yet.</p>
-                                @endif
+                                <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                             </div>
-                            <a href="{{ route('student.dashboard', ['tab' => 'announcements']) }}" class="btn-view-all">VIEW ALL</a>
+                            <a href="<?php echo e(route('student.dashboard', ['tab' => 'announcements'])); ?>" class="btn-view-all">VIEW ALL</a>
                         </section>
                     </div>
 
                 </div>
-            @endif
+            <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
         </main>
     </div>
 </body>
-</html>
+</html><?php /**PATH C:\xampp\xam\htdocs\smart-discussion-forum\resources\views/dashboards/student.blade.php ENDPATH**/ ?>

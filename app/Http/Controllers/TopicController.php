@@ -22,14 +22,14 @@ class TopicController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'required|string',
         ]);
 
         Topic::create([
-            'title' => $request->title,
-            'description' => $request->description,
+            'title' => $validated['title'],
+            'description' => $validated['description'],
             'user_id' => Auth::id(), // Tracks which lecturer made it
         ]);
 

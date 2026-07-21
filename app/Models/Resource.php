@@ -11,9 +11,13 @@ class Resource extends Model
 
     // Protects attributes from mass-assignment vulnerabilities
     protected $fillable = [
+        'staffNo',
+        'courseCode',
         'title',
         'file_path',
+        'file_name',
         'uploaded_by',
+        'file_type',
     ];
 
     /**
