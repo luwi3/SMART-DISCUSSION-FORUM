@@ -13,6 +13,9 @@ use App\Http\Controllers\GroupDiscussionController;
 use App\Http\Controllers\NotificationController;
 
 use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\ResourceController;
+use App\Http\Controllers\ParticipationController; 
+use App\Http\Controllers\TopicController;       
 use App\Models\Student;
 use Carbon\Carbon;
 use App\Models\Group;
@@ -45,9 +48,6 @@ Route::get('/', function () {
 Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
     $user = $request->user();
     
-    // 🛠️ Temporary debug line:
-    //dd($user, $user->lecturer);
-    
     if ($user->role === 'administrator') {
         return redirect()->route('admin.dashboard');
     } elseif ($user->role === 'lecturer') {
@@ -67,7 +67,7 @@ Route::get('/notifications', [NotificationController::class, 'index'])
 // 2. DASHBOARD PANELS (ROLE-BASED)
 // ==========================================
 
-// 🎓 Student Dashboard Route (✨ UPDATED: Now calls ParticipationController directly to load marks!)
+// 🎓 Student Dashboard Route
 Route::get('/student/dashboard', [ParticipationController::class, 'studentDashboard'])
     ->middleware(['auth', 'verified'])
     ->name('student.dashboard');
@@ -110,7 +110,7 @@ Route::middleware('auth')->group(function () {
     // 📝 Quiz Module Engine Paths
     Route::get('/quizzes/create', [QuizController::class, 'create'])->name('quizzes.create');
     Route::post('/quizzes/store', [QuizController::class, 'store'])->name('quizzes.store');
-    Route::post('/quizzes/{quizID}/import', [QuizController::class, 'importCSV'])->name('quizzes.import'); // 👈 NEW: Added for bulk CSV question imports!
+    Route::post('/quizzes/{quizID}/import', [QuizController::class, 'importCSV'])->name('quizzes.import');
     
     // 📁 Course Resource Document Paths
     Route::get('/resources', [ResourceController::class, 'index'])->name('resources.index');
@@ -125,7 +125,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/quizzes/{quizID}', [QuizController::class, 'show'])->name('quizzes.show');
     Route::post('/quizzes/{quizID}/submit', [QuizController::class, 'submit'])->name('quizzes.submit');
     
-    // 🏆 Student Quiz Scoreboard Path (✨ NEW: Connected to the sidebar Marks action!)
+    // 🏆 Student Quiz Scoreboard Path
     Route::get('/student/quiz-marks', [QuizController::class, 'viewStudentGrades'])->name('student.marks');
     
     // 💬 Forum Workspace Routes
@@ -163,6 +163,12 @@ Route::middleware('auth')->group(function () {
     // 📝 Dedicated Topic Action Handlers
     Route::get('/topics/create', [TopicController::class, 'create'])->name('topics.create');
     Route::post('/topics', [TopicController::class, 'store'])->name('topics.store');
+
+    // 📢 Standalone Announcements Workspace Route
+    Route::get('/announcements', function() {
+        $announcements = \App\Models\Announcement::latest()->get();
+        return view('announcements.index', compact('announcements'));
+    })->name('announcements.index');
 });
 
 
@@ -173,6 +179,10 @@ Route::get('/quizzes/{quizID}/grades', [QuizController::class, 'viewGrades'])->n
 
 Route::get('/test-quiz-create', function() { return view('quizzes.create'); });
 Route::get('/test-quiz-show', function() { return view('quizzes.show'); });
+
+Route::get('/test-quiz-show', function() { 
+    return view('quizzes.show'); 
+});
 
 Route::get('/test-blacklist', function () {
     $blacklistCutoff = today()->subDays(3)->toDateString(); 

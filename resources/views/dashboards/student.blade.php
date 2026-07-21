@@ -91,7 +91,7 @@
         .feed-avatar { width: 32px; height: 32px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #2563eb; font-size: 13px; }
         .feed-msg-title { font-size: 13px; font-weight: 700; color: #334155; }
         .feed-time { font-size: 11px; color: #94a3b8; margin-top: 2px; }
-        .btn-view-all { width: 100%; background: #1d4ed8; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; margin-top: 20px; }
+        .btn-view-all { width: 100%; background: #1d4ed8; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; margin-top: 20px; text-decoration: none; text-align: center; display: block; }
 
         .list-row-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 10px; }
         .list-row-item:last-child { margin-bottom: 0; }
@@ -108,6 +108,12 @@
         .placeholder-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 30px; max-width: 600px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
         .placeholder-card h2 { color: #0f172a; margin-bottom: 10px; font-size: 20px; }
         .placeholder-card p { color: #64748b; font-size: 14px; line-height: 1.6; }
+
+        /* Student Details Card Grid */
+        .details-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 15px; }
+        .detail-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; border-radius: 8px; }
+        .detail-label { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 6px; }
+        .detail-value { font-size: 15px; font-weight: 700; color: #0f172a; }
     </style>
 </head>
 <body>
@@ -218,30 +224,94 @@
                 <p class="welcome-sub">Always keep learning and stay active.</p>
             </div>
 
-            <section class="cards-row">
-                <div class="metric-card">
-                    <div class="m-title">🤖 Forum Participation</div>
-                    <div class="m-val">
-                        @if($maxPossibleMarks > 0)
-                            {{ $totalParticipationScore }} <span style="font-size: 16px; color: #64748b; font-weight: 500;">/ {{ $maxPossibleMarks }}</span>
-                        @else
-                            0 <span style="font-size: 14px; color: #94a3b8;">Marks</span>
-                        @endif
+            @if(isset($currentTab) && $currentTab === 'profile')
+                <!-- 👤 STUDENT DETAILS / PROFILE VIEW -->
+                <div class="content-panel">
+                    <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>👤 Student Profile & Account Details</span>
+                        <a href="{{ route('student.dashboard', ['tab' => 'main']) }}" style="font-size: 13px; background: #e2e8f0; color: #334155; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-weight: 600;">← Main Menu</a>
                     </div>
-                    <div class="m-sub">
-                        @if($maxPossibleMarks > 0)
-                            Live Contribution Progress
-                        @else
-                            No discussion active yet
-                        @endif
-                    </div>
-                    <div class="progress-line">
-                        @php 
-                            $percent = $maxPossibleMarks > 0 ? min(($totalParticipationScore / $maxPossibleMarks) * 100, 100) : 0; 
-                        @endphp
-                        <div class="progress-fill" style="width: {{ $percent }}%;"></div>
+                    
+                    <div class="details-grid">
+                        <div class="detail-box">
+                            <div class="detail-label">Full Name</div>
+                            <div class="detail-value">{{ Auth::user()->name }}</div>
+                        </div>
+                        <div class="detail-box">
+                            <div class="detail-label">Email Address</div>
+                            <div class="detail-value">{{ Auth::user()->email }}</div>
+                        </div>
+                        <div class="detail-box">
+                            <div class="detail-label">Account Role</div>
+                            <div class="detail-value" style="text-transform: capitalize;">{{ Auth::user()->role ?? 'Student' }}</div>
+                        </div>
+                        <div class="detail-box">
+                            <div class="detail-label">Registration / ID</div>
+                            <div class="detail-value">{{ Auth::user()->regNo ?? Auth::user()->id }}</div>
+                        </div>
+                        <div class="detail-box">
+                            <div class="detail-label">Account Status</div>
+                            <div class="detail-value" style="color: #15803d;">Active</div>
+                        </div>
+                        <div class="detail-box">
+                            <div class="detail-label">Member Since</div>
+                            <div class="detail-value">{{ Auth::user()->created_at ? Auth::user()->created_at->format('M d, Y') : 'N/A' }}</div>
+                        </div>
                     </div>
                 </div>
+
+            @elseif(isset($currentTab) && $currentTab === 'announcements')
+                <!-- 📢 FULL ANNOUNCEMENTS VIEW -->
+                <div class="content-panel">
+                    <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>📢 All Department Announcements</span>
+                        <a href="{{ route('student.dashboard', ['tab' => 'main']) }}" style="font-size: 13px; background: #e2e8f0; color: #334155; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-weight: 600;">← Main Menu</a>
+                    </div>
+                    
+                    <div class="feed-list" style="margin-top: 20px;">
+                        @if(isset($announcements) && count($announcements) > 0)
+                            @foreach($announcements as $announcement)
+                                <div class="list-row-item" style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
+                                    <div style="display: flex; justify-content: space-between; width: 100%;">
+                                        <span class="item-info-title" style="font-size: 16px;">{{ $announcement->title }}</span>
+                                        <span class="item-info-badge">{{ $announcement->courseCode }}</span>
+                                    </div>
+                                    <p style="font-size: 14px; color: #475569; line-height: 1.5;">{{ $announcement->message }}</p>
+                                    <span style="font-size: 11px; color: #94a3b8;">Posted {{ $announcement->created_at ? $announcement->created_at->diffForHumans() : 'Recently' }}</span>
+                                </div>
+                            @endforeach
+                        @else
+                            <p style="color: #64748b; font-size: 14px;">No announcements found.</p>
+                        @endif
+                    </div>
+                </div>
+
+            @else
+                <!-- 📊 MAIN MENU / DASHBOARD VIEW -->
+                <section class="cards-row">
+                    <div class="metric-card">
+                        <div class="m-title">🤖 Forum Participation</div>
+                        <div class="m-val">
+                            @if(isset($maxPossibleMarks) && $maxPossibleMarks > 0)
+                                {{ $totalParticipationScore ?? 0 }} <span style="font-size: 16px; color: #64748b; font-weight: 500;">/ {{ $maxPossibleMarks }}</span>
+                            @else
+                                0 <span style="font-size: 14px; color: #94a3b8;">Marks</span>
+                            @endif
+                        </div>
+                        <div class="m-sub">
+                            @if(isset($maxPossibleMarks) && $maxPossibleMarks > 0)
+                                Live Contribution Progress
+                            @else
+                                No discussion active yet
+                            @endif
+                        </div>
+                        <div class="progress-line">
+                            @php 
+                                $percent = (isset($maxPossibleMarks) && $maxPossibleMarks > 0) ? min((($totalParticipationScore ?? 0) / $maxPossibleMarks) * 100, 100) : 0; 
+                            @endphp
+                            <div class="progress-fill" style="width: {{ $percent }}%;"></div>
+                        </div>
+                    </div>
 
                 <div class="metric-card" style="width:160px;">
                     <div class="m-title" style="color:#1e293b;">Status</div>
@@ -410,26 +480,31 @@
                     </section>
                 </div>
 
-                <div class="right-column">
-                    <section class="content-panel">
-                        <div class="panel-title">📢 Recent Announcements</div>
-                        <div class="feed-list">
-                            <div class="feed-item">
-                                <div class="feed-avatar">D</div>
-                                <div><div class="feed-msg-title">New quiz available: Software Engineering</div><div class="feed-time">2 hours ago</div></div>
+                    <div class="right-column">
+                        <section class="content-panel">
+                            <div class="panel-title">📢 Recent Announcements</div>
+                            <div class="feed-list">
+                                @php
+                                    $sidebarAnnouncements = \App\Models\Announcement::latest()->take(3)->get();
+                                @endphp
+
+                                @if($sidebarAnnouncements->count() > 0)
+                                    @foreach($sidebarAnnouncements as $announcement)
+                                        <div class="feed-item">
+                                            <div class="feed-avatar">{{ strtoupper(substr($announcement->courseCode ?? 'D', 0, 1)) }}</div>
+                                            <div>
+                                                <div class="feed-msg-title">{{ $announcement->title }}</div>
+                                                <div class="feed-time">{{ $announcement->created_at ? $announcement->created_at->diffForHumans() : 'Recent' }}</div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                @else
+                                    <p style="color: #64748b; font-size: 13px;">No announcements posted yet.</p>
+                                @endif
                             </div>
-                            <div class="feed-item">
-                                <div class="feed-avatar">D</div>
-                                <div><div class="feed-msg-title">Department meeting on Friday</div><div class="feed-time">1 day ago</div></div>
-                            </div>
-                            <div class="feed-item">
-                                <div class="feed-avatar">D</div>
-                                <div><div class="feed-msg-title">Submit your group project</div><div class="feed-time">2 days ago</div></div>
-                            </div>
-                        </div>
-                        <button class="btn-view-all">VIEW ALL</button>
-                    </section>
-                </div>
+                            <a href="{{ route('student.dashboard', ['tab' => 'announcements']) }}" class="btn-view-all">VIEW ALL</a>
+                        </section>
+                    </div>
 
             <div id="notifications-view" class="dashboard-screen">
                 <div class="welcome-header"><h1 class="welcome-txt">Notifications</h1></div>

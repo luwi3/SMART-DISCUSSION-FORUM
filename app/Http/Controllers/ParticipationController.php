@@ -10,6 +10,7 @@ use App\Models\Student;
 use App\Models\Quiz;
 use App\Models\TopicParticipation;
 use App\Models\Message; 
+use App\Models\Announcement;
 
 class ParticipationController extends Controller
 {
@@ -22,7 +23,6 @@ class ParticipationController extends Controller
         $topics = Topic::orderBy('created_at', 'asc')->get();
 
         // 2. 🛡️ STRICT WHITELIST: Only pull users whose role column is exactly 'student'
-        // This guarantees that administrators and lecturers are completely excluded from the ledger view.
         $students = User::where('role', 'student')
                         ->orderBy('name', 'asc')
                         ->get();
@@ -62,7 +62,7 @@ class ParticipationController extends Controller
     }
 
     /**
-     * 🎓 Render Student Dashboard with synchronized Forum Participation Marks
+     * 🎓 Render Student Dashboard with synchronized Forum Participation Marks & Dynamic Tabs
      */
     public function studentDashboard(Request $request)
     {

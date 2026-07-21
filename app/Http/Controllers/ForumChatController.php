@@ -90,13 +90,13 @@ return view('chat.index', compact('topics', 'sidebarGroups', 'currentStreamTarge
         return view('chat.index', compact('topics', 'sidebarGroups', 'currentStreamTarget', 'messages', 'type', 'id', 'currentStudent'));
     }
 
-   public function store(Request $request, $type = null, $id = null)
-{
-    // 1. Validate the incoming message
-    $request->validate(['body' => 'required|string|max:3000']);
+    public function store(Request $request, $type = null, $id = null)
+    {
+        // 1. Validate the incoming message
+        $request->validate(['body' => 'required|string|max:3000']);
 
-    // 2. Fetch the student record for the logged-in user
-    $student = Student::where('user_id', auth()->id())->first();
+        // 2. Fetch the student record for the logged-in user
+        $student = Student::where('user_id', auth()->id())->first();
 
     // 3. Check if they are blacklisted 🛑
     if ($student && $student->status === 'blacklisted') {
