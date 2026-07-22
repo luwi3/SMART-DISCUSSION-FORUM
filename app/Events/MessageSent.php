@@ -5,21 +5,26 @@ namespace App\Events;
 use App\Models\Message;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+// 1. 🔴 Import ShouldBroadcastNow instead of ShouldBroadcast
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow; 
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class MessageSent implements ShouldBroadcast
+// 2. 🔴 Implement ShouldBroadcastNow
+class MessageSent implements ShouldBroadcastNow 
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $message;
 
     public function __construct(Message $message)
-    {
-        $this->message = $message;
-    }
-
+{
+    $this->message = $message->load([
+        'user',
+        'replyTo'
+    ]);
+}
+    
     public function broadcastOn()
     {
         // 1. Check if the message belongs to a course topic
@@ -49,8 +54,15 @@ class MessageSent implements ShouldBroadcast
                     'name' => $this->message->user->name ?? 'Peer User'
                 ],
                 'user_id' => $this->message->user_id,
+                'reply_to_message_id' => $this->message->reply_to_message_id,
                 'created_at' => $this->message->created_at
             ]
         ];
+    }
+    
+    // 3. 🔴 Explicitly define the event name so it perfectly matches your JS
+    public function broadcastAs()
+    {
+        return 'MessageSent';
     }
 }
