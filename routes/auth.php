@@ -15,7 +15,9 @@ Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
 
-    Route::post('register', [RegisteredUserController::class, 'store']);
+    // 🚀 FORCED OVERRIDE: Directly points POST requests to your custom store handler
+    Route::post('register', [RegisteredUserController::class, 'store'])
+        ->name('register.post');
 
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');

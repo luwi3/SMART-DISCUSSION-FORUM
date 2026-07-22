@@ -4,14 +4,40 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ForumChatController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\LecturerController;
 use App\Http\Controllers\QuizController;
-use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\ParticipationController; 
-use App\Http\Controllers\TopicController;       
+use App\Http\Controllers\TopicController;        
+use App\Http\Controllers\GroupDiscussionController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\AdminDashboardController;
 use App\Models\Student;
+use App\Models\Group;
 use Carbon\Carbon;
+
+// ==========================================
+// REAL-TIME BROADCAST CHANNELS
+// ==========================================
+Broadcast::channel('chat.{type}.{id}', function ($user, $type, $id) {
+    // If it's a public broadcast stream, everyone authenticated gets access
+    if ($type === 'broadcast') {
+        return true;
+    }
+
+    // If it's a study group, verify the student is actually a joined member
+    if ($type === 'group') {
+        return Group::where('id', $id)
+            ->whereHas('members', function ($query) use ($user) {
+                $query->where('users.id', $user->id);
+            })->exists();
+    }
+
+    // Fallback or course topic validation rules
+    return true;
+});
+
 
 // ==========================================
 // 1. ROOT & CORE SWITCHBOARD
@@ -20,22 +46,27 @@ Route::get('/', function () {
     return redirect('login');
 });
 
-// 🚦 The Switchboard: Handles Laravel's default dashboard redirects
+// 🚦 The Switchboard: Dynamic Routing based on user role
 Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
     $user = $request->user();
     
-    if ($user->role === 'administrator') {
+    if ($user->role === 'administrator' || $user->role === 'admin') {
         return redirect()->route('admin.dashboard');
-    } elseif ($user->lecturer()->exists()) {
+    } elseif ($user->role === 'lecturer') {
         return redirect()->route('lecturer.dashboard');
     }
     
     return redirect()->route('student.dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
+// Notifications
+Route::get('/notifications', [NotificationController::class, 'index'])
+    ->middleware('auth')
+    ->name('notifications');
+
 
 // ==========================================
-// 2. DASHBOARD PANELS (ROLEBASED)
+// 2. DASHBOARD PANELS (ROLE-BASED)
 // ==========================================
 
 // 🎓 Student Dashboard Route
@@ -57,6 +88,7 @@ Route::get('/lecturer/quizzes', [QuizController::class, 'quizzesIndex'])
 Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('admin.dashboard');
+
 
 // ==========================================
 // 3. ADMIN MANAGEMENT ROUTES
@@ -98,9 +130,35 @@ Route::middleware('auth')->group(function () {
     // 🏆 Student Quiz Scoreboard Path
     Route::get('/student/quiz-marks', [QuizController::class, 'viewStudentGrades'])->name('student.marks');
     
-    // 💬 Forum Workspace Routes
+    // 💬 Notifications Handler
+    Route::post('/student/notifications/mark-as-read', function () {
+        auth()->user()->unreadNotifications->markAsRead();
+        return response()->json(['status' => 'success']);
+    })->middleware('auth');
+
+    // 👥 Group creation views & submission processing
+    Route::get('/groups/create', [GroupDiscussionController::class, 'create'])->name('groups.create');
+    Route::post('/groups', [GroupDiscussionController::class, 'store'])->name('groups.store');
+
+    // 🌐 Group Browsing & Joining Core Directory Panel
+    Route::get('/groups', [GroupDiscussionController::class, 'index'])->name('groups.index');
+    Route::post('/groups/{id}/join', [GroupDiscussionController::class, 'join'])->name('groups.join');
+    
+    // 🎛️ Creator Moderation Controls
+    Route::delete('/groups/{id}', [GroupDiscussionController::class, 'destroy'])->name('groups.destroy');
+    Route::delete('/groups/{groupId}/remove-user/{userId}', [GroupDiscussionController::class, 'removeUser'])->name('groups.remove_user');
+
+    // Forum Workspace Routes
     Route::get('/forum-workspace/{type?}/{id?}', [ForumChatController::class, 'index'])->name('chat.index');
     Route::post('/forum-workspace/{type}/{id}', [ForumChatController::class, 'store'])->name('chat.store');
+
+    // 🟢 Alias Route Catch-Net
+    Route::get('/chat', function(\Illuminate\Http\Request $request) {
+        if ($request->has('topic')) {
+            return redirect('/forum-workspace/topic/' . $request->query('topic'));
+        }
+        return redirect()->route('chat.index');
+    });
 
     // 📝 Dedicated Topic Action Handlers
     Route::get('/topics/create', [TopicController::class, 'create'])->name('topics.create');
@@ -119,13 +177,8 @@ Route::middleware('auth')->group(function () {
 // ==========================================
 Route::get('/quizzes/{quizID}/grades', [QuizController::class, 'viewGrades'])->name('quizzes.grades');
 
-Route::get('/test-quiz-create', function() { 
-    return view('quizzes.create'); 
-});
-
-Route::get('/test-quiz-show', function() { 
-    return view('quizzes.show'); 
-});
+Route::get('/test-quiz-create', function() { return view('quizzes.create'); });
+Route::get('/test-quiz-show', function() { return view('quizzes.show'); });
 
 Route::get('/test-blacklist', function () {
     $blacklistCutoff = today()->subDays(3)->toDateString(); 
@@ -161,7 +214,6 @@ Route::get('/test-blacklist', function () {
 
 Route::post('/admin/students/{regNo}/activate', function ($regNo) {
     $student = Student::where('regNo', $regNo)->firstOrFail();
-    
     $student->status = 'active';
     $student->lastCommDate = now(); 
     $student->save();

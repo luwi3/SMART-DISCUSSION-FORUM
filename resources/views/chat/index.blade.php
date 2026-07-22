@@ -6,14 +6,22 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Smart Forum Workspace</title>
     
-    <!-- Tailwind CSS CDN -->
-   @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-gray-100 antialiased font-sans">
 
 <div class="flex h-screen bg-white">
-    <!-- Sidebar Workspace Navigation Container -->
     <div class="w-64 bg-[#0b1329] text-slate-300 flex flex-col border-r border-slate-900">
+        
+        <div class="p-3 bg-[#070d1c] border-b border-slate-900">
+            <a href="{{ url('/student/dashboard') }}" class="flex items-center space-x-2 text-xs font-semibold text-slate-400 hover:text-sky-400 transition-colors group">
+                <i class="fa-solid fa-arrow-left transition-transform group-hover:-translate-x-1"></i>
+                <span>Back to Student Dashboard</span>
+            </a>
+        </div>
+
         <div class="p-4 border-b border-slate-900 flex items-center justify-between">
             <h1 class="text-xs font-bold tracking-wider text-slate-400 uppercase">Workspaces</h1>
             <span class="text-[11px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full border border-slate-700 font-mono">
@@ -22,66 +30,118 @@
         </div>
         
         <div class="flex-1 overflow-y-auto p-4 space-y-6">
-            <!-- Active Courses Sidebar Collection Container -->
+            
             <div>
                 <h2 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase mb-2 flex items-center">
-                    <i class="fa-solid fa-graduation-cap text-sky-400 mr-2"></i> Active Courses
+                    <i class="fa-solid fa-earth-americas text-emerald-400 mr-2"></i> Global Communication
                 </h2>
-                <ul class="space-y-1">
-                    @foreach($topics as $topic)
-                        <li>
-                            <a href="{{ url('/forum-workspace/topic/' . $topic->id) }}" 
-                               class="flex items-center space-x-2 px-2 py-1.5 text-xs rounded-md transition-colors hover:bg-slate-800 hover:text-white 
-                               {{ ($type === 'topic' && $id == $topic->id) ? 'bg-slate-800 text-white font-medium' : '' }}">
-                                <i class="fa-solid fa-book-bookmark text-blue-400"></i>
-                                <span class="truncate">{{ $topic->course_code ?? $topic->title }}</span>
-                            </a>
-                        </li>
-                    @endforeach
+                @php
+                    // Main chat is active if type is broadcast, or if no explicit topic route/query is present
+                    $isMainBroadcastActive = ($type === 'broadcast' || !$type || $id === 'general') && !request('topic');
+                @endphp
+                <a href="{{ url('/forum-workspace') }}" 
+                   class="flex items-center space-x-2 px-3 py-2.5 text-xs rounded-md transition-all duration-200 relative group
+                   {{ $isMainBroadcastActive 
+                       ? 'bg-slate-800 text-white font-bold scale-[1.06] shadow-lg shadow-emerald-500/20 border-l-4 border-emerald-400 pl-2 translate-x-1 z-10' 
+                       : 'hover:bg-slate-800 hover:text-white text-slate-400' }}">
+                    <i class="fa-solid fa-comments {{ $isMainBroadcastActive ? 'text-emerald-400 animate-pulse' : 'text-slate-500 group-hover:text-emerald-400' }} text-sm transition-colors"></i>
+                    <span class="truncate">Main Chat Broadcast</span>
+                </a>
+            </div>
+
+            <div x-data="{ openTopics: true }">
+
+    <button
+        @click="openTopics = !openTopics"
+        class="w-full flex items-center justify-between text-[10px] font-bold tracking-wider text-slate-500 uppercase mb-3">
+
+        <span class="flex items-center">
+            <i class="fa-solid fa-graduation-cap text-sky-400 mr-2"></i>
+            Active Topics
+        </span>
+
+        <i class="fa-solid"
+           :class="openTopics ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+    </button>
+
+    <ul x-show="openTopics"
+        x-transition
+        class="space-y-2">
+
+        @foreach($topics as $topic)
+            @php
+                $isActiveTopic = ($type === 'topic' && $id == $topic->id) || (request('topic') == $topic->id);
+            @endphp
+
+            <li>
+                <a href="{{ url('/forum-workspace/topic/' . $topic->id) }}"
+                   class="flex items-center space-x-2 px-3 py-2.5 text-xs rounded-md transition-all duration-200 relative group
+                   {{ $isActiveTopic
+                       ? 'bg-slate-800 text-white font-bold scale-[1.06] shadow-xl shadow-blue-500/25 border-l-4 border-blue-500 pl-2 translate-x-1 z-10'
+                       : 'hover:bg-slate-800 hover:text-white text-slate-400' }}">
+
+                    <i class="fa-solid fa-book-bookmark {{ $isActiveTopic ? 'text-blue-400 animate-pulse' : 'text-slate-500 group-hover:text-blue-400' }} transition-colors"></i>
+
+                    <span class="truncate">
+                        {{ $topic->course_code ?? $topic->title }}
+                    </span>
+
+                </a>
+            </li>
+        @endforeach
+
+    </ul>
+
+</div>
+            <div>
+                <h2 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase mb-3 flex items-center">
+                    <i class="fa-solid fa-users text-purple-400 mr-2"></i> Study Groups
+                </h2>
+                <ul class="space-y-2">
+                    @if(isset($sidebarGroups) && count($sidebarGroups) > 0)
+                        @foreach($sidebarGroups as $sGroup)
+                            @php
+                                $isActiveGroup = ($type === 'group' && $id == $sGroup->id);
+                            @endphp
+                            <li>
+                                <a href="{{ url('/forum-workspace/group/' . $sGroup->id) }}" 
+                                   class="flex items-center space-x-2 px-3 py-2.5 text-xs rounded-md transition-all duration-200 relative group
+                                   {{ $isActiveGroup 
+                                       ? 'bg-slate-800 text-white font-bold scale-[1.06] shadow-xl shadow-purple-500/25 border-l-4 border-purple-500 pl-2 translate-x-1 z-10' 
+                                       : 'hover:bg-slate-800 hover:text-white text-slate-400' }}">
+                                    
+                                    <i class="fa-solid fa-hashtag {{ $isActiveGroup ? 'text-purple-400 animate-pulse' : 'text-slate-500 group-hover:text-purple-400' }} transition-colors"></i>
+                                    <span class="truncate">{{ $sGroup->name }}</span>
+                                </a>
+                            </li>
+                        @endforeach
+                    @else
+                        <li class="px-3 py-2 text-[11px] text-slate-600 italic">No joined groups</li>
+                    @endif
                 </ul>
             </div>
 
-            <!-- Recent Group Discussions Sidebar Collection Container -->
-            <div>
-                <h2 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase mb-2 flex items-center">
-                    <i class="fa-solid fa-users text-slate-400 mr-2"></i> Study Groups
-                </h2>
-                <ul class="space-y-1">
-                    @foreach($groups as $group)
-                        <li>
-                            <a href="{{ url('/forum-workspace/group/' . $group->id) }}" 
-                               class="flex items-center space-x-2 px-2 py-1.5 text-xs rounded-md transition-colors hover:bg-slate-800 hover:text-white 
-                               {{ ($type === 'group' && $id == $group->id) ? 'bg-slate-800 text-white font-medium' : '' }}">
-                                <i class="fa-regular fa-comments text-emerald-400"></i>
-                                <span class="truncate">{{ $group->name }}</span>
-                            </a>
-                        </li>
-                    @endforeach
-                </ul>
-            </div>
         </div>
     </div>
 
-    <!-- Main Chat Feed Interface Panel Container -->
     <div class="flex-1 flex flex-col h-full bg-[#f8fafc] relative">
         
-        <!-- Message Historical Feed List Stream Container Wrapper -->
         <div id="chat-messages-container" class="flex-1 overflow-y-auto px-8 py-6 space-y-4 pb-24 scroll-smooth">
             @if ($errors->any())
-    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl m-4 shadow-sm flex items-start space-x-2">
-        <i class="fa-solid fa-circle-exclamation mt-0.5 text-red-500"></i>
-        <ul class="list-disc list-inside text-xs font-medium">
-            @foreach ($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    </div>
-@endif
+                <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl m-4 shadow-sm flex items-start space-x-2">
+                    <i class="fa-solid fa-circle-exclamation mt-0.5 text-red-500"></i>
+                    <ul class="list-disc list-inside text-xs font-medium">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             @if(count($messages) > 0)
                 @foreach($messages as $msg)
                     <div class="flex items-end space-x-3 {{ $msg->user_id === auth()->id() ? 'flex-row-reverse space-x-reverse' : '' }} mb-1">
                         
-                        <!-- OWNER INITIALS VALUE: Displays "ME" if you sent it, otherwise peer initials -->
                         <div class="h-9 w-9 rounded-full bg-[#0b1329] text-slate-300 flex items-center justify-center text-xs font-bold shrink-0 shadow">
                             @if($msg->user_id === auth()->id())
                                 ME
@@ -91,7 +151,6 @@
                         </div>
                         
                         <div class="flex flex-col max-w-xl {{ $msg->user_id === auth()->id() ? 'items-end' : 'items-start' }}">
-                            <!-- EYE-SAFE LIGHT BLUE BUBBLES -->
                             <div class="relative px-4 py-2.5 shadow-md rounded-xl break-words w-full border
                                 {{ $msg->user_id === auth()->id() 
                                     ? 'bg-sky-100 text-slate-900 border-sky-200 rounded-tr-none' 
@@ -130,51 +189,61 @@
             @endif
         </div>
 
-        <!-- Sticky Input Tray Box Wrapper Container -->
         <div class="absolute bottom-0 left-0 right-0 p-4 bg-slate-50 border-t border-slate-200 z-10">
-    <form id="chat-form" method="POST" action="{{ route('chat.store', ['type' => $type ?? 'broadcast', 'id' => $id ?? 'general']) }}" class="flex items-center space-x-3 max-w-7xl mx-auto">
-        @csrf
-        
-        <div class="relative inline-block text-left">
-            <button type="button" id="dropdown-toggle" class="flex items-center space-x-1.5 px-3 py-2 bg-[#0b1329] border border-slate-950 rounded-xl text-slate-300 shadow-sm focus:outline-none hover:bg-slate-800 transition-all cursor-pointer">
-                <i class="fa-solid fa-shield-halved text-xs text-sky-400"></i>
-                <span class="text-[10px] font-bold tracking-wide uppercase">Restrict</span>
-                <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                <i class="fa-solid fa-chevron-up text-[9px] text-slate-400 ml-0.5"></i>
-            </button>
+            <form id="chat-form" method="POST" action="{{ route('chat.store', ['type' => $type ?? (request('topic') ? 'topic' : 'broadcast'), 'id' => $id ?? (request('topic') ?: 'general')]) }}" class="flex items-center space-x-3 max-w-7xl mx-auto">
+                @csrf
+                
+                <div class="relative inline-block text-left">
+                    <button type="button" id="dropdown-toggle" class="flex items-center space-x-1.5 px-3 py-2 bg-[#0b1329] border border-slate-950 rounded-xl text-slate-300 shadow-sm focus:outline-none hover:bg-slate-800 transition-all cursor-pointer">
+                        <i class="fa-solid fa-shield-halved text-xs text-sky-400"></i>
+                        <span class="text-[10px] font-bold tracking-wide uppercase">Restrict</span>
+                        <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <i class="fa-solid fa-chevron-up text-[9px] text-slate-400 ml-0.5"></i>
+                    </button>
 
-            <div id="dropdown-menu" class="hidden absolute bottom-full mb-2 left-0 w-64 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden divide-y divide-slate-100 z-50">
+                    <div id="dropdown-menu" class="hidden absolute bottom-full mb-2 left-0 w-64 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden divide-y divide-slate-100 z-50">
+                        <div class="py-1">
+                            <span class="block px-3 py-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider">Filter By Course Code</span>
+                            @foreach($topics as $topic)
+                                @php
+                                    $isDropdownActive = ($type === 'topic' && $id == $topic->id) || (request('topic') == $topic->id);
+                                @endphp
+                                <a href="{{ url('/forum-workspace/topic/' . $topic->id) }}" class="block px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 hover:text-blue-600 truncate {{ $isDropdownActive ? 'bg-blue-50 text-blue-600 font-semibold' : '' }}">
+                                    <span class="bg-blue-100 text-blue-800 font-mono text-[10px] px-1.5 py-0.5 rounded mr-1.5 border border-blue-200 font-semibold">
+                                        {{ $topic->course_code ?? 'CODE' }}
+                                    </span>
+                                    <span class="text-slate-500 text-[11px]">{{ $topic->title }}</span>
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
                 </div>
+
+                @if($currentStudent && $currentStudent->status === 'blacklisted')
+                    <div class="flex-1 flex items-center justify-center py-2.5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-medium shadow-sm">
+                        <i class="fa-solid fa-circle-exclamation text-red-500 mr-2"></i>
+                        <span>Your messaging privileges have been suspended due to inactivity.</span>
+                    </div>
+                @else
+                    <div class="flex-1 relative flex items-center">
+                        <input type="text" id="message-input" name="body" required autocomplete="off" placeholder="Write an answer or update workspace thread..." 
+                               class="w-full text-sm px-4 py-2.5 bg-white rounded-xl focus:outline-none focus:ring-1 focus:ring-slate-800 transition-all text-slate-800 placeholder-slate-400 shadow-sm border border-slate-200">
+                    </div>
+
+                    <button type="submit" id="send-btn" class="w-10 h-10 bg-[#0b1329] hover:bg-slate-800 text-slate-200 rounded-full transition-all shadow active:scale-95 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-paper-plane text-xs"></i>
+                    </button>
+                @endif
+            </form>
         </div>
-
-        @if($currentStudent && $currentStudent->status === 'blacklisted')
-            <div class="flex-1 flex items-center justify-center py-2.5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-medium shadow-sm">
-                <i class="fa-solid fa-circle-exclamation text-red-500 mr-2"></i>
-                <span>Your messaging privileges have been suspended due to inactivity.</span>
-            </div>
-        @else
-            <div class="flex-1 relative flex items-center">
-                <input type="text" id="message-input" name="body" required autocomplete="off" placeholder="Write an answer or update workspace thread..." 
-                       class="w-full text-sm px-4 py-2.5 bg-white rounded-xl focus:outline-none focus:ring-1 focus:ring-slate-800 transition-all text-slate-800 placeholder-slate-400 shadow-sm border border-slate-200">
-            </div>
-
-            <button type="submit" id="send-btn" class="w-10 h-10 bg-[#0b1329] hover:bg-slate-800 text-slate-200 rounded-full transition-all shadow active:scale-95 flex items-center justify-center shrink-0">
-                <i class="fa-solid fa-paper-plane text-xs"></i>
-            </button>
-        @endif
-    </form>
-</div>
     </div>
 </div>
-
-@vite(['resources/js/app.js'])
 
 <script type="module">
     const container = document.getElementById('chat-messages-container');
     const fallbackEmpty = document.getElementById('fallback-empty');
     const currentUserId = {{ auth()->id() }};
 
-    // --- Dropdown Menu System Toggle Controls ---
     const toggleBtn = document.getElementById('dropdown-toggle');
     const menuEl = document.getElementById('dropdown-menu');
     
@@ -196,7 +265,6 @@
 
     scrollToBottom();
 
-    // DYNAMIC INJECTION ENGINE: Handles message appends locally and from websockets instantly
     const appendNewMessage = (body, senderName, senderId) => {
         if (fallbackEmpty) fallbackEmpty.remove();
 
@@ -252,7 +320,6 @@
             
             if (sendBtn) sendBtn.disabled = true;
 
-            // Instantly render for the current user
             appendNewMessage(messageText, "{{ auth()->user()->name }}", currentUserId);
             input.value = ''; 
 
@@ -270,14 +337,14 @@
         });
     }
 
-    // 🎯 INSTANT WEBSOCKET ENGINE: Listens to the active room channel dynamically
-    const currentChannelType = "{{ $type ?? 'broadcast' }}";
-    const currentChannelId = "{{ $id ?? 'general' }}";
+    // Normalized parsing mechanics to capture parameters from direct paths OR query fragments
+    const queryTopicId = "{{ request('topic') }}";
+    const currentChannelType = queryTopicId ? "topic" : "{{ $type ?? 'broadcast' }}";
+    const currentChannelId = queryTopicId ? queryTopicId : "{{ $id ?? 'general' }}";
 
     if (window.Echo) {
         window.Echo.channel(`chat.${currentChannelType}.${currentChannelId}`)
             .listen('MessageSent', (e) => {
-                // Instantly inject the message for the other user without reloading the page
                 if (parseInt(e.message.user_id) !== currentUserId) {
                     const body = e.message.body;
                     const senderName = e.message.user ? e.message.user.name : 'Peer User';

@@ -7,17 +7,29 @@ use App\Models\Topic;
 use App\Models\Message;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use App\Models\User;
+use App\Notifications\NewTopicNotification;
 use App\Models\Student;
 
 class ForumChatController extends Controller
 {
-    public function index($type = null, $id = null)
+    public function index(Request $request, $type = null, $id = null)
     {
-        // Fetch all groups for the sidebar
-        $groups = GroupDiscussion::orderBy('name', 'asc')->get();
-        
+        // 🎯 FIX: Check if incoming request arrived from a notification via query parameter (?topic=ID)
+        if ($request->has('topic')) {
+            $type = 'topic';
+            $id = $request->query('topic');
+        }
+
         // Fetch all topics for the sidebar
         $topics = Topic::orderBy('title', 'asc')->get(); 
+        
+        // 🎯 UPDATE: Fetch joined groups for the authenticated student to pass down to the sidebar loop
+        $sidebarGroups = collect();
+        if (auth()->check()) {
+            // Adjust this if your user-to-groups relationship uses a different name (e.g., joinedGroups)
+            $sidebarGroups = auth()->user()->groups ?? collect(); 
+        }
         
         $messages = collect();
         $currentStreamTarget = null;
@@ -34,7 +46,13 @@ class ForumChatController extends Controller
         // Check if a specific group or topic is being viewed (Ignore fallback 'general' ID)
         if ($type && $id && $id !== 'general' && $type !== 'broadcast') {
             if ($type === 'group') {
-                $currentStreamTarget = GroupDiscussion::findOrFail($id);
+                // Look for either GroupDiscussion or standard Group model matching your structural database naming
+                if (class_exists(\App\Models\GroupDiscussion::class)) {
+                    $currentStreamTarget = GroupDiscussion::findOrFail($id);
+                } else {
+                    $currentStreamTarget = \App\Models\Group::findOrFail($id);
+                }
+
                 if ($groupColumn) {
                     $messages = Message::where($groupColumn, $id)->with('user')->orderBy('created_at', 'asc')->get();
                 }
@@ -59,10 +77,11 @@ class ForumChatController extends Controller
             $messages = $query->with('user')->orderBy('created_at', 'asc')->get();
         }
 
-        // Pass all variables, including the new $topics, to the Blade view
-        $currentStudent = \App\Models\Student::where('user_id', auth()->id())->first();
+        // Fetch the active student profile to prevent undefined variable errors in Blade
+        $currentStudent = Student::where('user_id', auth()->id())->first();
 
-        return view('chat.index', compact('groups', 'topics', 'currentStreamTarget', 'messages', 'type', 'id', 'currentStudent'));
+        // Pass all variables cleanly to the Blade view in a single return statement
+        return view('chat.index', compact('topics', 'sidebarGroups', 'currentStreamTarget', 'messages', 'type', 'id', 'currentStudent'));
     }
 
     public function store(Request $request, $type = null, $id = null)
@@ -84,6 +103,7 @@ class ForumChatController extends Controller
             return back()->withErrors(['message' => 'You have been blocked from using the chat due to inactivity until further notice.']);
         }
 
+        // 4. Create and map the new message entries
         $message = new Message();
         $message->user_id = auth()->id();
         $message->body = $request->body;
@@ -110,7 +130,7 @@ class ForumChatController extends Controller
         if ($student) {
             $student->lastCommDate = now();
 
-            // 🔄 Automatically bring warned students back to active
+            // 🔄 Automatically bring warned students back to active status
             if ($student->status === 'warning') {
                 $student->status = 'active';
             }
@@ -120,6 +140,7 @@ class ForumChatController extends Controller
 
         $message->load('user'); 
 
+        // Live broadcast updates to active connections
         broadcast(new \App\Events\MessageSent($message))->toOthers();
         
         // 🌟 UX Optimization: Send an encouraging confirmation if a student participates in a graded topic
