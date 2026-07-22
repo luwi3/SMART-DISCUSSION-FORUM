@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ForumChatController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\LecturerController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\ResourceController;
@@ -17,6 +18,10 @@ use App\Models\Student;
 use Carbon\Carbon;
 use App\Models\Group;
 
+
+// ==========================================
+// REAL-TIME BROADCAST CHANNELS
+// ==========================================
 Broadcast::channel('chat.{type}.{id}', function ($user, $type, $id) {
     // If it's a public broadcast stream, everyone authenticated gets access
     if ($type === 'broadcast') {
@@ -31,9 +36,11 @@ Broadcast::channel('chat.{type}.{id}', function ($user, $type, $id) {
             })->exists();
     }
 
-    // Fallback or course topic validation rules (adjust if courses require authorization)
+    // Fallback or course topic validation rules
     return true;
 });
+
+
 // ==========================================
 // 1. ROOT & CORE SWITCHBOARD
 // ==========================================
@@ -41,11 +48,11 @@ Route::get('/', function () {
     return redirect('login');
 });
 
-// 🚦 The Switchboard: Dynamic Routing based purely on string matching values
+// 🚦 The Switchboard: Dynamic Routing based on user role
 Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
     $user = $request->user();
     
-    if ($user->role === 'administrator') {
+    if ($user->role === 'administrator' || $user->role === 'admin') {
         return redirect()->route('admin.dashboard');
     } elseif ($user->role === 'lecturer') {
         return redirect()->route('lecturer.dashboard');
@@ -125,7 +132,7 @@ Route::middleware('auth')->group(function () {
     // 🏆 Student Quiz Scoreboard Path
     Route::get('/student/quiz-marks', [QuizController::class, 'viewStudentGrades'])->name('student.marks');
     
-    // 💬 Forum Workspace Routes
+    // 💬 Notifications Handler
     Route::post('/student/notifications/mark-as-read', function () {
         auth()->user()->unreadNotifications->markAsRead();
         return response()->json(['status' => 'success']);
@@ -139,7 +146,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/groups', [GroupDiscussionController::class, 'index'])->name('groups.index');
     Route::post('/groups/{id}/join', [GroupDiscussionController::class, 'join'])->name('groups.join');
     
-    // 🎛️ Creator Moderation Controls (Delete group / Kick individual user)
+    // 🎛️ Creator Moderation Controls
     Route::delete('/groups/{id}', [GroupDiscussionController::class, 'destroy'])->name('groups.destroy');
     Route::delete('/groups/{groupId}/remove-user/{userId}', [GroupDiscussionController::class, 'removeUser'])->name('groups.remove_user');
 
@@ -147,9 +154,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/forum-workspace/{type?}/{id?}', [ForumChatController::class, 'index'])->name('chat.index');
     Route::post('/forum-workspace/{type}/{id}', [ForumChatController::class, 'store'])->name('chat.store');
 
-    /**
-     * 🟢 FIX: THE ALIAS ROUTE CATCH-NET
-     */
+    // 🟢 Alias Route Catch-Net
     Route::get('/chat', function(\Illuminate\Http\Request $request) {
         if ($request->has('topic')) {
             return redirect('/forum-workspace/topic/' . $request->query('topic'));

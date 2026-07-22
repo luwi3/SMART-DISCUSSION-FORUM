@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Resource;
 use App\Models\Lecturer;
+use App\Models\Announcement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -16,10 +17,18 @@ class ResourceController extends Controller
     public function index()
     {
         $userId = Auth::id();
-        $lecturer = Lecturer::where('user_id', $userId)->first();
-        $staffNo = $lecturer ? $lecturer->staffNo : 'STAFF-TEST-01';
+        
+        // Dynamically find or generate a lecturer record for the authenticated user
+        $lecturer = Lecturer::firstOrCreate(
+            ['user_id' => $userId],
+            [
+                'staffNo' => 'STAFF-' . strtoupper(uniqid()), 
+                'name' => Auth::user()->name ?? 'Lecturer'
+            ]
+        );
+        $staffNo = $lecturer->staffNo;
 
-        // Retrieve resources belonging to this lecturer
+        // Retrieve resources belonging to this specific lecturer
         $resources = Resource::where('staffNo', $staffNo)->orderBy('created_at', 'desc')->get();
 
         return view('resources.index', compact('resources'));
@@ -31,8 +40,16 @@ class ResourceController extends Controller
     public function store(Request $request)
     {
         $userId = Auth::id();
-        $lecturer = Lecturer::where('user_id', $userId)->first();
-        $staffNo = $lecturer ? $lecturer->staffNo : 'STAFF-TEST-01';
+        
+        // Dynamically find or generate a lecturer record for the authenticated user
+        $lecturer = Lecturer::firstOrCreate(
+            ['user_id' => $userId],
+            [
+                'staffNo' => 'STAFF-' . strtoupper(uniqid()), 
+                'name' => Auth::user()->name ?? 'Lecturer'
+            ]
+        );
+        $staffNo = $lecturer->staffNo;
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
@@ -49,11 +66,19 @@ class ResourceController extends Controller
                 'staffNo' => $staffNo,
                 'courseCode' => strtoupper($validated['courseCode']),
                 'title' => $validated['title'],
+                'file_name' => $file->getClientOriginalName(),
                 'file_path' => $path,
                 'file_type' => $file->getClientOriginalExtension(),
             ]);
 
-            return redirect()->back()->with('success', 'Learning resource uploaded successfully!');
+            // Automatically create a student announcement with the download link
+            Announcement::create([
+                'title' => 'New Resource: ' . $validated['title'],
+                'courseCode' => strtoupper($validated['courseCode']),
+                'message' => "A new learning resource has been published for your course.<br><a href='" . asset('storage/' . $path) . "' class='btn btn-sm btn-primary mt-2' download>Download " . htmlspecialchars($validated['title']) . "</a>",
+            ]);
+
+            return redirect()->back()->with('success', 'Learning resource uploaded and broadcasted as an announcement successfully!');
         }
 
         return redirect()->back()->with('error', 'File upload failed.');
