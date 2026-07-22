@@ -125,7 +125,56 @@
     </div>
 
     <div class="flex-1 flex flex-col h-full bg-[#f8fafc] relative">
-        
+
+        @php
+            // Requirement #12: this view is reachable either via a direct
+            // /forum-workspace/topic/{id} path, or via a ?topic= query param
+            // on the general workspace route - handle both the same way.
+            $shareTopicId = null;
+            if ($type === 'topic' && $id) {
+                $shareTopicId = $id;
+            } elseif (request('topic')) {
+                $shareTopicId = request('topic');
+            }
+        @endphp
+
+        @if($shareTopicId && isset($currentStreamTarget) && !($currentStreamTarget->is_broadcast ?? false))
+            <div class="px-8 py-3 border-b border-slate-200 bg-white flex items-center justify-between shrink-0">
+                <div class="flex items-center space-x-2 min-w-0">
+                    <i class="fa-solid fa-book-bookmark text-blue-400 shrink-0"></i>
+                    <h2 class="text-sm font-bold text-slate-800 truncate">{{ $currentStreamTarget->title ?? 'Discussion Topic' }}</h2>
+                </div>
+
+                <div class="relative inline-block text-left shrink-0" id="share-wrapper">
+                    <button type="button" id="share-toggle" class="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-200 transition-all text-xs font-semibold">
+                        <i class="fa-solid fa-share-nodes text-slate-500"></i>
+                        <span>Share</span>
+                    </button>
+
+                    <div id="share-menu" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden divide-y divide-slate-100 z-50">
+                        <a href="#" data-share="whatsapp" class="flex items-center space-x-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50">
+                            <i class="fa-brands fa-whatsapp text-green-500 w-4"></i><span>WhatsApp</span>
+                        </a>
+                        <a href="#" data-share="twitter" class="flex items-center space-x-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50">
+                            <i class="fa-brands fa-x-twitter text-slate-900 w-4"></i><span>X (Twitter)</span>
+                        </a>
+                        <a href="#" data-share="facebook" class="flex items-center space-x-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50">
+                            <i class="fa-brands fa-facebook text-blue-600 w-4"></i><span>Facebook</span>
+                        </a>
+                        <a href="#" data-share="telegram" class="flex items-center space-x-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50">
+                            <i class="fa-brands fa-telegram text-sky-500 w-4"></i><span>Telegram</span>
+                        </a>
+                        <a href="#" data-share="email" class="flex items-center space-x-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50">
+                            <i class="fa-solid fa-envelope text-slate-500 w-4"></i><span>Email</span>
+                        </a>
+                        <button type="button" id="copy-link-btn" class="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 text-left">
+                            <i class="fa-solid fa-link text-slate-500 w-4"></i><span id="copy-link-label">Copy Link</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        @endif
+
         <div id="chat-messages-container" class="flex-1 overflow-y-auto px-8 py-6 space-y-4 pb-24 scroll-smooth">
             @if ($errors->any())
                 <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl m-4 shadow-sm flex items-start space-x-2">
@@ -355,5 +404,64 @@
             });
     }
 </script>
+
+{{-- Requirement #12: builds real share links for the currently open topic.
+     Self-contained, doesn't touch any of the chat/websocket logic above. --}}
+@if($shareTopicId && isset($currentStreamTarget) && !($currentStreamTarget->is_broadcast ?? false))
+<script>
+(function() {
+    const shareToggle = document.getElementById('share-toggle');
+    const shareMenu = document.getElementById('share-menu');
+
+    if (shareToggle && shareMenu) {
+        shareToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            shareMenu.classList.toggle('hidden');
+        });
+        document.addEventListener('click', function() {
+            shareMenu.classList.add('hidden');
+        });
+        shareMenu.addEventListener('click', function(e) { e.stopPropagation(); });
+    }
+
+    // Always share the canonical /forum-workspace/topic/{id} URL, regardless
+    // of whether this page was reached via that path or via a ?topic= query.
+    const topicUrl = "{{ url('/forum-workspace/topic/' . $shareTopicId) }}";
+    const topicTitle = @json($currentStreamTarget->title ?? 'Discussion Topic');
+    const shareText = topicTitle + ' - Join the discussion:';
+
+    const shareLinks = {
+        whatsapp: 'https://wa.me/?text=' + encodeURIComponent(shareText + ' ' + topicUrl),
+        twitter: 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(shareText) + '&url=' + encodeURIComponent(topicUrl),
+        facebook: 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(topicUrl),
+        telegram: 'https://t.me/share/url?url=' + encodeURIComponent(topicUrl) + '&text=' + encodeURIComponent(shareText),
+        email: 'mailto:?subject=' + encodeURIComponent(topicTitle) + '&body=' + encodeURIComponent(shareText + ' ' + topicUrl)
+    };
+
+    document.querySelectorAll('[data-share]').forEach(function(link) {
+        const platform = link.getAttribute('data-share');
+        if (shareLinks[platform]) {
+            link.setAttribute('href', shareLinks[platform]);
+            link.setAttribute('target', '_blank');
+            link.setAttribute('rel', 'noopener noreferrer');
+        }
+    });
+
+    const copyBtn = document.getElementById('copy-link-btn');
+    const copyLabel = document.getElementById('copy-link-label');
+    if (copyBtn) {
+        copyBtn.addEventListener('click', function() {
+            navigator.clipboard.writeText(topicUrl).then(function() {
+                if (copyLabel) {
+                    const original = copyLabel.textContent;
+                    copyLabel.textContent = 'Copied!';
+                    setTimeout(function() { copyLabel.textContent = original; }, 1500);
+                }
+            });
+        });
+    }
+})();
+</script>
+@endif
 </body>
 </html>
