@@ -25,6 +25,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/groups', [GroupDiscussionController::class, 'index']);
     Route::post('/groups', [GroupDiscussionController::class, 'store']);
     Route::post('/groups/{id}/join', [GroupDiscussionController::class, 'join']);
+    Route::delete('/groups/{id}', [GroupDiscussionController::class, 'destroy']);
 
     Route::post('/topics', [TopicController::class, 'store']);
 
