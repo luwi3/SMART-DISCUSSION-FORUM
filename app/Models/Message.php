@@ -5,9 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Message extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'body',
         'user_id',
@@ -15,8 +18,9 @@ class Message extends Model
         'topic_id',
         'reply_to_message_id',
         'thread_id',
+        'course_code',
+        'ai_description',
     ];
-
 
     /**
      * The user who sent this message
@@ -26,59 +30,37 @@ class Message extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
-
     /**
      * The main message that started this thread
-     *
-     * Example:
-     * Message 1: "Explain Laravel"
-     * Message 2: "Laravel uses MVC"
-     * Message 3: "Can you explain MVC?"
-     *
-     * Messages 2 and 3 belong to thread_id = 1
      */
     public function thread(): BelongsTo
     {
         return $this->belongsTo(Message::class, 'thread_id');
     }
 
-
     /**
      * All messages inside this thread
-     *
-     * Gets every message that belongs to the same thread
      */
     public function threadMessages(): HasMany
     {
         return $this->hasMany(Message::class, 'thread_id');
     }
 
-
     /**
      * The exact message this message replied to
-     *
-     * Example:
-     * Message 5 replies directly to Message 2
      */
     public function replyTo(): BelongsTo
     {
         return $this->belongsTo(Message::class, 'reply_to_message_id');
     }
 
-
     /**
      * Direct replies under this message
-     *
-     * Example:
-     * Message 1
-     *    ├── Message 2
-     *    └── Message 3
      */
     public function replies(): HasMany
     {
         return $this->hasMany(Message::class, 'reply_to_message_id');
     }
-    
 
     /**
      * Study group relationship
@@ -87,7 +69,6 @@ class Message extends Model
     {
         return $this->belongsTo(GroupDiscussion::class, 'group_id');
     }
-
 
     /**
      * Topic/course discussion relationship
