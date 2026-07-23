@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
     <title>Smart Forum Workspace</title>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/css/app.css', 'resources/js/app.js']); ?>
 </head>
 <body class="bg-gray-100 antialiased font-sans">
 
@@ -17,7 +17,7 @@
     <div class="w-64 bg-[#0b1329] text-slate-300 flex flex-col border-r border-slate-900">
 
         <div class="p-3 bg-[#070d1c] border-b border-slate-900">
-           <a href="{{ route('dashboard') }}" class="flex items-center text-gray-400 hover:text-white px-4 py-3 transition">
+           <a href="<?php echo e(route('dashboard')); ?>" class="flex items-center text-gray-400 hover:text-white px-4 py-3 transition">
                 <span class="mr-2">←</span> Back to Dashboard
             </a>
         </div>
@@ -25,7 +25,8 @@
         <div class="p-4 border-b border-slate-900 flex items-center justify-between">
             <h1 class="text-xs font-bold tracking-wider text-slate-400 uppercase">Workspaces</h1>
             <span class="text-[11px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full border border-slate-700 font-mono">
-                {{ auth()->user()->username ?? auth()->user()->name }}
+                <?php echo e(auth()->user()->username ?? auth()->user()->name); ?>
+
             </span>
         </div>
 
@@ -36,24 +37,25 @@
                 <h2 class="text-[10px] font-bold tracking-wider text-slate-500 uppercase mb-2 flex items-center">
                     <i class="fa-solid fa-earth-americas text-emerald-400 mr-2"></i> Global Communication
                 </h2>
-                @php
+                <?php
                     $isMainBroadcastActive = ($type === 'broadcast' || !$type || $id === 'general') && !request('topic');
-                @endphp
-                <a href="{{ url('/forum-workspace') }}"
+                ?>
+                <a href="<?php echo e(url('/forum-workspace')); ?>"
                    class="flex items-center justify-between px-3 py-2.5 text-xs rounded-md transition-all duration-200 relative group
-                   {{ $isMainBroadcastActive
+                   <?php echo e($isMainBroadcastActive
                        ? 'bg-slate-800 text-white font-bold scale-[1.06] shadow-lg shadow-emerald-500/20 border-l-4 border-emerald-400 pl-2 translate-x-1 z-10'
-                       : 'hover:bg-slate-800 hover:text-white text-slate-400' }}">
+                       : 'hover:bg-slate-800 hover:text-white text-slate-400'); ?>">
                     <div class="flex items-center space-x-2 truncate">
-                        <i class="fa-solid fa-comments {{ $isMainBroadcastActive ? 'text-emerald-400 animate-pulse' : 'text-slate-500 group-hover:text-emerald-400' }} text-sm transition-colors"></i>
+                        <i class="fa-solid fa-comments <?php echo e($isMainBroadcastActive ? 'text-emerald-400 animate-pulse' : 'text-slate-500 group-hover:text-emerald-400'); ?> text-sm transition-colors"></i>
                         <span class="truncate">Main Chat Broadcast</span>
                     </div>
 
-                    @if(isset($mainChatUnread) && $mainChatUnread > 0)
+                    <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if(isset($mainChatUnread) && $mainChatUnread > 0): ?>
                         <span class="bg-red-500 text-white font-bold text-[10px] px-2 py-0.5 rounded-full min-w-[20px] text-center shrink-0 shadow-sm ml-2">
-                            {{ $mainChatUnread }}
+                            <?php echo e($mainChatUnread); ?>
+
                         </span>
-                    @endif
+                    <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                 </a>
             </div>
 
@@ -70,31 +72,33 @@
                 </button>
 
                 <ul x-show="openTopics" x-transition class="space-y-2">
-                    @foreach($topics as $topic)
-                        @php
+                    <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::openLoop(); ?><?php endif; ?><?php $__currentLoopData = $topics; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $topic): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::startLoopIteration(); ?><?php endif; ?>
+                        <?php
                             $isActiveTopic = ($type === 'topic' && $id == $topic->id) || (request('topic') == $topic->id);
-                        @endphp
+                        ?>
                         <li>
-                            <a href="{{ url('/forum-workspace/topic/' . $topic->id) }}"
+                            <a href="<?php echo e(url('/forum-workspace/topic/' . $topic->id)); ?>"
                                class="flex items-center justify-between px-3 py-2.5 text-xs rounded-md transition-all duration-200 relative group
-                               {{ $isActiveTopic
+                               <?php echo e($isActiveTopic
                                    ? 'bg-slate-800 text-white font-bold scale-[1.06] shadow-xl shadow-blue-500/25 border-l-4 border-blue-500 pl-2 translate-x-1 z-10'
-                                   : 'hover:bg-slate-800 hover:text-white text-slate-400' }}">
+                                   : 'hover:bg-slate-800 hover:text-white text-slate-400'); ?>">
                                 <div class="flex items-center space-x-2 truncate">
-                                    <i class="fa-solid fa-book-bookmark {{ $isActiveTopic ? 'text-blue-400 animate-pulse' : 'text-slate-500 group-hover:text-blue-400' }} transition-colors"></i>
+                                    <i class="fa-solid fa-book-bookmark <?php echo e($isActiveTopic ? 'text-blue-400 animate-pulse' : 'text-slate-500 group-hover:text-blue-400'); ?> transition-colors"></i>
                                     <span class="truncate">
-                                        {{ $topic->course_code ?? $topic->title }}
+                                        <?php echo e($topic->course_code ?? $topic->title); ?>
+
                                     </span>
                                 </div>
 
-                                @if(isset($topic->unread_count) && $topic->unread_count > 0)
+                                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if(isset($topic->unread_count) && $topic->unread_count > 0): ?>
                                     <span class="bg-red-500 text-white font-bold text-[10px] px-2 py-0.5 rounded-full min-w-[20px] text-center shrink-0 shadow-sm ml-2">
-                                        {{ $topic->unread_count }}
+                                        <?php echo e($topic->unread_count); ?>
+
                                     </span>
-                                @endif
+                                <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                             </a>
                         </li>
-                    @endforeach
+                    <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::endLoop(); ?><?php endif; ?><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::closeLoop(); ?><?php endif; ?>
                 </ul>
             </div>
 
@@ -104,33 +108,34 @@
                     <i class="fa-solid fa-users text-purple-400 mr-2"></i> Study Groups
                 </h2>
                 <ul class="space-y-2">
-                    @if(isset($sidebarGroups) && count($sidebarGroups) > 0)
-                        @foreach($sidebarGroups as $sGroup)
-                            @php
+                    <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if(isset($sidebarGroups) && count($sidebarGroups) > 0): ?>
+                        <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::openLoop(); ?><?php endif; ?><?php $__currentLoopData = $sidebarGroups; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $sGroup): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::startLoopIteration(); ?><?php endif; ?>
+                            <?php
                                 $isActiveGroup = ($type === 'group' && $id == $sGroup->id);
-                            @endphp
+                            ?>
                             <li>
-                                <a href="{{ url('/forum-workspace/group/' . $sGroup->id) }}"
+                                <a href="<?php echo e(url('/forum-workspace/group/' . $sGroup->id)); ?>"
                                    class="flex items-center justify-between px-3 py-2.5 text-xs rounded-md transition-all duration-200 relative group
-                                   {{ $isActiveGroup
+                                   <?php echo e($isActiveGroup
                                        ? 'bg-slate-800 text-white font-bold scale-[1.06] shadow-xl shadow-purple-500/25 border-l-4 border-purple-500 pl-2 translate-x-1 z-10'
-                                       : 'hover:bg-slate-800 hover:text-white text-slate-400' }}">
+                                       : 'hover:bg-slate-800 hover:text-white text-slate-400'); ?>">
                                     <div class="flex items-center space-x-2 truncate">
-                                        <i class="fa-solid fa-hashtag {{ $isActiveGroup ? 'text-purple-400 animate-pulse' : 'text-slate-500 group-hover:text-purple-400' }} transition-colors"></i>
-                                        <span class="truncate">{{ $sGroup->name }}</span>
+                                        <i class="fa-solid fa-hashtag <?php echo e($isActiveGroup ? 'text-purple-400 animate-pulse' : 'text-slate-500 group-hover:text-purple-400'); ?> transition-colors"></i>
+                                        <span class="truncate"><?php echo e($sGroup->name); ?></span>
                                     </div>
 
-                                    @if(isset($sGroup->unread_count) && $sGroup->unread_count > 0)
+                                    <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if(isset($sGroup->unread_count) && $sGroup->unread_count > 0): ?>
                                         <span class="bg-red-500 text-white font-bold text-[10px] px-2 py-0.5 rounded-full min-w-[20px] text-center shrink-0 shadow-sm ml-2">
-                                            {{ $sGroup->unread_count }}
+                                            <?php echo e($sGroup->unread_count); ?>
+
                                         </span>
-                                    @endif
+                                    <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                                 </a>
                             </li>
-                        @endforeach
-                    @else
+                        <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::endLoop(); ?><?php endif; ?><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::closeLoop(); ?><?php endif; ?>
+                    <?php else: ?>
                         <li class="px-3 py-2 text-[11px] text-slate-600 italic">No joined groups</li>
-                    @endif
+                    <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                 </ul>
             </div>
 
@@ -140,20 +145,20 @@
     <!-- Active Right Side Panel Chat Streams Messaging Core Interface -->
     <div class="flex-1 flex flex-col h-full bg-[#f8fafc] relative">
 
-        @php
+        <?php
             $shareTopicId = null;
             if ($type === 'topic' && $id) {
                 $shareTopicId = $id;
             } elseif (request('topic')) {
                 $shareTopicId = request('topic');
             }
-        @endphp
+        ?>
 
-        @if($shareTopicId && isset($currentStreamTarget) && !($currentStreamTarget->is_broadcast ?? false))
+        <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($shareTopicId && isset($currentStreamTarget) && !($currentStreamTarget->is_broadcast ?? false)): ?>
             <div class="px-8 py-3 border-b border-slate-200 bg-white flex items-center justify-between shrink-0">
                 <div class="flex items-center space-x-2 min-w-0">
                     <i class="fa-solid fa-book-bookmark text-blue-400 shrink-0"></i>
-                    <h2 class="text-sm font-bold text-slate-800 truncate">{{ $currentStreamTarget->title ?? 'Discussion Topic' }}</h2>
+                    <h2 class="text-sm font-bold text-slate-800 truncate"><?php echo e($currentStreamTarget->title ?? 'Discussion Topic'); ?></h2>
                 </div>
 
                 <div class="relative inline-block text-left shrink-0" id="share-wrapper">
@@ -184,67 +189,72 @@
                     </div>
                 </div>
             </div>
-        @endif
+        <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
 
         <div id="chat-messages-container" class="flex-1 overflow-y-auto px-8 py-6 space-y-4 pb-28 scroll-smooth">
-            @if ($errors->any())
+            <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($errors->any()): ?>
                 <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl m-4 shadow-sm flex items-start space-x-2">
                     <i class="fa-solid fa-circle-exclamation mt-0.5 text-red-500"></i>
                     <ul class="list-disc list-inside text-xs font-medium">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
+                        <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::openLoop(); ?><?php endif; ?><?php $__currentLoopData = $errors->all(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $error): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::startLoopIteration(); ?><?php endif; ?>
+                            <li><?php echo e($error); ?></li>
+                        <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::endLoop(); ?><?php endif; ?><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::closeLoop(); ?><?php endif; ?>
                     </ul>
                 </div>
-            @endif
+            <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
 
-            @if(count($messages) > 0)
-                @foreach($messages as $msg)
-                    <div class="flex items-end space-x-3 {{ $msg->user_id === auth()->id() ? 'flex-row-reverse space-x-reverse' : '' }} mb-1"
-                         data-message-id="{{ $msg->id }}"
-                         data-sender="{{ $msg->user_id === auth()->id() ? 'You' : ($msg->user->name ?? 'Unknown') }}"
-                         data-body="{{ $msg->body }}">
+            <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if(count($messages) > 0): ?>
+                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::openLoop(); ?><?php endif; ?><?php $__currentLoopData = $messages; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $msg): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::startLoopIteration(); ?><?php endif; ?>
+                    <div class="flex items-end space-x-3 <?php echo e($msg->user_id === auth()->id() ? 'flex-row-reverse space-x-reverse' : ''); ?> mb-1"
+                         data-message-id="<?php echo e($msg->id); ?>"
+                         data-sender="<?php echo e($msg->user_id === auth()->id() ? 'You' : ($msg->user->name ?? 'Unknown')); ?>"
+                         data-body="<?php echo e($msg->body); ?>">
 
                         <div class="h-9 w-9 rounded-full bg-[#0b1329] text-slate-300 flex items-center justify-center text-xs font-bold shrink-0 shadow">
-                            @if($msg->user_id === auth()->id())
+                            <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($msg->user_id === auth()->id()): ?>
                                 ME
-                            @else
-                                {{ strtoupper(substr($msg->user->name ?? 'U', 0, 2)) }}
-                            @endif
+                            <?php else: ?>
+                                <?php echo e(strtoupper(substr($msg->user->name ?? 'U', 0, 2))); ?>
+
+                            <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                         </div>
 
-                        <div class="flex flex-col max-w-xl {{ $msg->user_id === auth()->id() ? 'items-end' : 'items-start' }}">
+                        <div class="flex flex-col max-w-xl <?php echo e($msg->user_id === auth()->id() ? 'items-end' : 'items-start'); ?>">
                             <div class="relative px-4 py-2.5 shadow-md rounded-xl break-words w-full border
-                                {{ $msg->user_id === auth()->id()
+                                <?php echo e($msg->user_id === auth()->id()
                                     ? 'bg-sky-100 text-slate-900 border-sky-200 rounded-tr-none'
-                                    : 'bg-white text-slate-800 border-slate-100 rounded-tl-none' }}">
+                                    : 'bg-white text-slate-800 border-slate-100 rounded-tl-none'); ?>">
 
-                                @if($msg->user_id !== auth()->id())
+                                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($msg->user_id !== auth()->id()): ?>
                                     <div class="text-[11px] font-bold text-emerald-600 mb-1 tracking-wide uppercase">
-                                        {{ $msg->user->name }}
-                                    </div>
-                                @endif
+                                        <?php echo e($msg->user->name); ?>
 
-                                {{-- WhatsApp-style quoted reply block --}}
-                                @if($msg->replyTo)
+                                    </div>
+                                <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+
+                                
+                                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($msg->replyTo): ?>
                                     <button type="button"
                                             class="quote-jump w-full text-left mb-1.5 pl-2 pr-2 py-1 border-l-4 border-emerald-400 bg-black/5 hover:bg-black/10 rounded-md text-xs transition-colors"
-                                            data-jump-id="{{ $msg->reply_to_message_id }}">
+                                            data-jump-id="<?php echo e($msg->reply_to_message_id); ?>">
                                         <div class="font-bold text-emerald-600 text-[10px] uppercase">
-                                            {{ $msg->replyTo->user_id === auth()->id() ? 'You' : ($msg->replyTo->user->name ?? 'Unknown') }}
+                                            <?php echo e($msg->replyTo->user_id === auth()->id() ? 'You' : ($msg->replyTo->user->name ?? 'Unknown')); ?>
+
                                         </div>
                                         <div class="text-slate-600 truncate max-w-[260px]">
-                                            {{ Str::limit($msg->replyTo->body, 60) }}
+                                            <?php echo e(Str::limit($msg->replyTo->body, 60)); ?>
+
                                         </div>
                                     </button>
-                                @elseif($msg->reply_to_message_id)
+                                <?php elseif($msg->reply_to_message_id): ?>
                                     <div class="mb-1.5 pl-2 pr-2 py-1 border-l-4 border-slate-300 bg-black/5 rounded-md text-xs italic text-slate-400">
                                         Original message deleted
                                     </div>
-                                @endif
+                                <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
 
                                 <div class="pr-14 text-sm font-normal leading-relaxed">
-                                    {{ $msg->body }}
+                                    <?php echo e($msg->body); ?>
+
                                 </div>
 
                                 <div class="mt-2 pt-1 border-t border-slate-200/60 flex items-center justify-between">
@@ -257,18 +267,19 @@
                                 </div>
 
                                 <span class="absolute bottom-1 right-2.5 text-[10px] select-none font-mono
-                                    {{ $msg->user_id === auth()->id() ? 'text-slate-500' : 'text-gray-400' }}">
-                                    {{ $msg->created_at ? $msg->created_at->format('H:i') : now()->format('H:i') }}
-                                    @if($msg->user_id === auth()->id())
+                                    <?php echo e($msg->user_id === auth()->id() ? 'text-slate-500' : 'text-gray-400'); ?>">
+                                    <?php echo e($msg->created_at ? $msg->created_at->format('H:i') : now()->format('H:i')); ?>
+
+                                    <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($msg->user_id === auth()->id()): ?>
                                         <i class="fa-solid fa-check-double text-sky-600 ml-0.5"></i>
-                                    @endif
+                                    <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                                 </span>
                             </div>
                         </div>
 
                     </div>
-                @endforeach
-            @else
+                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::endLoop(); ?><?php endif; ?><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::closeLoop(); ?><?php endif; ?>
+            <?php else: ?>
                 <div id="fallback-empty" class="h-full flex flex-col items-center justify-center text-slate-400 p-8 text-center">
                     <div class="w-16 h-16 rounded-full bg-[#0b1329] flex items-center justify-center shadow mb-4">
                         <i class="fa-solid fa-graduation-cap text-slate-300 text-2xl"></i>
@@ -276,13 +287,13 @@
                     <h2 class="text-sm font-bold text-slate-700">Course Discussion Hub</h2>
                     <p class="text-xs mt-1 max-w-xs text-slate-500">Select a course code thread stream from the menu to open historical records.</p>
                 </div>
-            @endif
+            <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
         </div>
 
         <!-- Sticky Bottom Chat Input Container -->
         <div class="absolute bottom-0 left-0 right-0 p-4 bg-slate-50 border-t border-slate-200 z-10">
-            <form id="chat-form" method="POST" action="{{ route('chat.store', ['type' => $type ?? (request('topic') ? 'topic' : 'broadcast'), 'id' => $id ?? (request('topic') ?: 'general')]) }}" class="flex flex-col space-y-2 max-w-7xl mx-auto">
-                @csrf
+            <form id="chat-form" method="POST" action="<?php echo e(route('chat.store', ['type' => $type ?? (request('topic') ? 'topic' : 'broadcast'), 'id' => $id ?? (request('topic') ?: 'general')])); ?>" class="flex flex-col space-y-2 max-w-7xl mx-auto">
+                <?php echo csrf_field(); ?>
                 <input type="hidden" id="reply_to_message_id" name="reply_to_message_id" value="">
 
                 <!-- Replying State Preview Bar -->
@@ -308,27 +319,28 @@
                         <div id="dropdown-menu" class="hidden absolute bottom-full mb-2 left-0 w-64 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden divide-y divide-slate-100 z-50">
                             <div class="py-1">
                                 <span class="block px-3 py-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider">Filter By Course Code</span>
-                                @foreach($topics as $topic)
-                                    @php
+                                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::openLoop(); ?><?php endif; ?><?php $__currentLoopData = $topics; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $topic): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::startLoopIteration(); ?><?php endif; ?>
+                                    <?php
                                         $isDropdownActive = ($type === 'topic' && $id == $topic->id) || (request('topic') == $topic->id);
-                                    @endphp
-                                    <a href="{{ url('/forum-workspace/topic/' . $topic->id) }}" class="block px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 hover:text-blue-600 truncate {{ $isDropdownActive ? 'bg-blue-50 text-blue-600 font-semibold' : '' }}">
+                                    ?>
+                                    <a href="<?php echo e(url('/forum-workspace/topic/' . $topic->id)); ?>" class="block px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 hover:text-blue-600 truncate <?php echo e($isDropdownActive ? 'bg-blue-50 text-blue-600 font-semibold' : ''); ?>">
                                         <span class="bg-blue-100 text-blue-800 font-mono text-[10px] px-1.5 py-0.5 rounded mr-1.5 border border-blue-200 font-semibold">
-                                            {{ $topic->course_code ?? 'CODE' }}
+                                            <?php echo e($topic->course_code ?? 'CODE'); ?>
+
                                         </span>
-                                        <span class="text-slate-500 text-[11px]">{{ $topic->title }}</span>
+                                        <span class="text-slate-500 text-[11px]"><?php echo e($topic->title); ?></span>
                                     </a>
-                                @endforeach
+                                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::endLoop(); ?><?php endif; ?><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::closeLoop(); ?><?php endif; ?>
                             </div>
                         </div>
                     </div>
 
-                    @if($currentStudent && $currentStudent->status === 'blacklisted')
+                    <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($currentStudent && $currentStudent->status === 'blacklisted'): ?>
                         <div class="flex-1 flex items-center justify-center py-2.5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-medium shadow-sm">
                             <i class="fa-solid fa-circle-exclamation text-red-500 mr-2"></i>
                             <span>Your messaging privileges have been suspended due to inactivity.</span>
                         </div>
-                    @else
+                    <?php else: ?>
                         <div class="flex-1 relative flex items-center">
                             <input type="text" id="message-input" name="body" required autocomplete="off" placeholder="Write an answer or update workspace thread..."
                                    class="w-full text-sm px-4 py-2.5 bg-white rounded-xl focus:outline-none focus:ring-1 focus:ring-slate-800 transition-all text-slate-800 placeholder-slate-400 shadow-sm border border-slate-200">
@@ -337,7 +349,7 @@
                         <button type="submit" id="send-btn" class="w-10 h-10 bg-[#0b1329] hover:bg-slate-800 text-slate-200 rounded-full transition-all shadow active:scale-95 flex items-center justify-center shrink-0">
                             <i class="fa-solid fa-paper-plane text-xs"></i>
                         </button>
-                    @endif
+                    <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
                 </div>
             </form>
         </div>
@@ -347,8 +359,8 @@
 <script type="module">
     const container = document.getElementById('chat-messages-container');
     let fallbackEmpty = document.getElementById('fallback-empty');
-    const currentUserId = {{ auth()->id() }};
-    const currentUserName = "{{ auth()->user()->name }}";
+    const currentUserId = <?php echo e(auth()->id()); ?>;
+    const currentUserName = "<?php echo e(auth()->user()->name); ?>";
 
     // Message cache — lets us show real "replying to" text for live appended messages
     const messageCache = {};
@@ -542,9 +554,9 @@
     // ===============================
     // REVERB / ECHO LISTENER
     // ===============================
-    const queryTopicId = "{{ request('topic') }}";
-    const currentChannelType = queryTopicId ? "topic" : "{{ $type ?? 'broadcast' }}";
-    const currentChannelId = queryTopicId ? queryTopicId : "{{ $id ?? 'general' }}";
+    const queryTopicId = "<?php echo e(request('topic')); ?>";
+    const currentChannelType = queryTopicId ? "topic" : "<?php echo e($type ?? 'broadcast'); ?>";
+    const currentChannelId = queryTopicId ? queryTopicId : "<?php echo e($id ?? 'general'); ?>";
 
     if (window.Echo) {
         window.Echo.channel(`chat.${currentChannelType}.${currentChannelId}`)
@@ -572,9 +584,8 @@
     }
 </script>
 
-{{-- Requirement #12: builds real share links for the currently open topic.
-     Self-contained, doesn't touch any of the chat/websocket logic above. --}}
-@if($shareTopicId && isset($currentStreamTarget) && !($currentStreamTarget->is_broadcast ?? false))
+
+<?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($shareTopicId && isset($currentStreamTarget) && !($currentStreamTarget->is_broadcast ?? false)): ?>
 <script>
 (function() {
     const shareToggle = document.getElementById('share-toggle');
@@ -593,8 +604,8 @@
 
     // Always share the canonical /forum-workspace/topic/{id} URL, regardless
     // of whether this page was reached via that path or via a ?topic= query.
-    const topicUrl = "{{ url('/forum-workspace/topic/' . $shareTopicId) }}";
-    const topicTitle = @json($currentStreamTarget->title ?? 'Discussion Topic');
+    const topicUrl = "<?php echo e(url('/forum-workspace/topic/' . $shareTopicId)); ?>";
+    const topicTitle = <?php echo json_encode($currentStreamTarget->title ?? 'Discussion Topic', 15, 512) ?>;
     const shareText = topicTitle + ' - Join the discussion:';
 
     const shareLinks = {
@@ -629,6 +640,6 @@
     }
 })();
 </script>
-@endif
+<?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
 </body>
-</html>
+</html><?php /**PATH C:\xampp\xam\htdocs\smart-discussion-forum\resources\views/chat/index.blade.php ENDPATH**/ ?>
