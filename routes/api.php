@@ -52,4 +52,8 @@ Route::get('/participation', [ParticipationController::class, 'index']);
     Route::get('/admin/dashboard', [AdminDashboardController::class, 'index']);
 Route::post('/admin/students/{regNo}/activate', [AdminDashboardController::class, 'activateStudent']);
 Route::post('/admin/lecturers', [LecturerController::class, 'store']);
+Route::post('/quizzes/store', [QuizController::class, 'store']);
+Route::get('/resources', [ResourceController::class, 'index']);
+Route::post('/resources', [ResourceController::class, 'store']);
+Route::delete('/resources/{id}', [ResourceController::class, 'destroy']);
 });

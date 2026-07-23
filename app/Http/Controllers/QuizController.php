@@ -169,6 +169,10 @@ class QuizController extends Controller
                           "Ends At: " . Carbon::parse($quiz->expiryTime)->format('M d, Y H:i'),
             ]);
 
+ if ($request->wantsJson()) {
+                return response()->json(['status' => 'success', 'quizID' => $resolvedQuizID]);
+            }
+
             return redirect()->route('lecturer.quizzes.index')->with('success', 'Quiz published and announcement sent successfully!');
         });
     }
@@ -216,113 +220,154 @@ class QuizController extends Controller
     /**
      * 🎓 4. Open a quiz for a student with strict window enforcement
      */
-    public function show($quizID)
-    {
-        $quiz = Quiz::where('quizID', $quizID)->firstOrFail();
-        
-        $userId = Auth::id();
-        if (!$userId) {
-            return redirect('/login')->with('error', 'Please log in to attempt the quiz.');
+   public function show(Request $request, $quizID)
+{
+    $quiz = Quiz::where('quizID', $quizID)->firstOrFail();
+
+    $userId = Auth::id();
+    if (!$userId) {
+        if ($request->wantsJson()) {
+            return response()->json(['error' => 'Please log in to attempt the quiz.'], 401);
         }
-        
-        $student = Student::where('user_id', $userId)->first();
-        $studentRegNo = $student ? $student->regNo : 'USR-' . $userId;
-        $studentCourse = $student ? trim(strtoupper($student->courseCode)) : null;
-        $quizCourse = trim(strtoupper($quiz->courseCode));
-
-        if ($studentCourse && $studentCourse !== $quizCourse) {
-            return redirect('/dashboard')->with('error', 'You are not registered for this course quiz.');
-        }
-
-        $resolvedQuizID = $quiz->quizID;
-
-        // Check time constraints strictly before opening
-        $now = now();
-        $startTime = Carbon::parse($quiz->startTime);
-        $expiryTime = Carbon::parse($quiz->expiryTime);
-
-        if ($now->lessThan($startTime)) {
-            return redirect('/dashboard')->with('error', 'This quiz has not started yet. It opens at ' . $startTime->format('M d, Y H:i'));
-        }
-
-        if ($now->greaterThan($expiryTime)) {
-            return redirect('/dashboard')->with('error', 'This quiz session has already expired.');
-        }
-
-        $submission = DB::table('quiz_submissions')
-            ->where('quizID', $resolvedQuizID)
-            ->where('regNo', $studentRegNo)
-            ->first();
-
-        if ($submission) {
-            $totalQuestionsCount = Question::where('quizID', $resolvedQuizID)->count();
-            return redirect('/dashboard')->with('quiz_result', "Quiz finished! Your score: {$submission->marks} / {$totalQuestionsCount} marks.");
-        }
-
-        $remainingSeconds = $now->diffInSeconds($expiryTime, false);
-        $questions = Question::where('quizID', $resolvedQuizID)->get();
-
-        return view('quizzes.show', compact('quiz', 'questions', 'remainingSeconds'));
+        return redirect('/login')->with('error', 'Please log in to attempt the quiz.');
     }
+
+    $student = Student::where('user_id', $userId)->first();
+    $studentRegNo = $student ? $student->regNo : 'USR-' . $userId;
+    $studentCourse = $student ? trim(strtoupper($student->courseCode)) : null;
+    $quizCourse = trim(strtoupper($quiz->courseCode));
+
+    if ($studentCourse && $studentCourse !== $quizCourse) {
+        if ($request->wantsJson()) {
+            return response()->json(['error' => 'You are not registered for this course quiz.'], 403);
+        }
+        return redirect('/dashboard')->with('error', 'You are not registered for this course quiz.');
+    }
+
+    $resolvedQuizID = $quiz->quizID;
+
+    $now = now();
+    $startTime = Carbon::parse($quiz->startTime);
+    $expiryTime = Carbon::parse($quiz->expiryTime);
+
+    if ($now->lessThan($startTime)) {
+        $msg = 'This quiz has not started yet. It opens at ' . $startTime->format('M d, Y H:i');
+        if ($request->wantsJson()) {
+            return response()->json(['error' => $msg], 403);
+        }
+        return redirect('/dashboard')->with('error', $msg);
+    }
+
+    if ($now->greaterThan($expiryTime)) {
+        if ($request->wantsJson()) {
+            return response()->json(['error' => 'This quiz session has already expired.'], 403);
+        }
+        return redirect('/dashboard')->with('error', 'This quiz session has already expired.');
+    }
+
+    $submission = DB::table('quiz_submissions')
+        ->where('quizID', $resolvedQuizID)
+        ->where('regNo', $studentRegNo)
+        ->first();
+
+    if ($submission) {
+        $totalQuestionsCount = Question::where('quizID', $resolvedQuizID)->count();
+        $msg = "Quiz finished! Your score: {$submission->marks} / {$totalQuestionsCount} marks.";
+        if ($request->wantsJson()) {
+            return response()->json(['error' => $msg, 'already_submitted' => true, 'score' => $submission->marks, 'total' => $totalQuestionsCount], 409);
+        }
+        return redirect('/dashboard')->with('quiz_result', $msg);
+    }
+
+    $remainingSeconds = $now->diffInSeconds($expiryTime, false);
+    $questions = Question::where('quizID', $resolvedQuizID)->get();
+
+    if ($request->wantsJson()) {
+        // Strip correct_option so the client can't just read the answer key
+        $safeQuestions = $questions->map(function ($q) {
+            return [
+                'id' => $q->id,
+                'question_text' => $q->question_text,
+                'option_a' => $q->option_a,
+                'option_b' => $q->option_b,
+                'option_c' => $q->option_c,
+                'option_d' => $q->option_d,
+            ];
+        });
+        return response()->json(compact('quiz', 'remainingSeconds') + ['questions' => $safeQuestions]);
+    }
+
+    return view('quizzes.show', compact('quiz', 'questions', 'remainingSeconds'));
+}
 
     /**
      * 🎓 5. Process and Grade Quiz Submissions
      */
-    public function submit(Request $request, $quizID)
-    {
-        $quiz = Quiz::where('quizID', $quizID)->firstOrFail();
-        $resolvedQuizID = $quiz->quizID;
-        
-        $userId = Auth::id();
-        if (!$userId) {
-            return redirect('/login')->with('error', 'Session expired.');
+   public function submit(Request $request, $quizID)
+{
+    $quiz = Quiz::where('quizID', $quizID)->firstOrFail();
+    $resolvedQuizID = $quiz->quizID;
+
+    $userId = Auth::id();
+    if (!$userId) {
+        if ($request->wantsJson()) {
+            return response()->json(['error' => 'Session expired.'], 401);
         }
-
-        $student = Student::where('user_id', $userId)->first();
-        $studentRegNo = $student ? $student->regNo : 'USR-' . $userId;
-        
-        $existingSubmission = DB::table('quiz_submissions')
-            ->where('quizID', $resolvedQuizID)
-            ->where('regNo', $studentRegNo)
-            ->exists();
-
-        if ($existingSubmission) {
-            return redirect('/dashboard')->with('error', 'Submission already registered.');
-        }
-
-        $questions = Question::where('quizID', $resolvedQuizID)->get();
-        $expiryTime = Carbon::parse($quiz->expiryTime);
-        $now = now();
-
-        $studentAnswers = $request->input('answers', []);
-        $correctCount = 0;
-
-        foreach ($questions as $question) {
-            $questionKey = $question->id; 
-            $studentChoice = $studentAnswers[$questionKey] ?? null;
-            if ($studentChoice !== null && strtoupper($studentChoice) === strtoupper($question->correct_option)) {
-                $correctCount++;
-            }
-        }
-
-        $isAutoSubmit = $request->input('auto_submit', 0);
-
-        DB::table('quiz_submissions')->insert([
-            'regNo'         => $studentRegNo,
-            'quizID'        => $resolvedQuizID,
-            'marks'         => $correctCount,
-            'timeSubmitted' => $now,
-            'autoSubmit'    => $isAutoSubmit,
-            'created_at'    => $now,
-            'updated_at'    => $now,
-        ]);
-
-        if ($isAutoSubmit == 1 || $now->greaterThanOrEqualTo($expiryTime)) {
-            return redirect('/dashboard')->with('quiz_result', "Quiz saved. Score: {$correctCount} / " . $questions->count());
-        }
-
-        return redirect('/dashboard')->with('success', "Quiz submitted successfully!");
+        return redirect('/login')->with('error', 'Session expired.');
     }
+
+    $student = Student::where('user_id', $userId)->first();
+    $studentRegNo = $student ? $student->regNo : 'USR-' . $userId;
+
+    $existingSubmission = DB::table('quiz_submissions')
+        ->where('quizID', $resolvedQuizID)
+        ->where('regNo', $studentRegNo)
+        ->exists();
+
+    if ($existingSubmission) {
+        if ($request->wantsJson()) {
+            return response()->json(['error' => 'Submission already registered.'], 409);
+        }
+        return redirect('/dashboard')->with('error', 'Submission already registered.');
+    }
+
+    $questions = Question::where('quizID', $resolvedQuizID)->get();
+    $expiryTime = Carbon::parse($quiz->expiryTime);
+    $now = now();
+
+    $studentAnswers = $request->input('answers', []);
+    $correctCount = 0;
+
+    foreach ($questions as $question) {
+        $questionKey = (string) $question->id;
+        $studentChoice = $studentAnswers[$questionKey] ?? null;
+        if ($studentChoice !== null && strtoupper($studentChoice) === strtoupper($question->correct_option)) {
+            $correctCount++;
+        }
+    }
+
+    $isAutoSubmit = $request->input('auto_submit', 0);
+
+    DB::table('quiz_submissions')->insert([
+        'regNo'         => $studentRegNo,
+        'quizID'        => $resolvedQuizID,
+        'marks'         => $correctCount,
+        'timeSubmitted' => $now,
+        'autoSubmit'    => $isAutoSubmit,
+        'created_at'    => $now,
+        'updated_at'    => $now,
+    ]);
+
+    if ($request->wantsJson()) {
+        return response()->json(['status' => 'success', 'score' => $correctCount, 'total' => $questions->count()]);
+    }
+
+    if ($isAutoSubmit == 1 || $now->greaterThanOrEqualTo($expiryTime)) {
+        return redirect('/dashboard')->with('quiz_result', "Quiz saved. Score: {$correctCount} / " . $questions->count());
+    }
+
+    return redirect('/dashboard')->with('success', "Quiz submitted successfully!");
+}
 
     /**
      * 👨‍🏫 6. View Gradebook for an Individual Quiz
@@ -366,29 +411,33 @@ class QuizController extends Controller
     /**
      * 🎓 8. Render Personal Performance Grade Sheets for Students
      */
-    public function viewStudentGrades()
-    {
-        $userId = Auth::id();
-        if (!$userId) {
-            return redirect('/login')->with('error', 'Please log in to check grades.');
-        }
-
-        $student = Student::where('user_id', $userId)->first();
-        $studentRegNo = $student ? $student->regNo : 'USR-' . $userId;
-
-        $grades = DB::table('quiz_submissions')
-            ->join('quizzes', 'quiz_submissions.quizID', '=', 'quizzes.quizID')
-            ->where('quiz_submissions.regNo', $studentRegNo)
-            ->select(
-                'quizzes.title as quiz_title',
-                'quizzes.courseCode',
-                'quiz_submissions.marks as score',
-                'quiz_submissions.timeSubmitted',
-                DB::raw('(SELECT COUNT(*) FROM questions WHERE questions.quizID = quizzes.quizID) as total_questions')
-            )
-            ->orderBy('quiz_submissions.timeSubmitted', 'desc')
-            ->get();
-
-        return view('quizzes.student_marks', compact('grades'));
+    public function viewStudentGrades(Request $request)
+{
+    $userId = Auth::id();
+    if (!$userId) {
+        return redirect('/login')->with('error', 'Please log in to check grades.');
     }
+
+    $student = Student::where('user_id', $userId)->first();
+    $studentRegNo = $student ? $student->regNo : 'USR-' . $userId;
+
+    $grades = DB::table('quiz_submissions')
+        ->join('quizzes', 'quiz_submissions.quizID', '=', 'quizzes.quizID')
+        ->where('quiz_submissions.regNo', $studentRegNo)
+        ->select(
+            'quizzes.title as quiz_title',
+            'quizzes.courseCode',
+            'quiz_submissions.marks as score',
+            'quiz_submissions.timeSubmitted',
+            DB::raw('(SELECT COUNT(*) FROM questions WHERE questions.quizID = quizzes.quizID) as total_questions')
+        )
+        ->orderBy('quiz_submissions.timeSubmitted', 'desc')
+        ->get();
+
+    if ($request->wantsJson()) {
+        return response()->json(compact('grades'));
+    }
+
+    return view('quizzes.student_marks', compact('grades'));
+}
 }

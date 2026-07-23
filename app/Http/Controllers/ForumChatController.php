@@ -395,3 +395,4 @@ class ForumChatController extends Controller
         return back();
     }
 }
+}

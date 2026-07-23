@@ -14,76 +14,73 @@ class ResourceController extends Controller
     /**
      * Display a listing of resources uploaded by the lecturer along with the upload form.
      */
-    public function index()
-    {
-        $userId = Auth::id();
-        
-        // Dynamically find or generate a lecturer record for the authenticated user
-        $lecturer = Lecturer::firstOrCreate(
-            ['user_id' => $userId],
-            [
-                'staffNo' => 'STAFF-' . strtoupper(uniqid()), 
-                'name' => Auth::user()->name ?? 'Lecturer'
-            ]
-        );
-        $staffNo = $lecturer->staffNo;
+   public function index(Request $request)
+{
+    $userId = Auth::id();
 
-        // Retrieve resources belonging to this specific lecturer
-        $resources = Resource::where('staffNo', $staffNo)->orderBy('created_at', 'desc')->get();
+    $lecturer = Lecturer::firstOrCreate(
+        ['user_id' => $userId],
+        ['staffNo' => 'STAFF-' . strtoupper(uniqid()), 'name' => Auth::user()->name ?? 'Lecturer']
+    );
+    $staffNo = $lecturer->staffNo;
 
-        return view('resources.index', compact('resources'));
+    $resources = Resource::where('staffNo', $staffNo)->orderBy('created_at', 'desc')->get();
+
+    if ($request->wantsJson()) {
+        return response()->json(compact('resources'));
     }
 
-    /**
-     * Process and securely upload a new learning resource file.
-     */
-    public function store(Request $request)
-    {
-        $userId = Auth::id();
-        
-        // Dynamically find or generate a lecturer record for the authenticated user
-        $lecturer = Lecturer::firstOrCreate(
-            ['user_id' => $userId],
-            [
-                'staffNo' => 'STAFF-' . strtoupper(uniqid()), 
-                'name' => Auth::user()->name ?? 'Lecturer'
-            ]
-        );
-        $staffNo = $lecturer->staffNo;
+    return view('resources.index', compact('resources'));
+}
 
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'courseCode' => 'required|string|max:50',
-            'file' => 'required|file|mimes:pdf,doc,docx,ppt,pptx,zip,png,jpg,jpeg|max:20480', // Max 20MB
+public function store(Request $request)
+{
+    $userId = Auth::id();
+
+    $lecturer = Lecturer::firstOrCreate(
+        ['user_id' => $userId],
+        ['staffNo' => 'STAFF-' . strtoupper(uniqid()), 'name' => Auth::user()->name ?? 'Lecturer']
+    );
+    $staffNo = $lecturer->staffNo;
+
+    $validated = $request->validate([
+        'title' => 'required|string|max:255',
+        'courseCode' => 'required|string|max:50',
+        'file' => 'required|file|mimes:pdf,doc,docx,ppt,pptx,zip,png,jpg,jpeg|max:20480',
+    ]);
+
+    if ($request->hasFile('file')) {
+        $file = $request->file('file');
+        $path = $file->store('resources', 'public');
+
+        $resource = Resource::create([
+            'staffNo' => $staffNo,
+            'courseCode' => strtoupper($validated['courseCode']),
+            'title' => $validated['title'],
+            'file_name' => $file->getClientOriginalName(),
+            'file_path' => $path,
+            'file_type' => $file->getClientOriginalExtension(),
         ]);
 
-        if ($request->hasFile('file')) {
-            $file = $request->file('file');
-            // Store file securely in the 'public/resources' directory
-            $path = $file->store('resources', 'public');
+        Announcement::create([
+            'title' => 'New Resource: ' . $validated['title'],
+            'courseCode' => strtoupper($validated['courseCode']),
+            'message' => "A new learning resource has been published for your course.<br><a href='" . asset('storage/' . $path) . "' class='btn btn-sm btn-primary mt-2' download>Download " . htmlspecialchars($validated['title']) . "</a>",
+        ]);
 
-            Resource::create([
-                'staffNo' => $staffNo,
-                'courseCode' => strtoupper($validated['courseCode']),
-                'title' => $validated['title'],
-                'file_name' => $file->getClientOriginalName(),
-                'file_path' => $path,
-                'file_type' => $file->getClientOriginalExtension(),
-            ]);
-
-            // Automatically create a student announcement with the download link
-            Announcement::create([
-                'title' => 'New Resource: ' . $validated['title'],
-                'courseCode' => strtoupper($validated['courseCode']),
-                'message' => "A new learning resource has been published for your course.<br><a href='" . asset('storage/' . $path) . "' class='btn btn-sm btn-primary mt-2' download>Download " . htmlspecialchars($validated['title']) . "</a>",
-            ]);
-
-            return redirect()->back()->with('success', 'Learning resource uploaded and broadcasted as an announcement successfully!');
+        if ($request->wantsJson()) {
+            return response()->json(['status' => 'success', 'resource' => $resource]);
         }
 
-        return redirect()->back()->with('error', 'File upload failed.');
+        return redirect()->back()->with('success', 'Learning resource uploaded and broadcasted as an announcement successfully!');
     }
 
+    if ($request->wantsJson()) {
+        return response()->json(['error' => 'File upload failed.'], 422);
+    }
+
+    return redirect()->back()->with('error', 'File upload failed.');
+}
     /**
      * Remove the resource file from storage and delete the database entry.
      */

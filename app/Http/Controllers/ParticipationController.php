@@ -104,6 +104,7 @@ class ParticipationController extends Controller
             'totalParticipationScore', 
             'maxPossibleMarks',
             'currentTab'
+            
         );
  if ($request->wantsJson()) {
         return response()->json($data);
