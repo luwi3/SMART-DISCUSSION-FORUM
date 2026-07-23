@@ -178,40 +178,67 @@ class QuizController extends Controller
     }
 
     /**
-     * 👨‍🏫 3b. Bulk Import Questions directly onto an Existing Quiz via spreadsheet
+     * 👨‍🏫 3b. Bulk Import Questions directly onto an Existing Quiz with Review Step
      */
     public function importCSV(Request $request, $quizID)
     {
+        $quiz = Quiz::where('quizID', $quizID)->firstOrFail();
+        $resolvedQuizID = $quiz->quizID;
+
+        // Step 2: Save Confirmed & Reviewed Questions
+        if ($request->isMethod('post') && $request->has('confirmed_questions')) {
+            $questions = json_decode($request->input('confirmed_questions'), true);
+
+            if (!is_array($questions) || empty($questions)) {
+                return redirect()->back()->with('error', 'No valid questions found to import.');
+            }
+
+            $insertedCount = 0;
+            foreach ($questions as $row) {
+                if (empty($row['text'])) continue;
+
+                Question::create([
+                    'quizID'         => $resolvedQuizID,
+                    'question_text'  => $row['text'],
+                    'option_a'       => $row['a'] ?? '',
+                    'option_b'       => $row['b'] ?? '',
+                    'option_c'       => $row['c'] ?? '',
+                    'option_d'       => $row['d'] ?? '',
+                    'correct_option' => strtoupper(trim($row['correct'] ?? 'A')),
+                ]);
+                $insertedCount++;
+            }
+
+            return redirect()->route('lecturer.quizzes.index')
+                ->with('success', "Successfully reviewed and imported {$insertedCount} questions!");
+        }
+
+        // Step 1: Upload CSV and Parse Questions for Review View
         $request->validate([
             'csv_file' => 'required|file|mimes:csv,txt|max:2048',
         ]);
 
-        $quiz = Quiz::where('quizID', $quizID)->firstOrFail();
-        $resolvedQuizID = $quiz->quizID;
-
         $filePath = $request->file('csv_file')->getRealPath();
         if (($handle = fopen($filePath, 'r')) !== FALSE) {
             fgetcsv($handle, 1000, ','); // Skip header row
-            $insertedCount = 0;
+            $parsedQuestions = [];
 
             while (($row = fgetcsv($handle, 1000, ',')) !== FALSE) {
                 if (empty($row[0])) continue;
 
-                Question::create([
-                    'quizID'         => $resolvedQuizID,
-                    'question_text'  => $row[0],
-                    'option_a'       => $row[1],
-                    'option_b'       => $row[2],
-                    'option_c'       => $row[3],
-                    'option_d'       => $row[4],
-                    'correct_option' => strtoupper(trim($row[5])),
-                ]);
-                $insertedCount++;
+                $parsedQuestions[] = [
+                    'text'    => $row[0],
+                    'a'       => $row[1] ?? '',
+                    'b'       => $row[2] ?? '',
+                    'c'       => $row[3] ?? '',
+                    'd'       => $row[4] ?? '',
+                    'correct' => strtoupper(trim($row[5] ?? 'A')),
+                ];
             }
             fclose($handle);
 
-            return redirect()->route('lecturer.quizzes.index')
-                ->with('success', "Successfully imported {$insertedCount} questions!");
+            // Return to review blade before inserting into DB
+            return view('quizzes.review_csv', compact('quiz', 'parsedQuestions'));
         }
 
         return redirect()->back()->with('error', 'Failed to open CSV.');
@@ -390,14 +417,16 @@ class QuizController extends Controller
     }
 
     /**
-     * 💻 7. Render Student Dashboard with Active Evaluation Stream Arrays
+     * 💻 7. Render Student Dashboard with Active Evaluation Stream Arrays & Lockdown Control
      */
     public function dashboard()
     {
         $userId = Auth::id();
         $student = $userId ? Student::where('user_id', $userId)->first() : null;
-        $studentCourse = $student ? $student->courseCode : null;
+        $studentRegNo = $student ? $student->regNo : 'USR-' . $userId;
+        $studentCourse = $student ? trim(strtoupper($student->courseCode)) : null;
 
+        // Fetch all current active quizzes for the student's course
         $activeQuizzes = Quiz::when($studentCourse, function ($query, $course) {
                 return $query->where('courseCode', $course);
             })
@@ -405,7 +434,19 @@ class QuizController extends Controller
             ->where('expiryTime', '>=', now())
             ->get();
 
-        return view('dashboards.student', compact('activeQuizzes'));
+        // Identify active quizzes that the student has NOT completed yet
+        $unsubmittedQuizzes = $activeQuizzes->filter(function ($quiz) use ($studentRegNo) {
+            return !DB::table('quiz_submissions')
+                ->where('quizID', $quiz->quizID)
+                ->where('regNo', $studentRegNo)
+                ->exists();
+        });
+
+        // Lockdown flags to freeze student dashboard when an active quiz is pending
+        $hasActiveQuiz = $unsubmittedQuizzes->isNotEmpty();
+        $pendingQuiz = $unsubmittedQuizzes->first();
+
+        return view('dashboards.student', compact('activeQuizzes', 'unsubmittedQuizzes', 'hasActiveQuiz', 'pendingQuiz'));
     }
 
     /**
