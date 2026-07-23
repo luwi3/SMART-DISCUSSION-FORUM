@@ -71,7 +71,7 @@ Route::get('/notifications', [NotificationController::class, 'index'])
 
 // 🎓 Student Dashboard Route
 Route::get('/student/dashboard', [ParticipationController::class, 'studentDashboard'])
-    ->middleware(['auth', 'verified'])
+    ->middleware(['auth', 'verified', 'no.active.quiz'])
     ->name('student.dashboard');
 
 // 👨‍🏫 Lecturer Dashboard Route
@@ -99,10 +99,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 
+// 🔄 Lightweight polling endpoint so the dashboard can detect a quiz going
+// live without the student needing to refresh manually. Deliberately kept
+// OUTSIDE the no.active.quiz group — it must always return JSON, never redirect.
+Route::get('/student/lock-status', [ParticipationController::class, 'lockStatus'])
+    ->middleware('auth')
+    ->name('student.lock-status');
+
+
 // ==========================================
 // 4. AUTHENTICATED CORE FEATURES GROUP
 // ==========================================
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'no.active.quiz'])->group(function () {
     
     // 👤 User Profile Management
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

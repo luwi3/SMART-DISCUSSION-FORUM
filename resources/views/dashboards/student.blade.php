@@ -98,6 +98,16 @@
         .detail-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; border-radius: 8px; }
         .detail-label { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 6px; }
         .detail-value { font-size: 15px; font-weight: 700; color: #0f172a; }
+
+        /* Quiz Lockdown Overlay */
+        .lockdown-wrapper { width: 100%; min-height: 80vh; display: flex; align-items: center; justify-content: center; background: #0a1931; border-radius: 16px; margin: 20px; padding: 20px; position: relative; overflow: hidden; }
+        .lockdown-glow { position: absolute; right: -60px; bottom: -60px; font-size: 220px; opacity: 0.06; color: white; }
+        .lockdown-card { max-width: 480px; text-align: center; color: white; z-index: 1; }
+        .lockdown-icon { width: 64px; height: 64px; margin: 0 auto 18px; background: rgba(245,158,11,0.15); color: #f59e0b; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; }
+        .lockdown-title { font-size: 22px; font-weight: 800; margin-bottom: 12px; }
+        .lockdown-body { font-size: 13px; color: #94a3b8; line-height: 1.6; margin-bottom: 26px; }
+        .lockdown-btn { display: block; width: 100%; padding: 14px; background: #2563eb; color: white; border-radius: 10px; font-weight: 700; font-size: 14px; text-decoration: none; transition: background 0.2s; }
+        .lockdown-btn:hover { background: #1d4ed8; }
     </style>
 </head>
 <body>
@@ -112,23 +122,57 @@
     <div class="top-brand-bar">
         <span>SMART DISCUSSION FORUM</span>
 
-        <a href="{{ route('student.dashboard', ['tab' => 'notifications']) }}" id="notification-dropdown" style="position: relative; display: inline-block; text-decoration: none;">
-            <button type="button" style="background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; position: relative;">
-                <svg style="width: 22px; height: 22px; stroke: #94a3b8; fill: none; transition: stroke 0.2s;" onmouseover="this.style.stroke='#ffffff'" onmouseout="this.style.stroke='#94a3b8'" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
-                </svg>
-                <span id="notification-count" style="position: absolute; top: -2px; right: -2px; background: #ef4444; color: white; border-radius: 9999px; padding: 2px 6px; font-size: 9px; font-weight: bold; line-height: 1; display: {{ $initialUnread > 0 ? 'inline-block' : 'none' }};">
-                    {{ $initialUnread }}
-                </span>
-            </button>
-        </a>
+        @unless($activeQuiz ?? null)
+            <a href="{{ route('student.dashboard', ['tab' => 'notifications']) }}" id="notification-dropdown" style="position: relative; display: inline-block; text-decoration: none;">
+                <button type="button" style="background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; position: relative;">
+                    <svg style="width: 22px; height: 22px; stroke: #94a3b8; fill: none; transition: stroke 0.2s;" onmouseover="this.style.stroke='#ffffff'" onmouseout="this.style.stroke='#94a3b8'" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                    </svg>
+                    <span id="notification-count" style="position: absolute; top: -2px; right: -2px; background: #ef4444; color: white; border-radius: 9999px; padding: 2px 6px; font-size: 9px; font-weight: bold; line-height: 1; display: {{ $initialUnread > 0 ? 'inline-block' : 'none' }};">
+                        {{ $initialUnread }}
+                    </span>
+                </button>
+            </a>
+        @endunless
     </div>
 
     <div class="workspace-layout">
+    @if($activeQuiz ?? null)
+        {{-- ============================================================ --}}
+        {{-- LOCKED QUIZ MODE: sidebar & main content replaced entirely.  --}}
+        {{-- Server-side middleware (EnsureNoActiveQuiz) enforces this on --}}
+        {{-- every other route too — this view lock is the visual layer. --}}
+        {{-- ============================================================ --}}
+        <div class="lockdown-wrapper">
+            <div class="lockdown-glow">🔒</div>
+            <div class="lockdown-card">
+                <div class="lockdown-icon">⚠️</div>
+                <h1 class="lockdown-title">Active Assessment in Progress</h1>
+                <p class="lockdown-body">
+                    You have an ongoing quiz: <strong style="color:white;">{{ $activeQuiz->title }}</strong>.
+                    All forum discussions, workspace chats, and dashboard tools are temporarily locked until you complete and submit this assessment.
+                </p>
+                <a href="{{ route('quizzes.show', ['quizID' => $activeQuiz->quizID]) }}" class="lockdown-btn">
+                    ✍️ Return to Active Quiz
+                </a>
+
+                <form method="POST" action="{{ route('logout') }}" style="margin-top: 18px;">
+                    @csrf
+                    <button type="submit" style="background: none; border: none; color: #f43f5e; font-weight: 700; font-size: 13px; cursor: pointer;">
+                        Logout instead
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    @else
+        {{-- ============================================================ --}}
+        {{-- NORMAL DASHBOARD MODE                                        --}}
+        {{-- ============================================================ --}}
         <aside class="sidebar">
             <ul class="sidebar-menu">
-                <li class="menu-item {{ (!isset($currentTab) || $currentTab === 'main') ? 'active' : '' }}">
-                    <a href="{{ route('student.dashboard', ['tab' => 'main']) }}">Main Menu</a>
+                <li class="menu-item {{ (!isset($currentTab) || $currentTab === 'dashboard') ? 'active' : '' }}">
+                    <a href="{{ route('student.dashboard', ['tab' => 'dashboard']) }}">Main Menu</a>
                 </li>
                 <li class="menu-item {{ (isset($currentTab) && $currentTab === 'profile') ? 'active' : '' }}">
                     <a href="{{ route('student.dashboard', ['tab' => 'profile']) }}">Profile</a>
@@ -211,7 +255,7 @@
                 <div class="content-panel">
                     <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center;">
                         <span>👤 Student Profile & Account Details</span>
-                        <a href="{{ route('student.dashboard', ['tab' => 'main']) }}" style="font-size: 13px; background: #e2e8f0; color: #334155; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-weight: 600;">← Main Menu</a>
+                        <a href="{{ route('student.dashboard', ['tab' => 'dashboard']) }}" style="font-size: 13px; background: #e2e8f0; color: #334155; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-weight: 600;">← Main Menu</a>
                     </div>
 
                     <div class="details-grid">
@@ -247,7 +291,7 @@
                 <div class="content-panel">
                     <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center;">
                         <span>📢 All Department Announcements</span>
-                        <a href="{{ route('student.dashboard', ['tab' => 'main']) }}" style="font-size: 13px; background: #e2e8f0; color: #334155; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-weight: 600;">← Main Menu</a>
+                        <a href="{{ route('student.dashboard', ['tab' => 'dashboard']) }}" style="font-size: 13px; background: #e2e8f0; color: #334155; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-weight: 600;">← Main Menu</a>
                     </div>
 
                     <div class="feed-list" style="margin-top: 20px;">
@@ -273,7 +317,7 @@
                 <div class="content-panel" style="max-width: 100%;">
                     <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center;">
                         <span>🔔 Alert Logs</span>
-                        <a href="{{ route('student.dashboard', ['tab' => 'main']) }}" style="font-size: 13px; background: #e2e8f0; color: #334155; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-weight: 600;">← Main Menu</a>
+                        <a href="{{ route('student.dashboard', ['tab' => 'dashboard']) }}" style="font-size: 13px; background: #e2e8f0; color: #334155; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-weight: 600;">← Main Menu</a>
                     </div>
                     <p style="color: #64748b; font-size: 14px; margin: 12px 0 20px;">Review your recent forum updates and alerts below.</p>
 
@@ -386,9 +430,9 @@
                             @if(isset($activeQuizzes) && count($activeQuizzes) > 0)
                                 <p style="color: #10b981; font-size: 14px; margin-bottom: 15px; font-weight: 600;">✅ Your registered course streams have active evaluation windows open.</p>
 
-                                @foreach($activeQuizzes as $activeQuiz)
+                                @foreach($activeQuizzes as $quizItem)
                                     @php
-                                        $currentQuizId = $activeQuiz->quizID ?? $activeQuiz->id;
+                                        $currentQuizId = $quizItem->quizID ?? $quizItem->id;
 
                                         $hasCompleted = isset($completedQuizzes) && $completedQuizzes->contains(function($completed) use ($currentQuizId) {
                                             return ($completed->quizID ?? $completed->id) == $currentQuizId;
@@ -397,8 +441,8 @@
 
                                     <div class="list-row-item">
                                         <div class="item-info-meta">
-                                            <span class="item-info-title">{{ $activeQuiz->title }}</span>
-                                            <span class="item-info-badge">{{ $activeQuiz->courseCode }} • {{ $activeQuiz->duration }} Mins</span>
+                                            <span class="item-info-title">{{ $quizItem->title }}</span>
+                                            <span class="item-info-badge">{{ $quizItem->courseCode }} • {{ $quizItem->duration }} Mins</span>
                                         </div>
 
                                         @if($hasCompleted)
@@ -457,8 +501,10 @@
                 </div>
             @endif
         </main>
+    @endif
     </div>
 
+    @unless($activeQuiz ?? null)
     <script>
         function clearBadgesInstantaneously() {
             const topBadge = document.getElementById('notification-count');
@@ -485,15 +531,28 @@
             const topBadge = document.getElementById('notification-count');
             const sidebarBadge = document.getElementById('sidebar-badge-counter');
             const logsContainer = document.getElementById('live-notifications-list');
-            const currentTab = "{{ $currentTab ?? 'main' }}";
+            const currentTab = "{{ $currentTab ?? 'dashboard' }}";
 
             let unreadCount = parseInt("{{ $initialUnread }}") || 0;
 
-            // Loaded directly onto the Notifications tab - mark them read now,
-            // same behavior the old JS-toggle version had on switching tabs.
             if (currentTab === 'notifications') {
                 clearBadgesInstantaneously();
             }
+
+            // 🔄 Poll every 20s so a quiz going live locks the dashboard
+            // automatically, without the student needing to refresh.
+            setInterval(function () {
+                fetch("{{ route('student.lock-status') }}", {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.locked && data.redirect_url) {
+                        window.location.href = data.redirect_url;
+                    }
+                })
+                .catch(err => console.error('Lock status check failed:', err));
+            }, 20000);
 
             if (userId && typeof Echo !== 'undefined') {
                 Echo.private(`App.Models.User.${userId}`)
@@ -544,5 +603,6 @@
             }
         });
     </script>
+    @endunless
 </body>
 </html>
