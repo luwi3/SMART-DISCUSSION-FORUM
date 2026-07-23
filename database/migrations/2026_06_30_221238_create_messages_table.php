@@ -18,7 +18,7 @@ return new class extends Migration
             
             // These are nullable because a message belongs to EITHER a group, a topic, OR neither (Global Broadcast)
             $table->foreignId('topic_id')->nullable()->constrained()->onDelete('cascade');
-           // $table->foreignId('group_id')->nullable()->constrained()->onDelete('cascade');
+           
             
             $table->timestamps();
         });
