@@ -17,50 +17,42 @@ class ParticipationController extends Controller
     /**
      * 👨‍🏫 Display the dynamic, system-automated Topic Participation Grade Matrix for Lecturers.
      */
-    public function index()
-    {
-        // 1. Fetch all active topics ordered by creation date
-        $topics = Topic::orderBy('created_at', 'asc')->get();
+   public function index(Request $request)
+{
+    $topics = Topic::orderBy('created_at', 'asc')->get();
 
-        // 2. 🛡️ STRICT WHITELIST: Only pull users whose role column is exactly 'student'
-        $students = User::where('role', 'student')
-                        ->orderBy('name', 'asc')
-                        ->get();
+    $students = User::where('role', 'student')
+                    ->orderBy('name', 'asc')
+                    ->get();
 
-        // 3. Map student message metrics directly into a look-up grid matrix layout
-        $matrix = [];
-        
-        foreach ($students as $student) {
-            foreach ($topics as $topic) {
-                // Count rows using your exact message database keys
-                $messageCount = Message::where('topic_id', $topic->id)
-                                       ->where('user_id', $student->id)
-                                       ->count();
+    $matrix = [];
 
-                // 🧮 SYSTEM ALGORITHM: Each reply adds 2 points, capped at 20 marks total per topic
-                $calculatedScore = $messageCount * 2; 
-                if ($calculatedScore > 20) {
-                    $calculatedScore = 20; 
-                }
+    foreach ($students as $student) {
+        foreach ($topics as $topic) {
+            $messageCount = Message::where('topic_id', $topic->id)
+                                   ->where('user_id', $student->id)
+                                   ->count();
 
-                $matrix[$student->id][$topic->id] = $calculatedScore;
-
-                // Sync data down to your persistent tracking table
-                TopicParticipation::updateOrCreate(
-                    [
-                        'topic_id' => $topic->id,
-                        'user_id'  => $student->id
-                    ],
-                    [
-                        'marks_earned' => $calculatedScore
-                    ]
-                );
+            $calculatedScore = $messageCount * 2;
+            if ($calculatedScore > 20) {
+                $calculatedScore = 20;
             }
-        }
 
-        return view('participation.index', compact('topics', 'students', 'matrix'));
+            $matrix[$student->id][$topic->id] = $calculatedScore;
+
+            TopicParticipation::updateOrCreate(
+                ['topic_id' => $topic->id, 'user_id' => $student->id],
+                ['marks_earned' => $calculatedScore]
+            );
+        }
     }
 
+    if ($request->wantsJson()) {
+        return response()->json(compact('topics', 'students', 'matrix'));
+    }
+
+    return view('participation.index', compact('topics', 'students', 'matrix'));
+}
     /**
      * 🎓 Render Student Dashboard with synchronized Forum Participation Marks & Dynamic Tabs
      */
@@ -105,11 +97,13 @@ class ParticipationController extends Controller
             ->get();
 
         $completedQuizzes = collect(); 
+        $currentTab = $request->query('tab', 'main');
         $data=compact(
             'activeQuizzes', 
             'completedQuizzes',
             'totalParticipationScore', 
-            'maxPossibleMarks'
+            'maxPossibleMarks',
+            'currentTab'
         );
  if ($request->wantsJson()) {
         return response()->json($data);

@@ -18,11 +18,13 @@ class QuizController extends Controller
     /**
      * 👨‍🏫 1. Render the clean main Lecturer Dashboard workspace.
      */
-    public function lecturerDashboard()
-    {
-        return view('dashboards.lecturer');
+    public function lecturerDashboard(Request $request)
+{
+    if ($request->wantsJson()) {
+        return response()->json(['status' => 'ok']);
     }
-
+    return view('dashboards.lecturer');
+}
     /**
      * 👨‍🏫 1b. Display the master Quiz List alongside Student Marks.
      */

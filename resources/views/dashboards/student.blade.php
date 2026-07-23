@@ -56,12 +56,12 @@
         .alert-body { margin: 4px 0 0 0; color: #2563eb; font-weight: 600; }
 
         .cards-row { display: flex; gap: 20px; flex-wrap: wrap; }
-        .metric-card { background: white; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; width: 220px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
-        .m-title { font-size: 13px; font-weight: 700; color: #16a34a; margin-bottom: 12px; }
-        .m-val { font-size: 32px; font-weight: 800; color: #0f172a; margin-bottom: 8px; }
+        .metric-card { background: white; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; width: 240px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+        .m-title { font-size: 13px; font-weight: 700; color: #2563eb; margin-bottom: 12px; }
+        .m-val { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 8px; }
         .m-sub { font-size: 12px; color: #64748b; }
         .progress-line { width: 100%; height: 6px; background: #e2e8f0; border-radius: 4px; margin-top: 10px; overflow: hidden; }
-        .progress-fill { background: #16a34a; height: 100%; width: 85%; }
+        .progress-fill { background: #2563eb; height: 100%; }
 
         .status-check { width: 36px; height: 36px; background: #dcfce7; color: #15803d; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; margin: 10px 0; }
         .btn-topic-action { background: #1d4ed8; color: white; border: none; width: 100%; padding: 10px; font-weight: 700; border-radius: 6px; font-size: 12px; cursor: pointer; margin-top: 12px; text-align: center; text-decoration: none; display: block; transition: background 0.2s; }
@@ -341,6 +341,7 @@
                         <div class="status-check">✓</div>
                         <div class="m-sub">Account Active</div>
                     </div>
+
                     <div class="metric-card" style="width:240px;">
                         <div class="m-title" style="color:#7c3aed;">Recommended Topic</div>
                         <div class="m-val" style="font-size:18px; margin-top:10px; margin-bottom:15px;">Database Design</div>
@@ -545,3 +546,5 @@
     </script>
 </body>
 </html>
+
+

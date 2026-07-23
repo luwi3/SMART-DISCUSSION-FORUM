@@ -9,6 +9,9 @@ use App\Http\Controllers\GroupDiscussionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TopicController;
 use App\Http\Controllers\ForumChatController;
+use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\LecturerController;
+
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -44,5 +47,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/forum-workspace/{type}/{id}', [ForumChatController::class, 'index']);
     Route::post('/forum-workspace/{type}/{id}', [ForumChatController::class, 'store']);
-    
+    Route::get('/lecturer/dashboard', [QuizController::class, 'lecturerDashboard']);
+Route::get('/participation', [ParticipationController::class, 'index']);
+    Route::get('/admin/dashboard', [AdminDashboardController::class, 'index']);
+Route::post('/admin/students/{regNo}/activate', [AdminDashboardController::class, 'activateStudent']);
+Route::post('/admin/lecturers', [LecturerController::class, 'store']);
 });
