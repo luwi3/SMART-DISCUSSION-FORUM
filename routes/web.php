@@ -34,10 +34,6 @@ Route::get('/test-embedding', function(EmbeddingService $service){
     );
     return $result;
 });
-<<<<<<< HEAD
-
-=======
->>>>>>> de4b9db203c121a3994c543ad0888fbf0a5132eb
 
 // ==========================================
 // REAL-TIME BROADCAST CHANNELS
