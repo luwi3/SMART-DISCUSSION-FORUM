@@ -172,14 +172,18 @@ class ForumChatController extends Controller
 
         $currentStudent = Student::where('user_id', auth()->id())->first();
 
-        // JSON response for API / Java desktop client
+
+               // JSON response for API / Java desktop client
         if ($request->wantsJson()) {
-            return response()->json(compact('topics', 'sidebarGroups', 'messages', 'type', 'id'));
+            return response()->json(compact(
+                'topics',
+                'sidebarGroups',
+                'messages',
+                'type',
+                'id'
+            ));
         }
 
-        return view('chat.index', compact('topics', 'sidebarGroups', 'currentStreamTarget', 'messages', 'type', 'id', 'currentStudent'));
-        // Pass all data down cleanly to the Blade template
-        return view('chat.index', compact('topics', 'sidebarGroups', 'currentStreamTarget', 'messages', 'type', 'id', 'currentStudent', 'mainChatUnread'));
         $courses = Student::select('courseCode')
             ->distinct()
             ->whereNotNull('courseCode')
@@ -194,7 +198,7 @@ class ForumChatController extends Controller
                 }
             })
             ->with('user')
-            ->orderBy('created_at','asc')
+            ->orderBy('created_at', 'asc')
             ->get();
         }
 
@@ -209,6 +213,7 @@ class ForumChatController extends Controller
             'mainChatUnread',
             'courses'
         ));
+
     }
 
     public function store(Request $request, $type = null, $id = null)
@@ -391,21 +396,10 @@ class ForumChatController extends Controller
                 'success',
                 'Your reply has been posted! Live participation marks have synced.'
             );
-
-        broadcast(new \App\Events\MessageSent($message))->toOthers();
-        
-        // Response for Java API client
-        if ($request->wantsJson()) {
-            return response()->json(['status' => 'success', 'message' => $message]);
-        }
-
-        if ($type === 'topic' && auth()->user()->role === 'student') {
-            return back()->with('success', 'Your reply has been posted! Live participation marks have synced.');
         }
 
         return back();
     }
-}
 
     /**
      * Delete a chat message.
@@ -420,15 +414,21 @@ class ForumChatController extends Controller
 
         if (!$isOwner && !$isModerator) {
             if (request()->ajax() || request()->wantsJson()) {
-                return response()->json(['error' => 'You are not authorized to delete this message.'], 403);
+                return response()->json([
+                    'error' => 'You are not authorized to delete this message.'
+                ], 403);
             }
+
             abort(403, 'You are not authorized to delete this message.');
         }
 
         $message->delete();
 
         if (request()->ajax() || request()->wantsJson()) {
-            return response()->json(['success' => true, 'message' => 'Message deleted.']);
+            return response()->json([
+                'success' => true,
+                'message' => 'Message deleted.'
+            ]);
         }
 
         return back()->with('success', 'Message deleted successfully.');
