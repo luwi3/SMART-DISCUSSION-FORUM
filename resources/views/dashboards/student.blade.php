@@ -93,13 +93,11 @@
         .item-info-title { font-size: 14px; font-weight: 700; color: #334155; }
         .item-info-badge { font-size: 11px; color: #64748b; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-weight: 600; width: fit-content; }
 
-        /* Student Details Card Grid (Profile tab) */
         .details-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 15px; }
         .detail-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; border-radius: 8px; }
         .detail-label { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 6px; }
         .detail-value { font-size: 15px; font-weight: 700; color: #0f172a; }
 
-        /* Quiz Lockdown Overlay */
         .lockdown-wrapper { width: 100%; min-height: 80vh; display: flex; align-items: center; justify-content: center; background: #0a1931; border-radius: 16px; margin: 20px; padding: 20px; position: relative; overflow: hidden; }
         .lockdown-glow { position: absolute; right: -60px; bottom: -60px; font-size: 220px; opacity: 0.06; color: white; }
         .lockdown-card { max-width: 480px; text-align: center; color: white; z-index: 1; }
@@ -138,11 +136,7 @@
 
     <div class="workspace-layout">
     @if($activeQuiz ?? null)
-        {{-- ============================================================ --}}
-        {{-- LOCKED QUIZ MODE: sidebar & main content replaced entirely.  --}}
-        {{-- Server-side middleware (EnsureNoActiveQuiz) enforces this on --}}
-        {{-- every other route too — this view lock is the visual layer. --}}
-        {{-- ============================================================ --}}
+        {{-- LOCKED QUIZ MODE --}}
         <div class="lockdown-wrapper">
             <div class="lockdown-glow">🔒</div>
             <div class="lockdown-card">
@@ -150,9 +144,9 @@
                 <h1 class="lockdown-title">Active Assessment in Progress</h1>
                 <p class="lockdown-body">
                     You have an ongoing quiz: <strong style="color:white;">{{ $activeQuiz->title }}</strong>.
-                    All forum discussions, workspace chats, and dashboard tools are temporarily locked until you complete and submit this assessment.
+                    All forum discussions, workspace chats, and dashboard tools are locked until you complete and submit this assessment.
                 </p>
-                <a href="{{ route('quizzes.show', ['quizID' => $activeQuiz->quizID]) }}" class="lockdown-btn">
+    <a href="{{ route('quizzes.show', ['quiz' => $activeQuiz->quizID ?? $activeQuiz->id]) }}" class="lockdown-btn">
                     ✍️ Return to Active Quiz
                 </a>
 
@@ -166,9 +160,7 @@
         </div>
 
     @else
-        {{-- ============================================================ --}}
-        {{-- NORMAL DASHBOARD MODE                                        --}}
-        {{-- ============================================================ --}}
+        {{-- NORMAL DASHBOARD MODE --}}
         <aside class="sidebar">
             <ul class="sidebar-menu">
                 <li class="menu-item {{ (!isset($currentTab) || $currentTab === 'dashboard') ? 'active' : '' }}">
@@ -394,7 +386,6 @@
                 </section>
 
                 <div class="dashboard-grid">
-
                     <div class="left-column">
                         <section style="display:flex; gap:20px; flex-wrap:wrap;">
                             <!-- 🔵 Create Topic Card -->
@@ -424,6 +415,8 @@
                                 </div>
                             </a>
                         </section>
+
+                        <!-- ✍️ Available Assessments Panel -->
                         <section class="content-panel" style="margin-top: 10px;">
                             <h3 class="panel-title">✍️ Available Assessments</h3>
 
@@ -450,7 +443,7 @@
                                                 ✓ Completed
                                             </span>
                                         @else
-                                            <a href="{{ route('quizzes.show', ['quizID' => $currentQuizId]) }}" style="display: inline-block; padding: 8px 16px; background: #10b981; color: white; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px;">
+                                            <a href="{{ route('quizzes.show', ['quiz' => $currentQuizId]) }}" style="display: inline-block; padding: 8px 16px; background: #10b981; color: white; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px;">
                                                 ✍️ Attempt Quiz
                                             </a>
                                         @endif
@@ -525,7 +518,7 @@
             .catch(err => console.error("Database sync notice:", err));
         }
 
-        // REAL-TIME WEBSOCKET CONNECTION
+        // REAL-TIME WEBSOCKET & POLL LOCK STATUS
         document.addEventListener('DOMContentLoaded', function () {
             const userId = "{{ auth()->id() }}";
             const topBadge = document.getElementById('notification-count');
@@ -539,8 +532,7 @@
                 clearBadgesInstantaneously();
             }
 
-            // 🔄 Poll every 20s so a quiz going live locks the dashboard
-            // automatically, without the student needing to refresh.
+            // 🔄 Poll every 20s for lock status
             setInterval(function () {
                 fetch("{{ route('student.lock-status') }}", {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
@@ -606,5 +598,3 @@
     @endunless
 </body>
 </html>
-
-

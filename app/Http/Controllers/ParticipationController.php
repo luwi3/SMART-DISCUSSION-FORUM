@@ -18,50 +18,43 @@ class ParticipationController extends Controller
     /**
      * 👨‍🏫 Display the dynamic, system-automated Topic Participation Grade Matrix for Lecturers.
      */
-   public function index(Request $request)
-{
-    $topics = Topic::orderBy('created_at', 'asc')->get();
+    public function index(Request $request)
+    {
+        $topics = Topic::orderBy('created_at', 'asc')->get();
 
-    $students = User::where('role', 'student')
-                    ->orderBy('name', 'asc')
-                    ->get();
+        $students = User::where('role', 'student')
+                        ->orderBy('name', 'asc')
+                        ->get();
 
-        // 3. Map student message metrics directly into a look-up grid matrix layout
         $matrix = [];
 
         foreach ($students as $student) {
             foreach ($topics as $topic) {
-                // Count rows using your exact message database keys
                 $messageCount = Message::where('topic_id', $topic->id)
                                        ->where('user_id', $student->id)
                                        ->count();
 
-                // 🧮 SYSTEM ALGORITHM: Each reply adds 2 points, capped at 20 marks total per topic
                 $calculatedScore = $messageCount * 2;
                 if ($calculatedScore > 20) {
                     $calculatedScore = 20;
                 }
 
-            $calculatedScore = $messageCount * 2;
-            if ($calculatedScore > 20) {
-                $calculatedScore = 20;
+                $matrix[$student->id][$topic->id] = $calculatedScore;
+
+                TopicParticipation::updateOrCreate(
+                    ['topic_id' => $topic->id, 'user_id' => $student->id],
+                    ['marks_earned' => $calculatedScore]
+                );
             }
-
-            $matrix[$student->id][$topic->id] = $calculatedScore;
-
-            TopicParticipation::updateOrCreate(
-                ['topic_id' => $topic->id, 'user_id' => $student->id],
-                ['marks_earned' => $calculatedScore]
-            );
         }
+
+        if ($request->wantsJson()) {
+            return response()->json(compact('topics', 'students', 'matrix'));
+        }
+
+        return view('participation.index', compact('topics', 'students', 'matrix'));
     }
 
-    if ($request->wantsJson()) {
-        return response()->json(compact('topics', 'students', 'matrix'));
-    }
-
-    return view('participation.index', compact('topics', 'students', 'matrix'));
-}
     /**
      * 🎓 Render Student Dashboard with synchronized Forum Participation Marks, Dynamic Tabs,
      * and Quiz Lockdown state.
@@ -70,43 +63,40 @@ class ParticipationController extends Controller
     {
         $userId = Auth::id();
         if (!$userId) {
+            if ($request->wantsJson()) {
+                return response()->json(['error' => 'Unauthenticated'], 401);
+            }
             return redirect('/login')->with('error', 'Please log in to view your dashboard.');
         }
 
-        // 1. Get the student's profile record — regNo is the key quiz_submissions uses,
-        //    NOT user_id, so every quiz-related lookup below goes through $student->regNo.
+        // 1. Get student profile & clean course code formatting
         $student = Student::where('user_id', $userId)->first();
-        $studentCourse = $student ? $student->courseCode : null;
+        $studentCourse = $student ? trim(strtoupper($student->courseCode)) : null;
         $studentRegNo  = $student ? $student->regNo : null;
 
-        // 2. ✨ SYNCHRONIZED LOGIC: Get ALL active topics to match the lecturer matrix view perfectly
+        // 2. Calculate participation marks
         $allTopics = Topic::all();
-
         $totalParticipationScore = 0;
-        $maxPossibleMarks = $allTopics->count() * 20; // 20 marks max per available topic
+        $maxPossibleMarks = $allTopics->count() * 20;
 
         foreach ($allTopics as $topic) {
             $replyCount = Message::where('topic_id', $topic->id)
                 ->where('user_id', $userId)
                 ->count();
 
-            $calculatedScore = $replyCount * 2;
-            if ($calculatedScore > 20) {
-                $calculatedScore = 20;
-            }
-
+            $calculatedScore = min($replyCount * 2, 20);
             $totalParticipationScore += $calculatedScore;
         }
 
         // 3. Quizzes currently within their live time window for this student's course
         $activeQuizzes = Quiz::when($studentCourse, function ($query, $course) {
-                return $query->where('courseCode', $course);
+                return $query->whereRaw('TRIM(UPPER(courseCode)) = ?', [$course]);
             })
             ->where('startTime', '<=', now())
             ->where('expiryTime', '>=', now())
             ->get();
 
-        // 4. Which of those the student has already submitted (by regNo, not user_id)
+        // 4. Which of those the student has already submitted
         $submittedQuizIDs = collect();
         if ($studentRegNo) {
             $submittedQuizIDs = DB::table('quiz_submissions')
@@ -119,31 +109,30 @@ class ParticipationController extends Controller
             return $submittedQuizIDs->contains($quiz->quizID);
         })->values();
 
-        // 5. 🔒 LOCKDOWN: the first currently-live quiz this student has NOT submitted yet.
-        //    No separate "status" or "attempts" table needed — absence of a quiz_submissions
-        //    row for this regNo + quizID IS "in progress" under this schema.
+        // 5. LOCKDOWN: First active quiz that hasn't been submitted
         $activeQuiz = $activeQuizzes->first(function ($quiz) use ($submittedQuizIDs) {
             return !$submittedQuizIDs->contains($quiz->quizID);
         });
 
-        // 6. Handle Tab State (Defaults to 'dashboard', switches to 'announcements' if requested)
+        // 6. Handle tab state and announcements
         $currentTab = $request->query('tab', 'dashboard');
         $announcements = Announcement::latest()->get();
 
-        return view('dashboards.student', compact(
+        $data = compact(
             'activeQuizzes',
             'completedQuizzes',
             'activeQuiz',
             'totalParticipationScore',
             'maxPossibleMarks',
-            'currentTab'
-            
+            'currentTab',
+            'announcements'
         );
- if ($request->wantsJson()) {
-        return response()->json($data);
-    }
 
-        return view('dashboards.student',$data);
+        if ($request->wantsJson()) {
+            return response()->json($data);
+        }
+
+        return view('dashboards.student', $data);
     }
 
     /**
@@ -159,7 +148,9 @@ class ParticipationController extends Controller
             return response()->json(['locked' => false]);
         }
 
-        $liveQuizzes = Quiz::where('courseCode', $student->courseCode)
+        $cleanCourse = trim(strtoupper($student->courseCode));
+
+        $liveQuizzes = Quiz::whereRaw('TRIM(UPPER(courseCode)) = ?', [$cleanCourse])
             ->where('startTime', '<=', now())
             ->where('expiryTime', '>=', now())
             ->get();
@@ -168,7 +159,7 @@ class ParticipationController extends Controller
             return response()->json(['locked' => false]);
         }
 
-        $submittedQuizIDs = \Illuminate\Support\Facades\DB::table('quiz_submissions')
+        $submittedQuizIDs = DB::table('quiz_submissions')
             ->where('regNo', $student->regNo)
             ->whereIn('quizID', $liveQuizzes->pluck('quizID'))
             ->pluck('quizID');
