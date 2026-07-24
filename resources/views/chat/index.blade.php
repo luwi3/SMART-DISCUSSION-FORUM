@@ -549,6 +549,13 @@
 
             const createdRow = appendNewMessage(messageText, currentUserName, currentUserId, null, replyToData);
 
+            // ADDED: tag the optimistic row with a temporary id so we can find and
+            // remove it later if the backend flags this message as spam.
+            const tempId = "temp_" + Date.now();
+            if (createdRow) {
+                createdRow.dataset.tempId = tempId;
+            }
+
             messageInput.value = '';
             cancelReply();
 
@@ -562,13 +569,42 @@
                 },
             })
                 .then(async (response) => {
+                    // ADDED: read the body as JSON first (regardless of status code)
+                    // so we can inspect it for the { spam: true, message: ... } shape
+                    // that the backend now returns on HTTP 422 for spam detections.
+                    let data = null;
+                    try {
+                        data = await response.json();
+                    } catch (parseErr) {
+                        // Body wasn't valid JSON — fall through to the old error path below.
+                    }
+
                     if (!response.ok) {
-                        const text = await response.text();
+                        // ADDED: distinguish "spam rejection" from a real failure.
+                        // A real failure (validation error, server error, etc.) still
+                        // throws and hits the existing .catch() block below, unchanged.
+                        if (data && data.spam === true) {
+                            return { spam: true, spamMessage: data.message };
+                        }
+
+                        const text = data ? JSON.stringify(data) : await response.text();
                         throw new Error(`Server rejected message (${response.status}): ${text}`);
                     }
-                    return response.json();
+
+                    return data;
                 })
                 .then((data) => {
+                    // ADDED: handle the spam case — remove the optimistic bubble and
+                    // notify the sender, then stop (skip the normal success logic below).
+                    if (data && data.spam === true) {
+                        if (createdRow) {
+                            createdRow.remove();
+                        }
+                        alert(data.spamMessage || 'This message was deleted because it was detected as spam.');
+                        return;
+                    }
+
+                    // UNCHANGED: existing normal-message success logic.
                     if (data?.message?.id) {
                         messageCache[data.message.id] = { sender: 'You', body: messageText };
                         if (createdRow) {
@@ -591,6 +627,9 @@
                     }
                 })
                 .catch((error) => {
+                    // UNCHANGED: this only fires now for genuine failures (network
+                    // errors, non-spam 4xx/5xx responses) — spam responses no longer
+                    // reach this block.
                     console.error('Sending failed:', error);
                     alert('Your message failed to send. Please try again.');
                 })

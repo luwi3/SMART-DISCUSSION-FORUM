@@ -13,16 +13,24 @@ use App\Notifications\NewTopicNotification;
 use App\Models\Student;
 use App\Services\TopicService;
 use App\Jobs\ProcessMessageAI;
+use App\Services\SpamDetectionService;
 
 class ForumChatController extends Controller
 {
-    // AI topic service
-    protected $topicService;
+    
 
-    public function __construct(TopicService $topicService)
-    {
-        $this->topicService = $topicService;
-    }
+
+protected $spamDetectionService;
+protected $topicService;
+
+public function __construct(
+    SpamDetectionService $spamDetectionService,
+    TopicService $topicService
+)
+{
+    $this->spamDetectionService = $spamDetectionService;
+    $this->topicService = $topicService;
+}
 
     public function index(Request $request, $type = null, $id = null)
     {
@@ -240,6 +248,27 @@ class ForumChatController extends Controller
         $message = new Message();
         $message->user_id = auth()->id();
         $message->body = $request->body;
+        /*
+|--------------------------------------------------------------------------
+| Spam Detection
+|--------------------------------------------------------------------------
+*/
+
+$isSpam = $this->spamDetectionService
+                ->checkSpam($message->body);
+
+
+if ($isSpam) {
+
+    return response()->json([
+
+        'spam' => true,
+
+        'message' => 'This message was deleted because it was detected as spam.'
+
+    ], 422);
+
+}
 
         if ($request->filled('restrict_course_id')) {
             $message->course_code = $request->restrict_course_id;
