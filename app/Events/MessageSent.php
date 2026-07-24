@@ -21,10 +21,10 @@ class MessageSent implements ShouldBroadcastNow
 {
     $this->message = $message->load([
         'user',
-        'replyTo'
+        'replyTo',
+        'topic_id'
     ]);
 }
-    
     public function broadcastOn()
     {
         // 1. Check if the message belongs to a course topic
@@ -50,12 +50,13 @@ class MessageSent implements ShouldBroadcastNow
             'message' => [
                 'id' => $this->message->id,
                 'body' => $this->message->body,
+                'topic_id' => $this->message->topic_id,
                 'user' => [
                     'name' => $this->message->user->name ?? 'Peer User'
                 ],
                 'user_id' => $this->message->user_id,
                 'reply_to_message_id' => $this->message->reply_to_message_id,
-                'created_at' => $this->message->created_at
+               'created_at' => $this->message->created_at->toISOString()
             ]
         ];
     }

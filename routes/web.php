@@ -18,18 +18,32 @@ use App\Http\Controllers\AdminDashboardController;
 use App\Models\Student;
 use Carbon\Carbon;
 use App\Models\Group;
+use App\Services\EmbeddingService;
+use App\Services\LlamaService;
+
+
+Route::get('/test-llama', function(LlamaService $llama){
+    return $llama->generateTopic(
+        "I don't understand database normalization"
+    );
+}); 
+
+Route::get('/test-embedding', function(EmbeddingService $service){
+    $result = $service->createEmbedding(
+        "Students discussing database normalization"
+    );
+    return $result;
+});
 
 
 // ==========================================
 // REAL-TIME BROADCAST CHANNELS
 // ==========================================
 Broadcast::channel('chat.{type}.{id}', function ($user, $type, $id) {
-    // If it's a public broadcast stream, everyone authenticated gets access
     if ($type === 'broadcast') {
         return true;
     }
 
-    // If it's a study group, verify the student is actually a joined member
     if ($type === 'group') {
         return Group::where('id', $id)
             ->whereHas('members', function ($query) use ($user) {
@@ -151,7 +165,7 @@ Route::middleware(['auth', 'no.active.quiz'])->group(function () {
     Route::post('/student/notifications/mark-as-read', function () {
         auth()->user()->unreadNotifications->markAsRead();
         return response()->json(['status' => 'success']);
-    })->middleware('auth');
+    });
 
     // 👥 Group creation views & submission processing
     Route::get('/groups/create', [GroupDiscussionController::class, 'create'])->name('groups.create');
@@ -165,9 +179,10 @@ Route::middleware(['auth', 'no.active.quiz'])->group(function () {
     Route::delete('/groups/{id}', [GroupDiscussionController::class, 'destroy'])->name('groups.destroy');
     Route::delete('/groups/{groupId}/remove-user/{userId}', [GroupDiscussionController::class, 'removeUser'])->name('groups.remove_user');
 
-    // Forum Workspace Routes
+    // 💬 Forum Workspace & Message Deletion Routes
     Route::get('/forum-workspace/{type?}/{id?}', [ForumChatController::class, 'index'])->name('chat.index');
     Route::post('/forum-workspace/{type}/{id}', [ForumChatController::class, 'store'])->name('chat.store');
+    Route::delete('/messages/{message}', [ForumChatController::class, 'destroy'])->name('chat.destroy');
 
     // 🟢 Alias Route Catch-Net
     Route::get('/chat', function(\Illuminate\Http\Request $request) {

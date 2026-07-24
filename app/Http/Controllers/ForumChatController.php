@@ -11,9 +11,19 @@ use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Notifications\NewTopicNotification;
 use App\Models\Student;
+use App\Services\TopicService;
+use App\Jobs\ProcessMessageAI;
 
 class ForumChatController extends Controller
 {
+    // AI topic service
+    protected $topicService;
+
+    public function __construct(TopicService $topicService)
+    {
+        $this->topicService = $topicService;
+    }
+
     public function index(Request $request, $type = null, $id = null)
     {
         // 🎯 CHECK: Incoming request arrived from a notification via query parameter (?topic=ID)
@@ -34,7 +44,7 @@ class ForumChatController extends Controller
         }
 
         // =================================================================
-        // 🌟 STEP 5: RESET UNREAD COUNT UPON ENTERING A CHAT ROOM
+        // 🌟 STEP 1: RESET UNREAD COUNT UPON ENTERING A CHAT ROOM
         // =================================================================
         if (auth()->check()) {
             if ($type === 'group' && $id && $id !== 'general') {
@@ -125,9 +135,9 @@ class ForumChatController extends Controller
                 return $group;
             });
         }
-        
+
         // =================================================================
-        // CHAT MESSAGE STREAM RESOLUTION (Original Logic Preserved)
+        // CHAT MESSAGE STREAM RESOLUTION
         // =================================================================
         $messages = collect();
         $currentStreamTarget = null;
@@ -158,8 +168,6 @@ class ForumChatController extends Controller
             if (Schema::hasColumn('messages', 'topic_id')) {
                 $query->whereNull('topic_id');
             }
-            
-            $messages = $query->with('user')->orderBy('created_at', 'asc')->get();
         }
 
         $currentStudent = Student::where('user_id', auth()->id())->first();
@@ -172,6 +180,35 @@ class ForumChatController extends Controller
         return view('chat.index', compact('topics', 'sidebarGroups', 'currentStreamTarget', 'messages', 'type', 'id', 'currentStudent'));
         // Pass all data down cleanly to the Blade template
         return view('chat.index', compact('topics', 'sidebarGroups', 'currentStreamTarget', 'messages', 'type', 'id', 'currentStudent', 'mainChatUnread'));
+        $courses = Student::select('courseCode')
+            ->distinct()
+            ->whereNotNull('courseCode')
+            ->get();
+
+        if (!$type || $type === 'broadcast') {
+            $messages = Message::where(function ($q) use ($currentStudent) {
+                $q->whereNull('course_code');
+
+                if ($currentStudent) {
+                    $q->orWhere('course_code', $currentStudent->courseCode);
+                }
+            })
+            ->with('user')
+            ->orderBy('created_at','asc')
+            ->get();
+        }
+
+        return view('chat.index', compact(
+            'topics',
+            'sidebarGroups',
+            'currentStreamTarget',
+            'messages',
+            'type',
+            'id',
+            'currentStudent',
+            'mainChatUnread',
+            'courses'
+        ));
     }
 
     public function store(Request $request, $type = null, $id = null)
@@ -180,14 +217,20 @@ class ForumChatController extends Controller
             'body' => 'required|string|max:3000'
         ]);
 
-        // 🔧 FIX: Fall back to request payload if route parameters are missing
+        // Fall back to request payload if route parameters are missing
         $type = $type ?? $request->input('type');
         $id = $id ?? $request->input('id');
 
         $student = Student::where('user_id', auth()->id())->first();
+        if ($request->filled('restrict_course_id')) {
+            if (!$student || $student->courseCode != $request->restrict_course_id) {
+                return response()->json([
+                    'error' => 'You cannot send a message restricted to this course.'
+                ], 422);
+            }
+        }
 
         if ($student && $student->status === 'blacklisted') {
-
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'errors' => [
@@ -205,26 +248,28 @@ class ForumChatController extends Controller
 
         // 4. Create and save new message
         $message = new Message();
-
         $message->user_id = auth()->id();
         $message->body = $request->body;
+
+        if ($request->filled('restrict_course_id')) {
+            $message->course_code = $request->restrict_course_id;
+        }
 
         /*
         |--------------------------------------------------------------------------
         | Reply and Thread Handling
         |--------------------------------------------------------------------------
         */
-
         if ($request->filled('reply_to_message_id')) {
-
             $parentMessage = Message::find($request->reply_to_message_id);
 
             if ($parentMessage) {
+                if ($parentMessage->course_code) {
+                    $message->course_code = $parentMessage->course_code;
+                }
 
-                // The exact message being replied to
                 $message->reply_to_message_id = $parentMessage->id;
 
-                // Keep replies inside the same thread
                 if ($parentMessage->thread_id) {
                     $message->thread_id = $parentMessage->thread_id;
                 } else {
@@ -238,15 +283,8 @@ class ForumChatController extends Controller
         | Detect Group Column
         |--------------------------------------------------------------------------
         */
-
         $groupColumn = null;
-
-        foreach ([
-            'group_discussion_id',
-            'group_id',
-            'discussion_id'
-        ] as $column) {
-
+        foreach (['group_discussion_id', 'group_id', 'discussion_id'] as $column) {
             if (Schema::hasColumn('messages', $column)) {
                 $groupColumn = $column;
                 break;
@@ -258,17 +296,14 @@ class ForumChatController extends Controller
         | Attach Message Location
         |--------------------------------------------------------------------------
         */
-
         if ($type === 'group' && $id !== 'general' && $groupColumn) {
             $message->{$groupColumn} = $id;
         }
 
         if (
             $type === 'topic'
-            && 
-            $id !== 'general'
-            &&
-            Schema::hasColumn('messages', 'topic_id')
+            && $id !== 'general'
+            && Schema::hasColumn('messages', 'topic_id')
         ) {
             $message->topic_id = $id;
         }
@@ -278,61 +313,47 @@ class ForumChatController extends Controller
         | Save Message
         |--------------------------------------------------------------------------
         */
-
         $message->save();
-        
-        
 
+        /*
+        |--------------------------------------------------------------------------
+        | AI Topic Processing
+        |--------------------------------------------------------------------------
+        */
+        $isGeneralChat = (!$type || $type === 'broadcast' || $id === 'general');
+        $isNewDiscussion = ($message->thread_id === null);
+        $isNotAlreadyTopic = ($message->topic_id === null);
+        $isNotGroupChat = !($type === 'group' && $id !== 'general');
 
+        if (
+            $isGeneralChat &&
+            $isNewDiscussion &&
+            $isNotAlreadyTopic &&
+            $isNotGroupChat
+        ) {
+            ProcessMessageAI::dispatch($message->id);
+        }
 
         /*
         |--------------------------------------------------------------------------
         | Update Read Status
         |--------------------------------------------------------------------------
         */
-
         if ($type === 'group' && $id !== 'general') {
-
             DB::table('chat_views')->updateOrInsert(
-                [
-                    'user_id' => auth()->id(),
-                    'chat_type' => 'group',
-                    'chat_id' => $id
-                ],
-                [
-                    'last_read_at' => now(),
-                    'updated_at' => now()
-                ]
+                ['user_id' => auth()->id(), 'chat_type' => 'group', 'chat_id' => $id],
+                ['last_read_at' => now(), 'updated_at' => now()]
             );
-
         } elseif ($type === 'topic' && $id !== 'general') {
-
             DB::table('chat_views')->updateOrInsert(
-                [
-                    'user_id' => auth()->id(),
-                    'chat_type' => 'topic',
-                    'chat_id' => $id
-                ],
-                [
-                    'last_read_at' => now(),
-                    'updated_at' => now()
-                ]
+                ['user_id' => auth()->id(), 'chat_type' => 'topic', 'chat_id' => $id],
+                ['last_read_at' => now(), 'updated_at' => now()]
             );
-
         } else {
-
             DB::table('chat_views')->updateOrInsert(
-                [
-                    'user_id' => auth()->id(),
-                    'chat_type' => 'main',
-                    'chat_id' => 0
-                ],
-                [
-                    'last_read_at' => now(),
-                    'updated_at' => now()
-                ]
+                ['user_id' => auth()->id(), 'chat_type' => 'main', 'chat_id' => 0],
+                ['last_read_at' => now(), 'updated_at' => now()]
             );
-
         }
 
         /*
@@ -340,9 +361,7 @@ class ForumChatController extends Controller
         | Student Activity
         |--------------------------------------------------------------------------
         */
-
         if ($student) {
-
             $student->lastCommDate = now();
 
             if ($student->status === 'warning') {
@@ -357,12 +376,9 @@ class ForumChatController extends Controller
         | Broadcast
         |--------------------------------------------------------------------------
         */
-
         $message->load('user');
         broadcast(new \App\Events\MessageSent($message));
 
-
-        // 🔧 FIX: Support both standard form redirects and JSON responses for JavaScript fetch() calls
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
                 'success' => true,
@@ -370,12 +386,7 @@ class ForumChatController extends Controller
             ]);
         }
 
-        if (
-            $type === 'topic'
-            &&
-            auth()->user()->role === 'student'
-        ) {
-
+        if ($type === 'topic' && auth()->user()->role === 'student') {
             return back()->with(
                 'success',
                 'Your reply has been posted! Live participation marks have synced.'
@@ -395,4 +406,31 @@ class ForumChatController extends Controller
         return back();
     }
 }
+
+    /**
+     * Delete a chat message.
+     */
+    public function destroy(Message $message)
+    {
+        $currentUser = auth()->user();
+
+        // 🔒 Authorization Check: User owns the message OR is an admin/lecturer
+        $isOwner = $currentUser->id === $message->user_id;
+        $isModerator = in_array($currentUser->role ?? '', ['admin', 'administrator', 'lecturer']);
+
+        if (!$isOwner && !$isModerator) {
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json(['error' => 'You are not authorized to delete this message.'], 403);
+            }
+            abort(403, 'You are not authorized to delete this message.');
+        }
+
+        $message->delete();
+
+        if (request()->ajax() || request()->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Message deleted.']);
+        }
+
+        return back()->with('success', 'Message deleted successfully.');
+    }
 }

@@ -9,6 +9,17 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    <style>
+        /* Light-blue "jumped to this message" flash — easy on the eyes, fades on its own */
+        @keyframes messageHighlightFlash {
+            0%   { background-color: rgba(191, 219, 254, 0.9); } /* blue-200 */
+            100% { background-color: transparent; }
+        }
+        .message-highlight {
+            animation: messageHighlightFlash 1.8s ease-out;
+        }
+    </style>
 </head>
 <body class="bg-gray-100 antialiased font-sans">
 
@@ -214,7 +225,7 @@
                         </div>
 
                         <div class="flex flex-col max-w-xl {{ $msg->user_id === auth()->id() ? 'items-end' : 'items-start' }}">
-                            <div class="relative px-4 py-2.5 shadow-md rounded-xl break-words w-full border
+                            <div class="message-bubble relative px-4 py-2.5 shadow-md rounded-xl break-words w-full border
                                 {{ $msg->user_id === auth()->id()
                                     ? 'bg-sky-100 text-slate-900 border-sky-200 rounded-tr-none'
                                     : 'bg-white text-slate-800 border-slate-100 rounded-tl-none' }}">
@@ -228,9 +239,9 @@
                                 {{-- WhatsApp-style quoted reply block --}}
                                 @if($msg->replyTo)
                                     <button type="button"
-                                            class="quote-jump w-full text-left mb-1.5 pl-2 pr-2 py-1 border-l-4 border-emerald-400 bg-black/5 hover:bg-black/10 rounded-md text-xs transition-colors"
+                                            class="quote-jump w-full text-left mb-1.5 pl-2 pr-2 py-1 border-l-4 border-sky-400 bg-sky-50 hover:bg-sky-100 rounded-md text-xs transition-colors"
                                             data-jump-id="{{ $msg->reply_to_message_id }}">
-                                        <div class="font-bold text-emerald-600 text-[10px] uppercase">
+                                        <div class="font-bold text-sky-700 text-[10px] uppercase">
                                             {{ $msg->replyTo->user_id === auth()->id() ? 'You' : ($msg->replyTo->user->name ?? 'Unknown') }}
                                         </div>
                                         <div class="text-slate-600 truncate max-w-[260px]">
@@ -247,13 +258,25 @@
                                     {{ $msg->body }}
                                 </div>
 
-                                <div class="mt-2 pt-1 border-t border-slate-200/60 flex items-center justify-between">
+                                <div class="mt-2 pt-1 border-t border-slate-200/60 flex items-center justify-between space-x-2">
                                     <button
                                         type="button"
                                         class="reply-trigger text-[10px] font-semibold text-blue-600 hover:text-blue-800 transition-colors flex items-center space-x-1">
                                         <i class="fa-solid fa-reply text-[9px]"></i>
                                         <span>Reply</span>
                                     </button>
+
+                                    {{-- Delete Option for Owner --}}
+                                    @if($msg->user_id === auth()->id())
+                                        <form action="{{ route('chat.destroy', $msg->id) }}" method="POST" onsubmit="return confirm('Delete this message?');" class="inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="text-[10px] font-semibold text-red-500 hover:text-red-700 transition-colors flex items-center space-x-1">
+                                                <i class="fa-solid fa-trash-can text-[9px]"></i>
+                                                <span>Delete</span>
+                                            </button>
+                                        </form>
+                                    @endif
                                 </div>
 
                                 <span class="absolute bottom-1 right-2.5 text-[10px] select-none font-mono
@@ -284,11 +307,12 @@
             <form id="chat-form" method="POST" action="{{ route('chat.store', ['type' => $type ?? (request('topic') ? 'topic' : 'broadcast'), 'id' => $id ?? (request('topic') ?: 'general')]) }}" class="flex flex-col space-y-2 max-w-7xl mx-auto">
                 @csrf
                 <input type="hidden" id="reply_to_message_id" name="reply_to_message_id" value="">
+                <input type="hidden" id="restrict_course_id" name="restrict_course_id" value="">
 
                 <!-- Replying State Preview Bar -->
-                <div id="reply-box" class="hidden text-xs bg-blue-50 border border-blue-200 text-blue-800 px-3 py-2 rounded-xl flex items-center justify-between shadow-sm">
+                <div id="reply-box" class="hidden text-xs bg-sky-50 border border-sky-200 text-sky-800 px-3 py-2 rounded-xl flex items-center justify-between shadow-sm">
                     <div class="truncate pr-2">
-                        <span id="reply-sender" class="font-bold text-blue-600"></span>
+                        <span id="reply-sender" class="font-bold text-sky-700"></span>
                         <span id="reply-text" class="italic ml-1 text-slate-700"></span>
                     </div>
                     <button type="button" id="cancel-reply-btn" class="text-red-500 hover:text-red-700 font-bold text-xs shrink-0 px-1">
@@ -298,26 +322,36 @@
 
                 <div class="flex items-center space-x-3 w-full">
                     <div class="relative inline-block text-left">
-                        <button type="button" id="dropdown-toggle" class="flex items-center space-x-1.5 px-3 py-2 bg-[#0b1329] border border-slate-950 rounded-xl text-slate-300 shadow-sm focus:outline-none hover:bg-slate-800 transition-all cursor-pointer">
-                            <i class="fa-solid fa-shield-halved text-xs text-sky-400"></i>
-                            <span class="text-[10px] font-bold tracking-wide uppercase">Restrict</span>
-                            <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                            <i class="fa-solid fa-chevron-up text-[9px] text-slate-400 ml-0.5"></i>
+                        <button type="button" id="dropdown-toggle" class="flex items-center space-x-2 px-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none transition-all cursor-pointer">
+                            <i class="fa-solid fa-filter text-xs text-sky-500"></i>
+                            <span id="restrict-label" class="text-[11px] font-semibold tracking-wide max-w-[110px] truncate">All Courses</span>
+                            <i class="fa-solid fa-chevron-down text-[9px] text-slate-400"></i>
                         </button>
 
                         <div id="dropdown-menu" class="hidden absolute bottom-full mb-2 left-0 w-64 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden divide-y divide-slate-100 z-50">
                             <div class="py-1">
-                                <span class="block px-3 py-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider">Filter By Course Code</span>
-                                @foreach($topics as $topic)
-                                    @php
-                                        $isDropdownActive = ($type === 'topic' && $id == $topic->id) || (request('topic') == $topic->id);
-                                    @endphp
-                                    <a href="{{ url('/forum-workspace/topic/' . $topic->id) }}" class="block px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 hover:text-blue-600 truncate {{ $isDropdownActive ? 'bg-blue-50 text-blue-600 font-semibold' : '' }}">
-                                        <span class="bg-blue-100 text-blue-800 font-mono text-[10px] px-1.5 py-0.5 rounded mr-1.5 border border-blue-200 font-semibold">
-                                            {{ $topic->course_code ?? 'CODE' }}
+                                <span class="block px-3 py-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                                    Restrict By Course
+                                </span>
+
+                                <button
+                                    type="button"
+                                    id="clear-restrict"
+                                    class="w-full text-left block px-3 py-2 text-xs text-slate-600 hover:bg-slate-50 font-medium">
+                                    <i class="fa-solid fa-xmark mr-1.5 text-slate-400"></i> All Courses
+                                </button>
+
+                                @foreach($courses as $course)
+                                    <button
+                                        type="button"
+                                        class="course-select w-full text-left block px-3 py-2 text-xs text-slate-700 hover:bg-sky-50 transition-colors"
+                                        data-course="{{ $course->courseCode }}"
+                                        data-label="{{ $course->courseCode }}">
+
+                                        <span class="bg-sky-100 text-sky-800 font-mono text-[10px] px-1.5 py-0.5 rounded mr-1.5 border border-sky-200 font-semibold">
+                                            {{ $course->courseCode }}
                                         </span>
-                                        <span class="text-slate-500 text-[11px]">{{ $topic->title }}</span>
-                                    </a>
+                                    </button>
                                 @endforeach
                             </div>
                         </div>
@@ -349,8 +383,11 @@
     let fallbackEmpty = document.getElementById('fallback-empty');
     const currentUserId = {{ auth()->id() }};
     const currentUserName = "{{ auth()->user()->name }}";
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-    // Message cache — lets us show real "replying to" text for live appended messages
+    // ===============================
+    // Message cache
+    // ===============================
     const messageCache = {};
     document.querySelectorAll('[data-message-id]').forEach(el => {
         messageCache[el.dataset.messageId] = {
@@ -393,7 +430,7 @@
 
     document.getElementById('cancel-reply-btn').addEventListener('click', cancelReply);
 
-    // Delegate reply-trigger clicks
+    // Event Delegation
     document.addEventListener('click', (e) => {
         const trigger = e.target.closest('.reply-trigger');
         if (trigger) {
@@ -403,14 +440,19 @@
             return;
         }
 
-        // Jump-to-original when clicking a quoted block
         const quote = e.target.closest('.quote-jump');
         if (quote) {
             const target = document.querySelector(`[data-message-id="${quote.dataset.jumpId}"]`);
             if (target) {
                 target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                target.classList.add('ring-2', 'ring-emerald-400');
-                setTimeout(() => target.classList.remove('ring-2', 'ring-emerald-400'), 1200);
+
+                const bubble = target.querySelector('.message-bubble');
+                if (bubble) {
+                    bubble.classList.remove('message-highlight');
+                    void bubble.offsetWidth;
+                    bubble.classList.add('message-highlight');
+                    setTimeout(() => bubble.classList.remove('message-highlight'), 1800);
+                }
             }
         }
     });
@@ -418,12 +460,38 @@
     // Restrict dropdown
     const toggleBtn = document.getElementById('dropdown-toggle');
     const menuEl = document.getElementById('dropdown-menu');
+    const restrictLabel = document.getElementById('restrict-label');
+    const restrictInput = document.getElementById('restrict_course_id');
+
     if (toggleBtn && menuEl) {
         toggleBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             menuEl.classList.toggle('hidden');
         });
         document.addEventListener('click', () => menuEl.classList.add('hidden'));
+        menuEl.addEventListener('click', (e) => e.stopPropagation());
+    }
+
+    function selectCourse(id, label) {
+        restrictInput.value = id || '';
+        restrictLabel.textContent = label;
+
+        document.querySelectorAll('.course-select').forEach(btn => {
+            const isSelected = String(id) === btn.dataset.course;
+            btn.classList.toggle('bg-sky-50', isSelected);
+            btn.classList.toggle('font-semibold', isSelected);
+        });
+
+        menuEl.classList.add('hidden');
+    }
+
+    document.querySelectorAll('.course-select').forEach(btn => {
+        btn.addEventListener('click', () => selectCourse(btn.dataset.course, btn.dataset.label));
+    });
+
+    const clearBtn = document.getElementById('clear-restrict');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => selectCourse('', 'All Courses'));
     }
 
     // Scrolling
@@ -432,7 +500,9 @@
     };
     scrollToBottom();
 
-    // Append new message
+    // ===============================
+    // Append a message DOM row
+    // ===============================
     const appendNewMessage = (body, senderName, senderId, messageId, replyTo = null) => {
         if (!container) return;
         if (fallbackEmpty) { fallbackEmpty.remove(); fallbackEmpty = null; }
@@ -442,10 +512,20 @@
         const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
 
         const replyBlock = replyTo ? `
-            <button type="button" class="quote-jump w-full text-left mb-1.5 pl-2 pr-2 py-1 border-l-4 border-emerald-400 bg-black/5 hover:bg-black/10 rounded-md text-xs transition-colors" data-jump-id="${replyTo.id}">
-                <div class="font-bold text-emerald-600 text-[10px] uppercase">${escapeHtml(replyTo.sender)}</div>
+            <button type="button" class="quote-jump w-full text-left mb-1.5 pl-2 pr-2 py-1 border-l-4 border-sky-400 bg-sky-50 hover:bg-sky-100 rounded-md text-xs transition-colors" data-jump-id="${replyTo.id}">
+                <div class="font-bold text-sky-700 text-[10px] uppercase">${escapeHtml(replyTo.sender)}</div>
                 <div class="text-slate-600 truncate max-w-[260px]">${escapeHtml(replyTo.body)}</div>
             </button>` : '';
+
+        const deleteForm = (isMe && messageId) ? `
+            <form action="/chat/messages/${messageId}" method="POST" onsubmit="return confirm('Delete this message?');" class="inline">
+                <input type="hidden" name="_token" value="${csrfToken}">
+                <input type="hidden" name="_method" value="DELETE">
+                <button type="submit" class="text-[10px] font-semibold text-red-500 hover:text-red-700 transition-colors flex items-center space-x-1">
+                    <i class="fa-solid fa-trash-can text-[9px]"></i>
+                    <span>Delete</span>
+                </button>
+            </form>` : '';
 
         const messageRow = document.createElement('div');
         messageRow.className = `flex items-end space-x-3 ${isMe ? 'flex-row-reverse space-x-reverse' : ''} mb-1`;
@@ -458,15 +538,16 @@
                 ${avatarDisplay}
             </div>
             <div class="flex flex-col max-w-xl ${isMe ? 'items-end' : 'items-start'}">
-                <div class="relative px-4 py-2.5 shadow-sm rounded-xl break-words w-full border
+                <div class="message-bubble relative px-4 py-2.5 shadow-sm rounded-xl break-words w-full border
                     ${isMe ? 'bg-sky-100 text-slate-900 border-sky-200 rounded-tr-none' : 'bg-white text-slate-800 border-slate-100 rounded-tl-none'}">
                     ${!isMe ? `<div class="text-[11px] font-bold text-emerald-600 mb-1 tracking-wide uppercase">${escapeHtml(senderName)}</div>` : ''}
                     ${replyBlock}
                     <div class="pr-14 text-sm font-normal leading-relaxed">${escapeHtml(body)}</div>
-                    <div class="mt-2 pt-1 border-t border-slate-200/60 flex items-center justify-between">
+                    <div class="mt-2 pt-1 border-t border-slate-200/60 flex items-center justify-between space-x-2">
                         <button type="button" class="reply-trigger text-[10px] font-semibold text-blue-600 hover:text-blue-800 transition-colors flex items-center space-x-1">
                             <i class="fa-solid fa-reply text-[9px]"></i><span>Reply</span>
                         </button>
+                        ${deleteForm}
                     </div>
                     <span class="absolute bottom-1 right-2.5 text-[10px] select-none font-mono ${isMe ? 'text-slate-500' : 'text-gray-400'}">
                         ${timeStr}
@@ -482,6 +563,8 @@
         if (messageId) {
             messageCache[messageId] = { sender: isMe ? 'You' : senderName, body };
         }
+
+        return messageRow;
     };
 
     // Send Message AJAX Handler
@@ -502,7 +585,7 @@
 
             if (sendBtn) sendBtn.disabled = true;
 
-            appendNewMessage(messageText, currentUserName, currentUserId, null, replyToData);
+            const createdRow = appendNewMessage(messageText, currentUserName, currentUserId, null, replyToData);
 
             messageInput.value = '';
             cancelReply();
@@ -513,7 +596,7 @@
                 credentials: 'same-origin',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'X-CSRF-TOKEN': csrfToken,
                 },
             })
                 .then(async (response) => {
@@ -524,9 +607,25 @@
                     return response.json();
                 })
                 .then((data) => {
-                    // Register the real DB id so future replies-to-this-message can quote it correctly.
                     if (data?.message?.id) {
                         messageCache[data.message.id] = { sender: 'You', body: messageText };
+                        if (createdRow) {
+                            createdRow.dataset.messageId = data.message.id;
+                            // Attach delete form dynamically now that we have the real message ID
+                            const actionBox = createdRow.querySelector('.border-t');
+                            if (actionBox && !actionBox.querySelector('form')) {
+                                actionBox.insertAdjacentHTML('beforeend', `
+                                    <form action="/chat/messages/${data.message.id}" method="POST" onsubmit="return confirm('Delete this message?');" class="inline">
+                                        <input type="hidden" name="_token" value="${csrfToken}">
+                                        <input type="hidden" name="_method" value="DELETE">
+                                        <button type="submit" class="text-[10px] font-semibold text-red-500 hover:text-red-700 transition-colors flex items-center space-x-1">
+                                            <i class="fa-solid fa-trash-can text-[9px]"></i>
+                                            <span>Delete</span>
+                                        </button>
+                                    </form>
+                                `);
+                            }
+                        }
                     }
                 })
                 .catch((error) => {
@@ -549,25 +648,35 @@
     if (window.Echo) {
         window.Echo.channel(`chat.${currentChannelType}.${currentChannelId}`)
             .listen('.MessageSent', (e) => {
-                if (parseInt(e.message.user_id) === currentUserId) return; // ignore our own echoed message
+                if (parseInt(e.message.user_id) === currentUserId) return;
 
                 const senderName = e.message.user?.name ?? 'Peer User';
                 let replyTo = null;
 
                 if (e.message.reply_to) {
-                    // Preferred: server sends the quoted message's sender + body directly.
                     replyTo = {
                         id: e.message.reply_to.id,
                         sender: e.message.reply_to.user_name ?? 'Unknown',
                         body: e.message.reply_to.body ?? '',
                     };
-                } else if (e.message.reply_to_message_id && messageCache[e.message.reply_to_message_id]) {
-                    // Fallback: look it up from our local cache if the server only sent the id.
-                    const cached = messageCache[e.message.reply_to_message_id];
-                    replyTo = { id: e.message.reply_to_message_id, sender: cached.sender, body: cached.body };
+                } else if (
+                    e.message.reply_to_message_id &&
+                    messageCache[e.message.reply_to_message_id]
+                ) {
+                    replyTo = {
+                        id: e.message.reply_to_message_id,
+                        sender: messageCache[e.message.reply_to_message_id].sender,
+                        body: messageCache[e.message.reply_to_message_id].body,
+                    };
                 }
 
-                appendNewMessage(e.message.body, senderName, e.message.user_id, e.message.id, replyTo);
+                appendNewMessage(
+                    e.message.body,
+                    senderName,
+                    e.message.user_id,
+                    e.message.id,
+                    replyTo
+                );
             });
     }
 </script>
