@@ -17,20 +17,16 @@ use App\Services\SpamDetectionService;
 
 class ForumChatController extends Controller
 {
-    
+    protected $spamDetectionService;
+    protected $topicService;
 
-
-protected $spamDetectionService;
-protected $topicService;
-
-public function __construct(
-    SpamDetectionService $spamDetectionService,
-    TopicService $topicService
-)
-{
-    $this->spamDetectionService = $spamDetectionService;
-    $this->topicService = $topicService;
-}
+    public function __construct(
+        SpamDetectionService $spamDetectionService,
+        TopicService $topicService
+    ) {
+        $this->spamDetectionService = $spamDetectionService;
+        $this->topicService = $topicService;
+    }
 
     public function index(Request $request, $type = null, $id = null)
     {
@@ -115,14 +111,12 @@ public function __construct(
         if (auth()->check()) {
             $rawGroups = auth()->user()->groups ?? collect(); 
             $sidebarGroups = $rawGroups->map(function ($group) use ($userId, $groupColumn) {
-                // Fetch when this specific user last looked at this group room
                 $lastView = DB::table('chat_views')
                     ->where('user_id', $userId)
                     ->where('chat_type', 'group')
                     ->where('chat_id', $group->id)
                     ->value('last_read_at');
 
-                // Determine target query column using detected configuration or fallbacks
                 $targetColumn = $groupColumn;
                 if (!$targetColumn) {
                     if (Schema::hasColumn('messages', 'group_discussion_id')) { $targetColumn = 'group_discussion_id'; }
@@ -167,14 +161,6 @@ public function __construct(
             }
         } else {
             $currentStreamTarget = (object) ['name' => 'General Stream', 'is_broadcast' => true];
-            $query = Message::query();
-            
-            if ($groupColumn) {
-                $query->whereNull($groupColumn);
-            }
-            if (Schema::hasColumn('messages', 'topic_id')) {
-                $query->whereNull('topic_id');
-            }
         }
 
         $currentStudent = Student::where('user_id', auth()->id())->first();
@@ -193,8 +179,13 @@ public function __construct(
                 }
             })
             ->with('user')
-            ->orderBy('created_at','asc')
+            ->orderBy('created_at', 'asc')
             ->get();
+        }
+
+        // Desktop App / JSON API Request Support
+        if ($request->wantsJson()) {
+            return response()->json(compact('topics', 'sidebarGroups', 'messages', 'type', 'id', 'mainChatUnread', 'courses'));
         }
 
         return view('chat.index', compact(
@@ -221,6 +212,8 @@ public function __construct(
         $id = $id ?? $request->input('id');
 
         $student = Student::where('user_id', auth()->id())->first();
+        
+        // Restricted course verification
         if ($request->filled('restrict_course_id')) {
             if (!$student || $student->courseCode != $request->restrict_course_id) {
                 return response()->json([
@@ -229,6 +222,7 @@ public function __construct(
             }
         }
 
+        // 🛑 Blacklist Enforcement Check
         if ($student && $student->status === 'blacklisted') {
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
@@ -248,27 +242,20 @@ public function __construct(
         $message = new Message();
         $message->user_id = auth()->id();
         $message->body = $request->body;
+
         /*
-|--------------------------------------------------------------------------
-| Spam Detection
-|--------------------------------------------------------------------------
-*/
+        |--------------------------------------------------------------------------
+        | Spam Detection
+        |--------------------------------------------------------------------------
+        */
+        $isSpam = $this->spamDetectionService->checkSpam($message->body);
 
-$isSpam = $this->spamDetectionService
-                ->checkSpam($message->body);
-
-
-if ($isSpam) {
-
-    return response()->json([
-
-        'spam' => true,
-
-        'message' => 'This message was deleted because it was detected as spam.'
-
-    ], 422);
-
-}
+        if ($isSpam) {
+            return response()->json([
+                'spam' => true,
+                'message' => 'This message was deleted because it was detected as spam.'
+            ], 422);
+        }
 
         if ($request->filled('restrict_course_id')) {
             $message->course_code = $request->restrict_course_id;
@@ -288,12 +275,7 @@ if ($isSpam) {
                 }
 
                 $message->reply_to_message_id = $parentMessage->id;
-
-                if ($parentMessage->thread_id) {
-                    $message->thread_id = $parentMessage->thread_id;
-                } else {
-                    $message->thread_id = $parentMessage->id;
-                }
+                $message->thread_id = $parentMessage->thread_id ?? $parentMessage->id;
             }
         }
 
@@ -377,7 +359,7 @@ if ($isSpam) {
 
         /*
         |--------------------------------------------------------------------------
-        | Student Activity
+        | Student Activity Update
         |--------------------------------------------------------------------------
         */
         if ($student) {
@@ -392,14 +374,16 @@ if ($isSpam) {
 
         /*
         |--------------------------------------------------------------------------
-        | Broadcast
+        | Broadcast & Response
         |--------------------------------------------------------------------------
         */
         $message->load('user');
-        broadcast(new \App\Events\MessageSent($message));
+        broadcast(new \App\Events\MessageSent($message))->toOthers();
 
+        // Return Desktop App / API JSON format
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
+                'status'  => 'success',
                 'success' => true,
                 'message' => $message
             ]);

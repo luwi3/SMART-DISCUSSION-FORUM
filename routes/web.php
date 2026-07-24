@@ -59,7 +59,10 @@ Route::get('/', function () {
 Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
     $user = $request->user();
     
-    if ($user->role === 'administrator' || $user->role === 'admin') {
+    // 🛠️ Temporary debug line:
+    //dd($user, $user->lecturer);
+    
+    if ($user->role === 'administrator') {
         return redirect()->route('admin.dashboard');
     } elseif ($user->role === 'lecturer') {
         return redirect()->route('lecturer.dashboard');
@@ -78,8 +81,8 @@ Route::get('/notifications', [NotificationController::class, 'index'])
 // 2. DASHBOARD PANELS (ROLE-BASED)
 // ==========================================
 
-// 🎓 Student Dashboard Route
-Route::get('/student/dashboard', [QuizController::class, 'dashboard'])
+// 🎓 Student Dashboard Route (✨ UPDATED: Now calls ParticipationController directly to load marks!)
+Route::get('/student/dashboard', [ParticipationController::class, 'studentDashboard'])
     ->middleware(['auth', 'verified'])
     ->name('student.dashboard');
 
@@ -121,6 +124,7 @@ Route::middleware('auth')->group(function () {
     // 📝 Quiz Module Engine Paths
     Route::get('/quizzes/create', [QuizController::class, 'create'])->name('quizzes.create');
     Route::post('/quizzes/store', [QuizController::class, 'store'])->name('quizzes.store');
+    Route::post('/quizzes/{quizID}/import', [QuizController::class, 'importCSV'])->name('quizzes.import'); // 👈 NEW: Added for bulk CSV question imports!
     
     // 📁 Course Resource Document Paths
     Route::get('/resources', [ResourceController::class, 'index'])->name('resources.index');
@@ -134,6 +138,9 @@ Route::middleware('auth')->group(function () {
     // 🎯 Dynamic Assessment Handlers
     Route::get('/quizzes/{quizID}', [QuizController::class, 'show'])->name('quizzes.show');
     Route::post('/quizzes/{quizID}/submit', [QuizController::class, 'submit'])->name('quizzes.submit');
+    
+    // 🏆 Student Quiz Scoreboard Path (✨ NEW: Connected to the sidebar Marks action!)
+    Route::get('/student/quiz-marks', [QuizController::class, 'viewStudentGrades'])->name('student.marks');
     
     // 💬 Forum Workspace Routes
     Route::post('/student/notifications/mark-as-read', function () {
@@ -226,4 +233,12 @@ Route::post('/admin/students/{regNo}/activate', function ($regNo) {
 // ==========================================
 // 6. DEFAULT AUTH SYSTEM FILE LOADER
 // ==========================================
+
+use App\Http\Controllers\TopicExportController;
+
+// Safely added for PDF generation functionality
+Route::get('/topics/{id}/export-pdf', [TopicExportController::class, 'export'])
+    ->name('topics.export-pdf')
+    ->middleware('auth');
+
 require __DIR__.'/auth.php';
