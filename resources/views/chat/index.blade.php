@@ -634,12 +634,7 @@
                 .then((data) => {
                     // ADDED: handle the spam case — remove the optimistic bubble and
                     // notify the sender, then stop (skip the normal success logic below).
-                    if (data && data.spam === true) {
-                        if (createdRow) {
-                            createdRow.remove();
-                        }
-                        alert(data.spamMessage || 'This message was deleted because it was detected as spam.');
-                        return;
+                   
                     }
 
                     // UNCHANGED: existing normal-message success logic.
