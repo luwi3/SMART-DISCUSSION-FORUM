@@ -34,10 +34,7 @@ class ParticipationController extends Controller
                                        ->where('user_id', $student->id)
                                        ->count();
 
-                $calculatedScore = $messageCount * 2;
-                if ($calculatedScore > 20) {
-                    $calculatedScore = 20;
-                }
+                $calculatedScore = min($messageCount * 2, 20);
 
                 $matrix[$student->id][$topic->id] = $calculatedScore;
 
@@ -73,14 +70,9 @@ class ParticipationController extends Controller
         $student = Student::where('user_id', $userId)->first();
         $studentCourse = $student ? trim(strtoupper($student->courseCode)) : null;
         $studentRegNo  = $student ? $student->regNo : null;
-
-        // 2. Calculate participation marks
-        // ➕ ADDED: expose the student record to the view under the name the
-        // dashboard blade expects, so the Status card/Profile tab can show the
-        // real active/warning/blacklisted state instead of a hardcoded value.
         $currentStudent = $student;
 
-        // 2. ✨ SYNCHRONIZED LOGIC: Get ALL active topics to match the lecturer matrix view perfectly
+        // 2. Calculate participation marks
         $allTopics = Topic::all();
         $totalParticipationScore = 0;
         $maxPossibleMarks = $allTopics->count() * 20;
@@ -120,9 +112,11 @@ class ParticipationController extends Controller
             return !$submittedQuizIDs->contains($quiz->quizID);
         });
 
-        // 6. Handle tab state and announcements
+        // 6. Handle tab state and announcements (Eager-load user relationship if defined)
         $currentTab = $request->query('tab', 'dashboard');
-        $announcements = Announcement::latest()->get();
+        
+        // Eager load relationship if model supports it (e.g. with('user'))
+        $announcements = Announcement::latest()->get(); 
 
         $data = compact(
             'activeQuizzes',
@@ -131,6 +125,7 @@ class ParticipationController extends Controller
             'totalParticipationScore',
             'maxPossibleMarks',
             'currentTab',
+            'currentStudent',
             'announcements'
         );
 
@@ -139,9 +134,6 @@ class ParticipationController extends Controller
         }
 
         return view('dashboards.student', $data);
-            'announcements',
-            'currentStudent' // ➕ ADDED
-        ));
     }
 
     /**
