@@ -256,7 +256,7 @@ Route::post('/admin/students/{regNo}/activate', function ($regNo) {
 // 6. DEFAULT AUTH SYSTEM FILE LOADER
 // ==========================================
 
-use App\Http\Controllers\TopicExportController;
+
 
 // Safely added for PDF generation functionality
 Route::get('/topics/{id}/export-pdf', [TopicExportController::class, 'export'])
