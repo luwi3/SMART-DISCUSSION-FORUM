@@ -92,7 +92,7 @@ $message
 
 
         $aiResponse = json_decode(
-            $result['response'],
+            $result['response'] ?? '',
             true
         );
 
@@ -106,7 +106,13 @@ $message
 
 
 
-        return $aiResponse['spam'] ?? false;
+        // Convert AI string responses like "true"/"false"
+        // into real PHP boolean values
+
+        return filter_var(
+            $aiResponse['spam'] ?? false,
+            FILTER_VALIDATE_BOOLEAN
+        );
 
     }
 

@@ -255,7 +255,7 @@ public function __construct(
 */
 
 $isSpam = $this->spamDetectionService
-                ->checkSpam($message->body);
+                ->isSpam($message->body);
 
 
 if ($isSpam) {

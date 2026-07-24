@@ -359,6 +359,22 @@
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
     };
+    //notification spam function
+    function showNotification(message) {
+
+    const notification = document.createElement('div');
+
+    notification.className =
+        "fixed bottom-5 right-5 bg-red-500 text-white px-5 py-3 rounded-lg shadow-lg z-50 text-sm";
+
+    notification.textContent = message;
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+        notification.remove();
+    }, 4000);
+}
 
     // ===============================
     // Reply box controls
@@ -600,7 +616,9 @@
                         if (createdRow) {
                             createdRow.remove();
                         }
-                        alert(data.spamMessage || 'This message was deleted because it was detected as spam.');
+                        showNotification(
+                       data.spamMessage || 'This message was deleted because it was detected as spam.'
+                      );
                         return;
                     }
 
