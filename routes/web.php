@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ForumChatController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\LecturerController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\ResourceController;
@@ -11,10 +12,8 @@ use App\Http\Controllers\ParticipationController;
 use App\Http\Controllers\TopicController;        
 use App\Http\Controllers\GroupDiscussionController;
 use App\Http\Controllers\NotificationController;
-
 use App\Http\Controllers\AdminDashboardController;
 use App\Models\Student;
-use Carbon\Carbon;
 use App\Models\Group;
 use App\Services\EmbeddingService;
 use App\Services\LlamaService;
@@ -33,6 +32,9 @@ Route::get('/test-embedding', function(EmbeddingService $service){
     return $result;
 });
 
+// ==========================================
+// REAL-TIME BROADCAST CHANNELS
+// ==========================================
 Broadcast::channel('chat.{type}.{id}', function ($user, $type, $id) {
     if ($type === 'broadcast') {
         return true;
@@ -55,14 +57,11 @@ Route::get('/', function () {
     return redirect('login');
 });
 
-// 🚦 The Switchboard: Dynamic Routing based purely on string matching values
+// 🚦 The Switchboard: Dynamic Routing based on user role
 Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
     $user = $request->user();
     
-    // 🛠️ Temporary debug line:
-    //dd($user, $user->lecturer);
-    
-    if ($user->role === 'administrator') {
+    if ($user->role === 'administrator' || $user->role === 'admin') {
         return redirect()->route('admin.dashboard');
     } elseif ($user->role === 'lecturer') {
         return redirect()->route('lecturer.dashboard');
@@ -81,9 +80,9 @@ Route::get('/notifications', [NotificationController::class, 'index'])
 // 2. DASHBOARD PANELS (ROLE-BASED)
 // ==========================================
 
-// 🎓 Student Dashboard Route (✨ UPDATED: Now calls ParticipationController directly to load marks!)
+// 🎓 Student Dashboard Route
 Route::get('/student/dashboard', [ParticipationController::class, 'studentDashboard'])
-    ->middleware(['auth', 'verified'])
+    ->middleware(['auth', 'verified', 'no.active.quiz'])
     ->name('student.dashboard');
 
 // 👨‍🏫 Lecturer Dashboard Route
@@ -111,10 +110,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 
+// 🔄 Lightweight polling endpoint so the dashboard can detect a quiz going
+// live without the student needing to refresh manually. Deliberately kept
+// OUTSIDE the no.active.quiz group — it must always return JSON, never redirect.
+Route::get('/student/lock-status', [ParticipationController::class, 'lockStatus'])
+    ->middleware('auth')
+    ->name('student.lock-status');
+
+
 // ==========================================
 // 4. AUTHENTICATED CORE FEATURES GROUP
 // ==========================================
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'no.active.quiz'])->group(function () {
     
     // 👤 User Profile Management
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -124,7 +131,7 @@ Route::middleware('auth')->group(function () {
     // 📝 Quiz Module Engine Paths
     Route::get('/quizzes/create', [QuizController::class, 'create'])->name('quizzes.create');
     Route::post('/quizzes/store', [QuizController::class, 'store'])->name('quizzes.store');
-    Route::post('/quizzes/{quizID}/import', [QuizController::class, 'importCSV'])->name('quizzes.import'); // 👈 NEW: Added for bulk CSV question imports!
+    Route::post('/quizzes/{quizID}/import', [QuizController::class, 'importCSV'])->name('quizzes.import');
     
     // 📁 Course Resource Document Paths
     Route::get('/resources', [ResourceController::class, 'index'])->name('resources.index');
@@ -139,10 +146,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/quizzes/{quizID}', [QuizController::class, 'show'])->name('quizzes.show');
     Route::post('/quizzes/{quizID}/submit', [QuizController::class, 'submit'])->name('quizzes.submit');
     
-    // 🏆 Student Quiz Scoreboard Path (✨ NEW: Connected to the sidebar Marks action!)
+    // 🏆 Student Quiz Scoreboard Path
     Route::get('/student/quiz-marks', [QuizController::class, 'viewStudentGrades'])->name('student.marks');
     
-    // 💬 Forum Workspace Routes
+    // 💬 Notifications Handler
     Route::post('/student/notifications/mark-as-read', function () {
         auth()->user()->unreadNotifications->markAsRead();
         return response()->json(['status' => 'success']);
@@ -156,7 +163,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/groups', [GroupDiscussionController::class, 'index'])->name('groups.index');
     Route::post('/groups/{id}/join', [GroupDiscussionController::class, 'join'])->name('groups.join');
     
-    // 🎛️ Creator Moderation Controls (Delete group / Kick individual user)
+    // 🎛️ Creator Moderation Controls
     Route::delete('/groups/{id}', [GroupDiscussionController::class, 'destroy'])->name('groups.destroy');
     Route::delete('/groups/{groupId}/remove-user/{userId}', [GroupDiscussionController::class, 'removeUser'])->name('groups.remove_user');
 
@@ -165,9 +172,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/forum-workspace/{type}/{id}', [ForumChatController::class, 'store'])->name('chat.store');
     Route::delete('/messages/{message}', [ForumChatController::class, 'destroy'])->name('chat.destroy');
 
-    /**
-     * 🟢 FIX: THE ALIAS ROUTE CATCH-NET
-     */
+    // 🟢 Alias Route Catch-Net
     Route::get('/chat', function(\Illuminate\Http\Request $request) {
         if ($request->has('topic')) {
             return redirect('/forum-workspace/topic/' . $request->query('topic'));
@@ -178,6 +183,12 @@ Route::middleware('auth')->group(function () {
     // 📝 Dedicated Topic Action Handlers
     Route::get('/topics/create', [TopicController::class, 'create'])->name('topics.create');
     Route::post('/topics', [TopicController::class, 'store'])->name('topics.store');
+
+    // 📢 Standalone Announcements Workspace Route
+    Route::get('/announcements', function() {
+        $announcements = \App\Models\Announcement::latest()->get();
+        return view('announcements.index', compact('announcements'));
+    })->name('announcements.index');
 });
 
 
