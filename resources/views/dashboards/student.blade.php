@@ -98,14 +98,10 @@
         .detail-label { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 6px; }
         .detail-value { font-size: 15px; font-weight: 700; color: #0f172a; }
 
-        .lockdown-wrapper { width: 100%; min-height: 80vh; display: flex; align-items: center; justify-content: center; background: #0a1931; border-radius: 16px; margin: 20px; padding: 20px; position: relative; overflow: hidden; }
-        .lockdown-glow { position: absolute; right: -60px; bottom: -60px; font-size: 220px; opacity: 0.06; color: white; }
-        .lockdown-card { max-width: 480px; text-align: center; color: white; z-index: 1; }
-        .lockdown-icon { width: 64px; height: 64px; margin: 0 auto 18px; background: rgba(245,158,11,0.15); color: #f59e0b; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; }
-        .lockdown-title { font-size: 22px; font-weight: 800; margin-bottom: 12px; }
-        .lockdown-body { font-size: 13px; color: #94a3b8; line-height: 1.6; margin-bottom: 26px; }
-        .lockdown-btn { display: block; width: 100%; padding: 14px; background: #2563eb; color: white; border-radius: 10px; font-weight: 700; font-size: 14px; text-decoration: none; transition: background 0.2s; }
-        .lockdown-btn:hover { background: #1d4ed8; }
+        /* Notifications tab */
+        .placeholder-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 30px; max-width: 100%; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+        .placeholder-card h2 { color: #0f172a; margin-bottom: 10px; font-size: 20px; }
+        .placeholder-card p { color: #64748b; font-size: 14px; line-height: 1.6; }
     </style>
 </head>
 <body>
@@ -120,51 +116,23 @@
     <div class="top-brand-bar">
         <span>SMART DISCUSSION FORUM</span>
 
-        @unless($activeQuiz ?? null)
-            <a href="{{ route('student.dashboard', ['tab' => 'notifications']) }}" id="notification-dropdown" style="position: relative; display: inline-block; text-decoration: none;">
-                <button type="button" style="background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; position: relative;">
-                    <svg style="width: 22px; height: 22px; stroke: #94a3b8; fill: none; transition: stroke 0.2s;" onmouseover="this.style.stroke='#ffffff'" onmouseout="this.style.stroke='#94a3b8'" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
-                    </svg>
-                    <span id="notification-count" style="position: absolute; top: -2px; right: -2px; background: #ef4444; color: white; border-radius: 9999px; padding: 2px 6px; font-size: 9px; font-weight: bold; line-height: 1; display: {{ $initialUnread > 0 ? 'inline-block' : 'none' }};">
-                        {{ $initialUnread }}
-                    </span>
-                </button>
+        <div id="notification-dropdown" style="position: relative; display: inline-block;">
+            <a href="{{ route('student.dashboard', ['tab' => 'notifications']) }}" style="background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; position: relative;">
+                <svg style="width: 22px; height: 22px; stroke: #94a3b8; fill: none; transition: stroke 0.2s;" onmouseover="this.style.stroke='#ffffff'" onmouseout="this.style.stroke='#94a3b8'" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                </svg>
+                <span id="notification-count" style="position: absolute; top: -2px; right: -2px; background: #ef4444; color: white; border-radius: 9999px; padding: 2px 6px; font-size: 9px; font-weight: bold; line-height: 1; display: {{ $initialUnread > 0 ? 'inline-block' : 'none' }};">
+                    {{ $initialUnread }}
+                </span>
             </a>
-        @endunless
+        </div>
     </div>
 
     <div class="workspace-layout">
-    @if($activeQuiz ?? null)
-        {{-- LOCKED QUIZ MODE --}}
-        <div class="lockdown-wrapper">
-            <div class="lockdown-glow">🔒</div>
-            <div class="lockdown-card">
-                <div class="lockdown-icon">⚠️</div>
-                <h1 class="lockdown-title">Active Assessment in Progress</h1>
-                <p class="lockdown-body">
-                    You have an ongoing quiz: <strong style="color:white;">{{ $activeQuiz->title }}</strong>.
-                    All forum discussions, workspace chats, and dashboard tools are locked until you complete and submit this assessment.
-                </p>
-    <a href="{{ route('quizzes.show', ['quiz' => $activeQuiz->quizID ?? $activeQuiz->id]) }}" class="lockdown-btn">
-                    ✍️ Return to Active Quiz
-                </a>
-
-                <form method="POST" action="{{ route('logout') }}" style="margin-top: 18px;">
-                    @csrf
-                    <button type="submit" style="background: none; border: none; color: #f43f5e; font-weight: 700; font-size: 13px; cursor: pointer;">
-                        Logout instead
-                    </button>
-                </form>
-            </div>
-        </div>
-
-    @else
-        {{-- NORMAL DASHBOARD MODE --}}
         <aside class="sidebar">
             <ul class="sidebar-menu">
-                <li class="menu-item {{ (!isset($currentTab) || $currentTab === 'dashboard') ? 'active' : '' }}">
-                    <a href="{{ route('student.dashboard', ['tab' => 'dashboard']) }}">Main Menu</a>
+                <li class="menu-item {{ (!isset($currentTab) || $currentTab === 'main') ? 'active' : '' }}">
+                    <a href="{{ route('student.dashboard', ['tab' => 'main']) }}">Main Menu</a>
                 </li>
                 <li class="menu-item {{ (isset($currentTab) && $currentTab === 'profile') ? 'active' : '' }}">
                     <a href="{{ route('student.dashboard', ['tab' => 'profile']) }}">Profile</a>
@@ -182,9 +150,9 @@
                 </li>
 
                 <li class="menu-item" x-data="{ open: false }" style="display: block; height: auto; padding-bottom: 0;">
-                    <div @click="open = !open" style="display: flex; justify-content: space-between; align-items: center; width: 100%; cursor: pointer;">
-                        <a href="#" @click.prevent style="flex-grow: 1; display: inline-block; padding: 14px 24px; color: #94a3b8; font-size: 14px; font-weight: 600;">Groups</a>
-                        <svg :class="{ 'rotate-180': open }" class="transform transition-transform duration-150" style="width: 14px; height: 14px; fill: currentColor; transition: transform 0.2s; margin-right: 20px; color: #a0aec0;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                    <div @click="open = !open" style="display: flex; justify-content: space-between; align-items: center; width: 100%; cursor: pointer; padding: 14px 24px;">
+                        <a href="#" @click.prevent style="flex-grow: 1; display: inline-block; color: #94a3b8; text-decoration: none; font-weight: 600; font-size: 14px;">Groups</a>
+                        <svg :class="{ 'rotate-180': open }" class="transform transition-transform duration-150" style="width: 14px; height: 14px; fill: currentColor; transition: transform 0.2s; margin-right: 20px; color: #94a3b8;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                         </svg>
                     </div>
@@ -237,17 +205,16 @@
                 </div>
             @endif
 
-            <div class="welcome-header">
-                <h1 class="welcome-txt">Hello, {{ Auth::user()->name }}! 👋</h1>
-                <p class="welcome-sub">Always keep learning and stay active.</p>
-            </div>
-
             @if(isset($currentTab) && $currentTab === 'profile')
                 <!-- 👤 STUDENT DETAILS / PROFILE VIEW -->
+                <div class="welcome-header">
+                    <h1 class="welcome-txt">My Profile</h1>
+                    <p class="welcome-sub">Manage your account information.</p>
+                </div>
                 <div class="content-panel">
                     <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center;">
                         <span>👤 Student Profile & Account Details</span>
-                        <a href="{{ route('student.dashboard', ['tab' => 'dashboard']) }}" style="font-size: 13px; background: #e2e8f0; color: #334155; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-weight: 600;">← Main Menu</a>
+                        <a href="{{ route('student.dashboard', ['tab' => 'main']) }}" style="font-size: 13px; background: #e2e8f0; color: #334155; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-weight: 600;">← Main Menu</a>
                     </div>
 
                     <div class="details-grid">
@@ -280,10 +247,14 @@
 
             @elseif(isset($currentTab) && $currentTab === 'announcements')
                 <!-- 📢 FULL ANNOUNCEMENTS VIEW -->
+                <div class="welcome-header">
+                    <h1 class="welcome-txt">All Announcements</h1>
+                    <p class="welcome-sub">Department-wide notices and updates.</p>
+                </div>
                 <div class="content-panel">
                     <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center;">
                         <span>📢 All Department Announcements</span>
-                        <a href="{{ route('student.dashboard', ['tab' => 'dashboard']) }}" style="font-size: 13px; background: #e2e8f0; color: #334155; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-weight: 600;">← Main Menu</a>
+                        <a href="{{ route('student.dashboard', ['tab' => 'main']) }}" style="font-size: 13px; background: #e2e8f0; color: #334155; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-weight: 600;">← Main Menu</a>
                     </div>
 
                     <div class="feed-list" style="margin-top: 20px;">
@@ -305,13 +276,17 @@
                 </div>
 
             @elseif(isset($currentTab) && $currentTab === 'notifications')
-                <!-- 🔔 FULL NOTIFICATIONS VIEW -->
-                <div class="content-panel" style="max-width: 100%;">
-                    <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center;">
-                        <span>🔔 Alert Logs</span>
-                        <a href="{{ route('student.dashboard', ['tab' => 'dashboard']) }}" style="font-size: 13px; background: #e2e8f0; color: #334155; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-weight: 600;">← Main Menu</a>
+                <!-- 🔔 NOTIFICATIONS VIEW -->
+                <div class="welcome-header">
+                    <h1 class="welcome-txt">Notifications</h1>
+                    <p class="welcome-sub">Real-time updates from your forum activity.</p>
+                </div>
+                <div class="placeholder-card">
+                    <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h2 style="font-size: 18px;">Alert Logs</h2>
+                        <a href="{{ route('student.dashboard', ['tab' => 'main']) }}" style="font-size: 13px; background: #e2e8f0; color: #334155; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-weight: 600;">← Main Menu</a>
                     </div>
-                    <p style="color: #64748b; font-size: 14px; margin: 12px 0 20px;">Review your recent forum updates and alerts below.</p>
+                    <p style="margin-bottom: 20px;">Review your recent forum updates and alerts below.</p>
 
                     <div id="live-notifications-list" class="feed-list">
                         @php
@@ -348,6 +323,11 @@
 
             @else
                 <!-- 📊 MAIN MENU / DASHBOARD VIEW -->
+                <div class="welcome-header">
+                    <h1 class="welcome-txt">Hello, {{ Auth::user()->name }}! 👋</h1>
+                    <p class="welcome-sub">Always keep learning and stay active.</p>
+                </div>
+
                 <section class="cards-row">
                     <div class="metric-card">
                         <div class="m-title">🤖 Forum Participation</div>
@@ -372,10 +352,22 @@
                             <div class="progress-fill" style="width: {{ $percent }}%;"></div>
                         </div>
                     </div>
+
+                    @php
+                        $studentStatus = $currentStudent->status ?? 'active';
+                    @endphp
                     <div class="metric-card" style="width:160px;">
                         <div class="m-title" style="color:#1e293b;">Status</div>
-                        <div class="status-check">✓</div>
-                        <div class="m-sub">Account Active</div>
+                        @if($studentStatus === 'blacklisted')
+                            <div class="status-check" style="background:#fee2e2; color:#dc2626;">✕</div>
+                            <div class="m-sub" style="color:#dc2626; font-weight:700;">Blacklisted</div>
+                        @elseif($studentStatus === 'warning')
+                            <div class="status-check" style="background:#fef3c7; color:#b45309;">!</div>
+                            <div class="m-sub" style="color:#b45309; font-weight:700;">Warning Issued</div>
+                        @else
+                            <div class="status-check">✓</div>
+                            <div class="m-sub">Account Active</div>
+                        @endif
                     </div>
 
                     <div class="metric-card" style="width:240px;">
@@ -387,45 +379,45 @@
 
                 <div class="dashboard-grid">
                     <div class="left-column">
-                        <section style="display:flex; gap:20px; flex-wrap:wrap;">
-                            <!-- 🔵 Create Topic Card -->
-                            <a href="{{ route('topics.create') }}" style="background:#2563eb; color:white; padding:20px; border-radius:12px; text-decoration:none; width:260px; display:flex; align-items:center; gap:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); transition:0.2s;" onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563eb'">
-                                <div style="background:white; color:#2563eb; width:45px; height:45px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px;">💬</div>
-                                <div>
-                                    <h3 style="font-size:16px; font-weight:700; margin-bottom:5px;">Create Topic</h3>
-                                    <p style="font-size:12px; opacity:0.9;">Start a new discussion</p>
-                                </div>
-                            </a>
+<section style="display:flex; gap:20px; flex-wrap:wrap;">
+    <!-- 🔵 Create Topic Card -->
+    <a href="{{ route('topics.create') }}" style="background:#2563eb; color:white; padding:20px; border-radius:12px; text-decoration:none; width:260px; display:flex; align-items:center; gap:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); transition:0.2s;" onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563eb'">
+        <div style="background:white; color:#2563eb; width:45px; height:45px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px;">💬</div>
+        <div>
+            <h3 style="font-size:16px; font-weight:700; margin-bottom:5px;">Create Topic</h3>
+            <p style="font-size:12px; opacity:0.9;">Start a new discussion</p>
+        </div>
+    </a>
 
-                            <!-- 🟢 Create Group Card -->
-                            <a href="{{ route('groups.create') }}" style="background:#10b981; color:white; padding:20px; border-radius:12px; text-decoration:none; width:260px; display:flex; align-items:center; gap:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); transition:0.2s;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
-                                <div style="background:white; color:#10b981; width:45px; height:45px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px;">👥</div>
-                                <div>
-                                    <h3 style="font-size:16px; font-weight:700; margin-bottom:5px;">Create Group</h3>
-                                    <p style="font-size:12px; opacity:0.9;">Create a discussion group</p>
-                                </div>
-                            </a>
+    <!-- 🟢 Create Group Card -->
+    <a href="{{ route('groups.create') }}" style="background:#10b981; color:white; padding:20px; border-radius:12px; text-decoration:none; width:260px; display:flex; align-items:center; gap:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); transition:0.2s;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
+        <div style="background:white; color:#10b981; width:45px; height:45px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px;">👥</div>
+        <div>
+            <h3 style="font-size:16px; font-weight:700; margin-bottom:5px;">Create Group</h3>
+            <p style="font-size:12px; opacity:0.9;">Create a discussion group</p>
+        </div>
+    </a>
 
-                            <!-- 🟣 View Groups Card -->
-                            <a href="{{ route('groups.index') }}" style="background:#6366f1; color:white; padding:20px; border-radius:12px; text-decoration:none; width:260px; display:flex; align-items:center; gap:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); transition:0.2s;" onmouseover="this.style.background='#4f46e5'" onmouseout="this.style.background='#6366f1'">
-                                <div style="background:white; color:#6366f1; width:45px; height:45px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px;">🌐</div>
-                                <div>
-                                    <h3 style="font-size:16px; font-weight:700; margin-bottom:5px;">View Groups</h3>
-                                    <p style="font-size:12px; opacity:0.9;">Explore & join groups</p>
-                                </div>
-                            </a>
-                        </section>
+    <!-- 🟣 View Groups Card -->
+    <a href="{{ route('groups.index') }}" style="background:#6366f1; color:white; padding:20px; border-radius:12px; text-decoration:none; width:260px; display:flex; align-items:center; gap:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); transition:0.2s;" onmouseover="this.style.background='#4f46e5'" onmouseout="this.style.background='#6366f1'">
+        <div style="background:white; color:#6366f1; width:45px; height:45px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px;">🌐</div>
+        <div>
+            <h3 style="font-size:16px; font-weight:700; margin-bottom:5px;">View Groups</h3>
+            <p style="font-size:12px; opacity:0.9;">Explore & join groups</p>
+        </div>
+    </a>
+</section>
 
-                        <!-- ✍️ Available Assessments Panel -->
-                        <section class="content-panel" style="margin-top: 10px;">
+<!-- ✍️ Available Assessments Panel -->
+<section class="content-panel" style="margin-top: 20px;">
                             <h3 class="panel-title">✍️ Available Assessments</h3>
 
                             @if(isset($activeQuizzes) && count($activeQuizzes) > 0)
                                 <p style="color: #10b981; font-size: 14px; margin-bottom: 15px; font-weight: 600;">✅ Your registered course streams have active evaluation windows open.</p>
 
-                                @foreach($activeQuizzes as $quizItem)
+                                @foreach($activeQuizzes as $activeQuiz)
                                     @php
-                                        $currentQuizId = $quizItem->quizID ?? $quizItem->id;
+                                        $currentQuizId = $activeQuiz->quizID ?? $activeQuiz->id;
 
                                         $hasCompleted = isset($completedQuizzes) && $completedQuizzes->contains(function($completed) use ($currentQuizId) {
                                             return ($completed->quizID ?? $completed->id) == $currentQuizId;
@@ -434,8 +426,8 @@
 
                                     <div class="list-row-item">
                                         <div class="item-info-meta">
-                                            <span class="item-info-title">{{ $quizItem->title }}</span>
-                                            <span class="item-info-badge">{{ $quizItem->courseCode }} • {{ $quizItem->duration }} Mins</span>
+                                            <span class="item-info-title">{{ $activeQuiz->title }}</span>
+                                            <span class="item-info-badge">{{ $activeQuiz->courseCode }} • {{ $activeQuiz->duration }} Mins</span>
                                         </div>
 
                                         @if($hasCompleted)
@@ -493,108 +485,105 @@
 
                 </div>
             @endif
+
         </main>
-    @endif
     </div>
 
-    @unless($activeQuiz ?? null)
     <script>
-        function clearBadgesInstantaneously() {
-            const topBadge = document.getElementById('notification-count');
-            const sidebarBadge = document.getElementById('sidebar-badge-counter');
+    function clearBadgesInstantaneously() {
+        const topBadge = document.getElementById('notification-count');
+        const sidebarBadge = document.getElementById('sidebar-badge-counter');
 
-            if (topBadge) topBadge.style.display = 'none';
-            if (sidebarBadge) sidebarBadge.style.display = 'none';
+        if (topBadge) topBadge.style.display = 'none';
+        if (sidebarBadge) sidebarBadge.style.display = 'none';
 
-            fetch("{{ url('/student/notifications/mark-as-read') }}", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                }
-            })
-            .then(response => response.json())
-            .then(data => console.log("Database notifications synchronized successfully:", data))
-            .catch(err => console.error("Database sync notice:", err));
+        fetch("{{ url('/student/notifications/mark-as-read') }}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        })
+        .then(response => response.json())
+        .then(data => console.log("Database notifications synchronized successfully:", data))
+        .catch(err => console.error("Database sync notice:", err));
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const currentTab = "{{ $currentTab ?? 'main' }}";
+
+        // Clear unread badges immediately when the notifications tab loads
+        if (currentTab === 'notifications') {
+            clearBadgesInstantaneously();
         }
 
-        // REAL-TIME WEBSOCKET & POLL LOCK STATUS
-        document.addEventListener('DOMContentLoaded', function () {
-            const userId = "{{ auth()->id() }}";
-            const topBadge = document.getElementById('notification-count');
-            const sidebarBadge = document.getElementById('sidebar-badge-counter');
-            const logsContainer = document.getElementById('live-notifications-list');
-            const currentTab = "{{ $currentTab ?? 'dashboard' }}";
+        // 🔄 Poll every 20s for lock status
+        setInterval(function () {
+            fetch("{{ route('student.lock-status') }}", {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.locked && data.redirect_url) {
+                    window.location.href = data.redirect_url;
+                }
+            })
+            .catch(err => console.error('Lock status check failed:', err));
+        }, 20000);
 
-            let unreadCount = parseInt("{{ $initialUnread }}") || 0;
+        // REAL-TIME WEBSOCKET LISTENER SETUP
+        const userId = "{{ auth()->id() }}";
+        const topBadge = document.getElementById('notification-count');
+        const sidebarBadge = document.getElementById('sidebar-badge-counter');
+        const logsContainer = document.getElementById('live-notifications-list');
 
-            if (currentTab === 'notifications') {
-                clearBadgesInstantaneously();
-            }
+        let unreadCount = parseInt("{{ $initialUnread ?? 0 }}") || 0;
 
-            // 🔄 Poll every 20s for lock status
-            setInterval(function () {
-                fetch("{{ route('student.lock-status') }}", {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.locked && data.redirect_url) {
-                        window.location.href = data.redirect_url;
+        if (userId && typeof Echo !== 'undefined') {
+            Echo.private(`App.Models.User.${userId}`)
+                .notification((notification) => {
+                    console.log('Real-time topic notification caught:', notification);
+
+                    if (currentTab !== 'notifications') {
+                        unreadCount++;
+                        if (topBadge) { topBadge.innerText = unreadCount; topBadge.style.display = 'inline-block'; }
+                        if (sidebarBadge) { sidebarBadge.innerText = unreadCount; sidebarBadge.style.display = 'inline-block'; }
                     }
-                })
-                .catch(err => console.error('Lock status check failed:', err));
-            }, 20000);
 
-            if (userId && typeof Echo !== 'undefined') {
-                Echo.private(`App.Models.User.${userId}`)
-                    .notification((notification) => {
-                        console.log('Real-time topic notification caught:', notification);
-
-                        if (currentTab !== 'notifications') {
-                            unreadCount++;
-                            if (topBadge) { topBadge.innerText = unreadCount; topBadge.style.display = 'inline-block'; }
-                            if (sidebarBadge) { sidebarBadge.innerText = unreadCount; sidebarBadge.style.display = 'inline-block'; }
-                        } else {
-                            clearBadgesInstantaneously();
+                    if (logsContainer) {
+                        const fallbackText = document.getElementById('no-notifications-fallback');
+                        if (fallbackText) {
+                            fallbackText.remove();
                         }
 
-                        if (logsContainer) {
-                            const fallbackText = document.getElementById('no-notifications-fallback');
-                            if (fallbackText) {
-                                fallbackText.remove();
-                            }
+                        const topicId = notification.topic_id || notification.id || (notification.data ? notification.data.topic_id : '');
 
-                            const topicId = notification.topic_id || notification.id || (notification.data ? notification.data.topic_id : '');
+                        let targetChatUrl = "{{ route('chat.index') }}";
+                        if (topicId) {
+                            targetChatUrl = `${targetChatUrl}?topic=${topicId}`;
+                        }
 
-                            let targetChatUrl = "{{ route('chat.index') }}";
+                        const newLinkWrapper = document.createElement('a');
+                        newLinkWrapper.href = targetChatUrl;
+                        newLinkWrapper.className = 'feed-item-link';
 
-                            if (topicId) {
-                                targetChatUrl = `${targetChatUrl}?topic=${topicId}`;
-                            }
-
-                            const newLinkWrapper = document.createElement('a');
-                            newLinkWrapper.href = targetChatUrl;
-                            newLinkWrapper.className = 'feed-item-link';
-
-                            newLinkWrapper.innerHTML = `
-                                <div class="feed-item" style="padding: 14px; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #0284c7;">
-                                    <div class="feed-avatar" style="background: #e0f2fe; color: #0284c7;">💬</div>
-                                    <div>
-                                        <div class="feed-msg-title" style="color: #0369a1;">
-                                            ${notification.message || (notification.data ? notification.data.message : 'New notification received')}
-                                        </div>
-                                        <div class="feed-time">Just now</div>
+                        newLinkWrapper.innerHTML = `
+                            <div class="feed-item" style="padding: 14px; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #0284c7;">
+                                <div class="feed-avatar" style="background: #e0f2fe; color: #0284c7;">💬</div>
+                                <div>
+                                    <div class="feed-msg-title" style="color: #0369a1;">
+                                        ${notification.message || (notification.data ? notification.data.message : 'New notification received')}
                                     </div>
+                                    <div class="feed-time">Just now</div>
                                 </div>
-                            `;
+                            </div>
+                        `;
 
-                            logsContainer.insertBefore(newLinkWrapper, logsContainer.firstChild);
-                        }
-                    });
-            }
-        });
-    </script>
-    @endunless
+                        logsContainer.insertBefore(newLinkWrapper, logsContainer.firstChild);
+                    }
+                });
+        }
+    });
+</script>
 </body>
 </html>

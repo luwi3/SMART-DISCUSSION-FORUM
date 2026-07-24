@@ -75,6 +75,12 @@ class ParticipationController extends Controller
         $studentRegNo  = $student ? $student->regNo : null;
 
         // 2. Calculate participation marks
+        // ➕ ADDED: expose the student record to the view under the name the
+        // dashboard blade expects, so the Status card/Profile tab can show the
+        // real active/warning/blacklisted state instead of a hardcoded value.
+        $currentStudent = $student;
+
+        // 2. ✨ SYNCHRONIZED LOGIC: Get ALL active topics to match the lecturer matrix view perfectly
         $allTopics = Topic::all();
         $totalParticipationScore = 0;
         $maxPossibleMarks = $allTopics->count() * 20;
@@ -133,6 +139,9 @@ class ParticipationController extends Controller
         }
 
         return view('dashboards.student', $data);
+            'announcements',
+            'currentStudent' // ➕ ADDED
+        ));
     }
 
     /**
