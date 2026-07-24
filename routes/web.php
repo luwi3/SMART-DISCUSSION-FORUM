@@ -34,7 +34,10 @@ Route::get('/test-embedding', function(EmbeddingService $service){
     );
     return $result;
 });
+<<<<<<< HEAD
 
+=======
+>>>>>>> de4b9db203c121a3994c543ad0888fbf0a5132eb
 
 // ==========================================
 // REAL-TIME BROADCAST CHANNELS
@@ -256,6 +259,8 @@ Route::post('/admin/students/{regNo}/activate', function ($regNo) {
 // ==========================================
 // 6. DEFAULT AUTH SYSTEM FILE LOADER
 // ==========================================
+
+use App\Http\Controllers\TopicExportController;
 
 // Safely added for PDF generation functionality
 Route::get('/topics/{id}/export-pdf', [TopicExportController::class, 'export'])

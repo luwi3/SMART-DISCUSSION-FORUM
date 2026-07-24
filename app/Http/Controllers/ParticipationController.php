@@ -94,7 +94,19 @@ class ParticipationController extends Controller
             ->where('expiryTime', '>=', now())
             ->get();
 
-        // 4. Which of those the student has already submitted
+        $completedQuizzes = collect(); 
+        $data=compact(
+            'activeQuizzes', 
+            'completedQuizzes',
+            'totalParticipationScore', 
+            'maxPossibleMarks'
+        );
+ if ($request->wantsJson()) {
+        return response()->json($data);
+    }
+
+        return view('dashboards.student',$data);
+        // 4. Which of those the student has already submitted (by regNo, not user_id)
         $submittedQuizIDs = collect();
         if ($studentRegNo) {
             $submittedQuizIDs = DB::table('quiz_submissions')

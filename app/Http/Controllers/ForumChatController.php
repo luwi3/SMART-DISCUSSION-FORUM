@@ -13,14 +13,18 @@ use App\Notifications\NewTopicNotification;
 use App\Models\Student;
 use App\Services\TopicService;
 use App\Jobs\ProcessMessageAI;
+use App\Services\SpamDetectionService;
 
 class ForumChatController extends Controller
 {
-    // AI topic service
+    protected $spamDetectionService;
     protected $topicService;
 
-    public function __construct(TopicService $topicService)
-    {
+    public function __construct(
+        SpamDetectionService $spamDetectionService,
+        TopicService $topicService
+    ) {
+        $this->spamDetectionService = $spamDetectionService;
         $this->topicService = $topicService;
     }
 
@@ -107,14 +111,12 @@ class ForumChatController extends Controller
         if (auth()->check()) {
             $rawGroups = auth()->user()->groups ?? collect(); 
             $sidebarGroups = $rawGroups->map(function ($group) use ($userId, $groupColumn) {
-                // Fetch when this specific user last looked at this group room
                 $lastView = DB::table('chat_views')
                     ->where('user_id', $userId)
                     ->where('chat_type', 'group')
                     ->where('chat_id', $group->id)
                     ->value('last_read_at');
 
-                // Determine target query column using detected configuration or fallbacks
                 $targetColumn = $groupColumn;
                 if (!$targetColumn) {
                     if (Schema::hasColumn('messages', 'group_discussion_id')) { $targetColumn = 'group_discussion_id'; }
@@ -159,32 +161,19 @@ class ForumChatController extends Controller
             }
         } else {
             $currentStreamTarget = (object) ['name' => 'General Stream', 'is_broadcast' => true];
-
-            $query = Message::query();
+          $query = Message::query();
             
             if ($groupColumn) {
                 $query->whereNull($groupColumn);
             }
+
             if (Schema::hasColumn('messages', 'topic_id')) {
                 $query->whereNull('topic_id');
             }
         }
 
         $currentStudent = Student::where('user_id', auth()->id())->first();
-
-
-               // JSON response for API / Java desktop client
-        if ($request->wantsJson()) {
-            return response()->json(compact(
-                'topics',
-                'sidebarGroups',
-                'messages',
-                'type',
-                'id'
-            ));
-        }
-
-        $courses = Student::select('courseCode')
+     $courses = Student::select('courseCode')
             ->distinct()
             ->whereNotNull('courseCode')
             ->get();
@@ -202,6 +191,19 @@ class ForumChatController extends Controller
             ->get();
         }
 
+        // Desktop App / JSON API Request Support
+        if ($request->wantsJson()) {
+            return response()->json(compact(
+                'topics',
+                'sidebarGroups',
+                'messages',
+                'type',
+                'id',
+                'mainChatUnread',
+                'courses'
+            ));
+        }
+
         return view('chat.index', compact(
             'topics',
             'sidebarGroups',
@@ -213,8 +215,11 @@ class ForumChatController extends Controller
             'mainChatUnread',
             'courses'
         ));
-
     }
+
+
+
+    
 
     public function store(Request $request, $type = null, $id = null)
     {
@@ -227,6 +232,8 @@ class ForumChatController extends Controller
         $id = $id ?? $request->input('id');
 
         $student = Student::where('user_id', auth()->id())->first();
+        
+        // Restricted course verification
         if ($request->filled('restrict_course_id')) {
             if (!$student || $student->courseCode != $request->restrict_course_id) {
                 return response()->json([
@@ -235,6 +242,7 @@ class ForumChatController extends Controller
             }
         }
 
+        // 🛑 Blacklist Enforcement Check
         if ($student && $student->status === 'blacklisted') {
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
@@ -256,6 +264,20 @@ class ForumChatController extends Controller
         $message->user_id = auth()->id();
         $message->body = $request->body;
 
+        /*
+        |--------------------------------------------------------------------------
+        | Spam Detection
+        |--------------------------------------------------------------------------
+        */
+        $isSpam = $this->spamDetectionService->checkSpam($message->body);
+
+        if ($isSpam) {
+            return response()->json([
+                'spam' => true,
+                'message' => 'This message was deleted because it was detected as spam.'
+            ], 422);
+        }
+
         if ($request->filled('restrict_course_id')) {
             $message->course_code = $request->restrict_course_id;
         }
@@ -274,12 +296,7 @@ class ForumChatController extends Controller
                 }
 
                 $message->reply_to_message_id = $parentMessage->id;
-
-                if ($parentMessage->thread_id) {
-                    $message->thread_id = $parentMessage->thread_id;
-                } else {
-                    $message->thread_id = $parentMessage->id;
-                }
+                $message->thread_id = $parentMessage->thread_id ?? $parentMessage->id;
             }
         }
 
@@ -363,7 +380,7 @@ class ForumChatController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Student Activity
+        | Student Activity Update
         |--------------------------------------------------------------------------
         */
         if ($student) {
@@ -378,14 +395,16 @@ class ForumChatController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Broadcast
+        | Broadcast & Response
         |--------------------------------------------------------------------------
         */
         $message->load('user');
-        broadcast(new \App\Events\MessageSent($message));
+        broadcast(new \App\Events\MessageSent($message))->toOthers();
 
+        // Return Desktop App / API JSON format
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
+                'status'  => 'success',
                 'success' => true,
                 'message' => $message
             ]);

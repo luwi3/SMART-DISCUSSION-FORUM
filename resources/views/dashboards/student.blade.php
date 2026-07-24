@@ -321,187 +321,347 @@
                 </div>
             </div>
 
-        @else
-            <!-- 📊 MAIN MENU / DASHBOARD VIEW -->
-            <div class="welcome-header">
-                <h1 class="welcome-txt">Hello, {{ Auth::user()->name }}! 👋</h1>
-                <p class="welcome-sub">Always keep learning and stay active.</p>
-            </div>
-
-            <section class="cards-row">
-                <div class="metric-card">
-                    <div class="m-title">🤖 Forum Participation</div>
-                    <div class="m-val">
-                        @if(isset($maxPossibleMarks) && $maxPossibleMarks > 0)
-                            {{ $totalParticipationScore ?? 0 }} <span style="font-size: 16px; color: #64748b; font-weight: 500;">/ {{ $maxPossibleMarks }}</span>
-                        @else
-                            0 <span style="font-size: 14px; color: #94a3b8;">Marks</span>
-                        @endif
-                    </div>
-                    <div class="m-sub">
-                        @if(isset($maxPossibleMarks) && $maxPossibleMarks > 0)
-                            Live Contribution Progress
-                        @else
-                            No discussion active yet
-                        @endif
-                    </div>
-                    <div class="progress-line">
-                        @php
-                            $percent = (isset($maxPossibleMarks) && $maxPossibleMarks > 0) ? min((($totalParticipationScore ?? 0) / $maxPossibleMarks) * 100, 100) : 0;
-                        @endphp
-                        <div class="progress-fill" style="width: {{ $percent }}%;"></div>
-                    </div>
-                </div>
-
-                @php
-                    $studentStatus = $currentStudent->status ?? 'active';
-                @endphp
-                <div class="metric-card" style="width:160px;">
-                    <div class="m-title" style="color:#1e293b;">Status</div>
-                    @if($studentStatus === 'blacklisted')
-                        <div class="status-check" style="background:#fee2e2; color:#dc2626;">✕</div>
-                        <div class="m-sub" style="color:#dc2626; font-weight:700;">Blacklisted</div>
-                    @elseif($studentStatus === 'warning')
-                        <div class="status-check" style="background:#fef3c7; color:#b45309;">!</div>
-                        <div class="m-sub" style="color:#b45309; font-weight:700;">Warning Issued</div>
-                    @else
-                        <div class="status-check">✓</div>
-                        <div class="m-sub">Account Active</div>
-                    @endif
-                </div>
-
-                <div class="metric-card" style="width:240px;">
-                    <div class="m-title" style="color:#7c3aed;">Recommended Topic</div>
-                    <div class="m-val" style="font-size:18px; margin-top:10px; margin-bottom:15px;">Database Design</div>
-                    <a href="{{ route('chat.index') }}" class="btn-topic-action">VIEW TOPICS</a>
-                </div>
-            </section>
-
-            <div class="dashboard-grid">
-                <div class="left-column">
-                    <section style="display:flex; gap:20px; flex-wrap:wrap;">
-                        <!-- 🔵 Create Topic Card -->
-                        <a href="{{ route('topics.create') }}" style="background:#2563eb; color:white; padding:20px; border-radius:12px; text-decoration:none; width:260px; display:flex; align-items:center; gap:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); transition:0.2s;" onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563eb'">
-                            <div style="background:white; color:#2563eb; width:45px; height:45px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px;">💬</div>
-                            <div>
-                                <h3 style="font-size:16px; font-weight:700; margin-bottom:5px;">Create Topic</h3>
-                                <p style="font-size:12px; opacity:0.9;">Start a new discussion</p>
-                            </div>
-                        </a>
-
-                        <!-- 🟢 Create Group Card -->
-                        <a href="{{ route('groups.create') }}" style="background:#10b981; color:white; padding:20px; border-radius:12px; text-decoration:none; width:260px; display:flex; align-items:center; gap:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); transition:0.2s;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
-                            <div style="background:white; color:#10b981; width:45px; height:45px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px;">👥</div>
-                            <div>
-                                <h3 style="font-size:16px; font-weight:700; margin-bottom:5px;">Create Group</h3>
-                                <p style="font-size:12px; opacity:0.9;">Create a discussion group</p>
-                            </div>
-                        </a>
-
-                        <!-- 🟣 View Groups Card -->
-                        <a href="{{ route('groups.index') }}" style="background:#6366f1; color:white; padding:20px; border-radius:12px; text-decoration:none; width:260px; display:flex; align-items:center; gap:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); transition:0.2s;" onmouseover="this.style.background='#4f46e5'" onmouseout="this.style.background='#6366f1'">
-                            <div style="background:white; color:#6366f1; width:45px; height:45px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px;">🌐</div>
-                            <div>
-                                <h3 style="font-size:16px; font-weight:700; margin-bottom:5px;">View Groups</h3>
-                                <p style="font-size:12px; opacity:0.9;">Explore & join groups</p>
-                            </div>
-                        </a>
-                    </section>
-
-                    <!-- ✍️ Available Assessments Panel -->
-                 <section class="content-panel" style="margin-top: 20px;">
-        <h3 class="panel-title">✍️ Available Assessments</h3>
-
-        @if(isset($activeQuizzes) && count($activeQuizzes) > 0)
-            <p style="color: #10b981; font-size: 14px; margin-bottom: 15px; font-weight: 600;">✅ Your registered course streams have active evaluation windows open.</p>
-
-            @foreach($activeQuizzes as $activeQuiz)
-                @php
-                    $currentQuizId = $activeQuiz->quizID ?? $activeQuiz->id;
-
-                    $hasCompleted = isset($completedQuizzes) && $completedQuizzes->contains(function($completed) use ($currentQuizId) {
-                        return ($completed->quizID ?? $completed->id) == $currentQuizId;
-                    });
-                @endphp
-
-                <div class="list-row-item">
-                    <div class="item-info-meta">
-                        <span class="item-info-title">{{ $activeQuiz->title }}</span>
-                        <span class="item-info-badge">{{ $activeQuiz->courseCode }} • {{ $activeQuiz->duration }} Mins</span>
-                    </div>
-
-                    @if($hasCompleted)
-                        <span style="display: inline-block; padding: 8px 16px; background: #e2e8f0; color: #475569; border-radius: 6px; font-weight: bold; font-size: 13px; border: 1px solid #cbd5e1;">
-                            ✓ Completed
-                        </span>
-                    @else
-                        <a href="{{ route('quizzes.show', ['quizID' => $currentQuizId]) }}" style="display: inline-block; padding: 8px 16px; background: #10b981; color: white; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px;">
-                            ✍️ Attempt Quiz
-                        </a>
-                    @endif
-                </div>
-            @endforeach
-        @else
-            <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">No active evaluation windows are currently open for your course stream.</p>
-            <div class="list-row-item" style="opacity: 0.6; background: #f1f5f9;">
-                <div class="item-info-meta">
-                    <span class="item-info-title" style="color: #94a3b8;">No Evaluation Scheduled</span>
-                    <span class="item-info-badge" style="background: #cbd5e1; color: #64748b;">-- • 0 Mins</span>
-                </div>
-                <button disabled style="display: inline-block; padding: 8px 16px; background: #94a3b8; color: #e2e8f0; border-radius: 6px; border: none; font-weight: bold; font-size: 13px; cursor: not-allowed;">
-                    🔒 Attempt Quiz
-                </button>
-            </div>
-        @endif
-    </section>
-</div> <!-- Closed left-column div -->
-
-<div class="right-column">
-    <section class="content-panel">
-        <div class="panel-title">📢 Recent Announcements</div>
-        <div class="feed-list">
-            @php
-                $displayAnnouncements = (isset($announcements) && !is_null($announcements) && $announcements->count() > 0) 
-                    ? $announcements->take(3) 
-                    : \App\Models\Announcement::latest()->take(3)->get();
-            @endphp
-
-            @forelse($displayAnnouncements as $announcement)
-                <div class="feed-item">
-                    <div class="feed-avatar">
-                        {{ strtoupper(substr($announcement->courseCode ?? $announcement->course_code ?? '📢', 0, 1)) }}
-                    </div>
+            @if(session('error'))
+                <div class="alert-banner" style="background-color: #fef2f2; border-left-color: #ef4444; color: #991b1b;">
+                    <span class="alert-icon">⚠️</span>
                     <div>
-                        <div class="feed-msg-title" style="font-weight: 600; color: #0f172a;">
-                            {{ $announcement->title }}
-                        </div>
-                        
-                        <div style="font-size: 12px; color: #334155; margin-top: 2px;">
-                            {!! $announcement->message 
-                                ?? $announcement->content 
-                                ?? $announcement->body 
-                                ?? $announcement->description 
-                                ?? '<i>No details provided.</i>' !!}
-                        </div>
+                        <h4 class="alert-heading" style="color: #991b1b;">System Notice</h4>
+                        <p class="alert-body" style="color: #ef4444;">{{ session('error') }}</p>
+                    </div>
+                </div>
+            @endif
 
-                        <div class="feed-time" style="font-size: 11px; color: #94a3b8; margin-top: 4px;">
-                            {{ $announcement->created_at ? $announcement->created_at->diffForHumans() : 'Recently' }}
+            @if(isset($currentTab) && $currentTab === 'profile')
+                <!-- 👤 STUDENT DETAILS / PROFILE VIEW -->
+                <div class="welcome-header">
+                    <h1 class="welcome-txt">My Profile</h1>
+                    <p class="welcome-sub">Manage your account information.</p>
+                </div>
+                <div class="content-panel">
+                    <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>👤 Student Profile & Account Details</span>
+                        <a href="{{ route('student.dashboard', ['tab' => 'main']) }}" style="font-size: 13px; background: #e2e8f0; color: #334155; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-weight: 600;">← Main Menu</a>
+                    </div>
+
+                    <div class="details-grid">
+                        <div class="detail-box">
+                            <div class="detail-label">Full Name</div>
+                            <div class="detail-value">{{ Auth::user()->name }}</div>
+                        </div>
+                        <div class="detail-box">
+                            <div class="detail-label">Email Address</div>
+                            <div class="detail-value">{{ Auth::user()->email }}</div>
+                        </div>
+                        <div class="detail-box">
+                            <div class="detail-label">Account Role</div>
+                            <div class="detail-value" style="text-transform: capitalize;">{{ Auth::user()->role ?? 'Student' }}</div>
+                        </div>
+                        <div class="detail-box">
+                            <div class="detail-label">Registration / ID</div>
+                            <div class="detail-value">{{ Auth::user()->regNo ?? Auth::user()->id }}</div>
+                        </div>
+                        <div class="detail-box">
+                            <div class="detail-label">Account Status</div>
+                            <div class="detail-value" style="color: #15803d;">Active</div>
+                        </div>
+                        <div class="detail-box">
+                            <div class="detail-label">Member Since</div>
+                            <div class="detail-value">{{ Auth::user()->created_at ? Auth::user()->created_at->format('M d, Y') : 'N/A' }}</div>
                         </div>
                     </div>
                 </div>
-            @empty
-                <p style="color: #64748b; font-size: 13px; padding: 10px 0;">No announcements posted yet.</p>
-            @endforelse
+
+            @elseif(isset($currentTab) && $currentTab === 'announcements')
+                <!-- 📢 FULL ANNOUNCEMENTS VIEW -->
+                <div class="welcome-header">
+                    <h1 class="welcome-txt">All Announcements</h1>
+                    <p class="welcome-sub">Department-wide notices and updates.</p>
+                </div>
+                <div class="content-panel">
+                    <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>📢 All Department Announcements</span>
+                        <a href="{{ route('student.dashboard', ['tab' => 'main']) }}" style="font-size: 13px; background: #e2e8f0; color: #334155; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-weight: 600;">← Main Menu</a>
+                    </div>
+
+                    <div class="feed-list" style="margin-top: 20px;">
+                        @if(isset($announcements) && count($announcements) > 0)
+                            @foreach($announcements as $announcement)
+                                <div class="list-row-item" style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
+                                    <div style="display: flex; justify-content: space-between; width: 100%;">
+                                        <span class="item-info-title" style="font-size: 16px;">{{ $announcement->title }}</span>
+                                        <span class="item-info-badge">{{ $announcement->courseCode }}</span>
+                                    </div>
+                                    <div style="font-size: 14px; color: #475569; line-height: 1.5; width: 100%;">{!! $announcement->message !!}</div>
+                                    <span style="font-size: 11px; color: #94a3b8;">Posted {{ $announcement->created_at ? $announcement->created_at->diffForHumans() : 'Recently' }}</span>
+                                </div>
+                            @endforeach
+                        @else
+                            <p style="color: #64748b; font-size: 14px;">No announcements found.</p>
+                        @endif
+                    </div>
+                </div>
+
+            @elseif(isset($currentTab) && $currentTab === 'notifications')
+                <!-- 🔔 NOTIFICATIONS VIEW -->
+                <div class="welcome-header">
+                    <h1 class="welcome-txt">Notifications</h1>
+                    <p class="welcome-sub">Real-time updates from your forum activity.</p>
+                </div>
+                <div class="placeholder-card">
+                    <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h2 style="font-size: 18px;">Alert Logs</h2>
+                        <a href="{{ route('student.dashboard', ['tab' => 'main']) }}" style="font-size: 13px; background: #e2e8f0; color: #334155; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-weight: 600;">← Main Menu</a>
+                    </div>
+                    <p style="margin-bottom: 20px;">Review your recent forum updates and alerts below.</p>
+
+                    <div id="live-notifications-list" class="feed-list">
+                        @php
+                            try {
+                                $dbNotifications = auth()->user()->unreadNotifications;
+                            } catch (\Exception $e) {
+                                $dbNotifications = [];
+                            }
+                        @endphp
+
+                        @if(count($dbNotifications) > 0)
+                            @foreach($dbNotifications as $notification)
+                                @php
+                                    $topicId = $notification->data['topic_id'] ?? ($notification->data['id'] ?? null);
+                                    $targetUrl = $topicId ? url('/chat?topic=' . $topicId) : route('chat.index');
+                                @endphp
+                                <a href="{{ $targetUrl }}" class="feed-item-link">
+                                    <div class="feed-item" style="padding: 14px; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #0284c7;">
+                                        <div class="feed-avatar" style="background: #e0f2fe; color: #0284c7;">💬</div>
+                                        <div>
+                                            <div class="feed-msg-title" style="color: #0369a1;">
+                                                {{ $notification->data['message'] ?? ($notification->data['text'] ?? 'New notification received') }}
+                                            </div>
+                                            <div class="feed-time">{{ $notification->created_at->diffForHumans() }}</div>
+                                        </div>
+                                    </div>
+                                </a>
+                            @endforeach
+                        @else
+                            <p id="no-notifications-fallback" style="color: #64748b; font-size: 14px;">Real-time notifications will stream live here.</p>
+                        @endif
+                    </div>
+                </div>
+
+            @else
+                <!-- 📊 MAIN MENU / DASHBOARD VIEW -->
+                <div class="welcome-header">
+                    <h1 class="welcome-txt">Hello, {{ Auth::user()->name }}! 👋</h1>
+                    <p class="welcome-sub">Always keep learning and stay active.</p>
+                </div>
+
+                <section class="cards-row">
+                    <div class="metric-card">
+                        <div class="m-title">🤖 Forum Participation</div>
+                        <div class="m-val">
+                            @if(isset($maxPossibleMarks) && $maxPossibleMarks > 0)
+                                {{ $totalParticipationScore ?? 0 }} <span style="font-size: 16px; color: #64748b; font-weight: 500;">/ {{ $maxPossibleMarks }}</span>
+                            @else
+                                0 <span style="font-size: 14px; color: #94a3b8;">Marks</span>
+                            @endif
+                        </div>
+                        <div class="m-sub">
+                            @if(isset($maxPossibleMarks) && $maxPossibleMarks > 0)
+                                Live Contribution Progress
+                            @else
+                                No discussion active yet
+                            @endif
+                        </div>
+                        <div class="progress-line">
+                            @php
+                                $percent = (isset($maxPossibleMarks) && $maxPossibleMarks > 0) ? min((($totalParticipationScore ?? 0) / $maxPossibleMarks) * 100, 100) : 0;
+                            @endphp
+                            <div class="progress-fill" style="width: {{ $percent }}%;"></div>
+                        </div>
+                    </div>
+
+                    @php
+                        $studentStatus = $currentStudent->status ?? 'active';
+                    @endphp
+                    <div class="metric-card" style="width:160px;">
+                        <div class="m-title" style="color:#1e293b;">Status</div>
+                        @if($studentStatus === 'blacklisted')
+                            <div class="status-check" style="background:#fee2e2; color:#dc2626;">✕</div>
+                            <div class="m-sub" style="color:#dc2626; font-weight:700;">Blacklisted</div>
+                        @elseif($studentStatus === 'warning')
+                            <div class="status-check" style="background:#fef3c7; color:#b45309;">!</div>
+                            <div class="m-sub" style="color:#b45309; font-weight:700;">Warning Issued</div>
+                        @else
+                            <div class="status-check">✓</div>
+                            <div class="m-sub">Account Active</div>
+                        @endif
+                    </div>
+
+                    <div class="metric-card" style="width:240px;">
+                        <div class="m-title" style="color:#7c3aed;">Recommended Topic</div>
+                        <div class="m-val" style="font-size:18px; margin-top:10px; margin-bottom:15px;">Database Design</div>
+                        <a href="{{ route('chat.index') }}" class="btn-topic-action">VIEW TOPICS</a>
+                    </div>
+                </section>
+
+                <div class="dashboard-grid">
+
+                    <div class="left-column">
+                         <section style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:20px;">
+
+    <!-- Create Topic -->
+    <a href="{{ route('topics.create') }}"
+       style="background:#2563eb; color:white; padding:20px; border-radius:12px; 
+       text-decoration:none; width:260px; display:flex; align-items:center; 
+       gap:15px;">
+
+        <div style="background:white; color:#2563eb; width:45px; height:45px;
+        border-radius:50%; display:flex; align-items:center;
+        justify-content:center; font-size:22px;">
+            💬
         </div>
-        <a href="{{ route('student.dashboard', ['tab' => 'announcements']) }}" class="btn-view-all">VIEW ALL</a>
-    </section>
+
+        <div>
+            <h3 style="font-size:16px; font-weight:700;">
+                Create Topic
+            </h3>
+
+            <p style="font-size:12px;">
+                Start a new discussion
+            </p>
+        </div>
+
+    </a>
+
+
+    <!-- Create Group -->
+    <a href="{{ route('groups.create') }}"
+       style="background:#10b981; color:white; padding:20px; border-radius:12px;
+       text-decoration:none; width:260px; display:flex; align-items:center;
+       gap:15px;">
+
+        <div style="background:white; color:#10b981; width:45px; height:45px;
+        border-radius:50%; display:flex; align-items:center;
+        justify-content:center; font-size:22px;">
+            👥
+        </div>
+
+        <div>
+            <h3 style="font-size:16px; font-weight:700;">
+                Create Group
+            </h3>
+
+            <p style="font-size:12px;">
+                Create a discussion group
+            </p>
+        </div>
+
+    </a>
+
+
+    <!-- View Groups -->
+    <a href="{{ route('groups.index') }}"
+       style="background:#6366f1; color:white; padding:20px; border-radius:12px;
+       text-decoration:none; width:260px; display:flex; align-items:center;
+       gap:15px;">
+
+        <div style="background:white; color:#6366f1; width:45px; height:45px;
+        border-radius:50%; display:flex; align-items:center;
+        justify-content:center; font-size:22px;">
+            🌐
+        </div>
+
+        <div>
+            <h3 style="font-size:16px; font-weight:700;">
+                View Groups
+            </h3>
+
+            <p style="font-size:12px;">
+                Explore & join groups
+            </p>
+        </div>
+
+    </a>
+
+</section>
+                        <section class="content-panel">
+                            <h3 class="panel-title">✍️ Available Assessments</h3>
+
+                            @if(isset($activeQuizzes) && count($activeQuizzes) > 0)
+                                <p style="color: #10b981; font-size: 14px; margin-bottom: 15px; font-weight: 600;">✅ Your registered course streams have active evaluation windows open.</p>
+
+                                @foreach($activeQuizzes as $activeQuiz)
+                                    @php
+                                        $currentQuizId = $activeQuiz->quizID ?? $activeQuiz->id;
+
+                                        $hasCompleted = isset($completedQuizzes) && $completedQuizzes->contains(function($completed) use ($currentQuizId) {
+                                            return ($completed->quizID ?? $completed->id) == $currentQuizId;
+                                        });
+                                    @endphp
+
+                                    <div class="list-row-item">
+                                        <div class="item-info-meta">
+                                            <span class="item-info-title">{{ $activeQuiz->title }}</span>
+                                            <span class="item-info-badge">{{ $activeQuiz->courseCode }} • {{ $activeQuiz->duration }} Mins</span>
+                                        </div>
+
+                                        @if($hasCompleted)
+                                            <span style="display: inline-block; padding: 8px 16px; background: #e2e8f0; color: #475569; border-radius: 6px; font-weight: bold; font-size: 13px; border: 1px solid #cbd5e1;">
+                                                ✓ Completed
+                                            </span>
+                                        @else
+                                            <a href="{{ route('quizzes.show', ['quizID' => $currentQuizId]) }}" style="display: inline-block; padding: 8px 16px; background: #10b981; color: white; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px;">
+                                                ✍️ Attempt Quiz
+                                            </a>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            @else
+                                <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">No active evaluation windows are currently open for your course stream.</p>
+                                <div class="list-row-item" style="opacity: 0.6; background: #f1f5f9;">
+                                    <div class="item-info-meta">
+                                        <span class="item-info-title" style="color: #94a3b8;">No Evaluation Scheduled</span>
+                                        <span class="item-info-badge" style="background: #cbd5e1; color: #64748b;">-- • 0 Mins</span>
+                                    </div>
+                                    <button disabled style="display: inline-block; padding: 8px 16px; background: #94a3b8; color: #e2e8f0; border-radius: 6px; border: none; font-weight: bold; font-size: 13px; cursor: not-allowed;">
+                                        🔒 Attempt Quiz
+                                    </button>
+                                </div>
+                            @endif
+                        </section>
+                    </div>
+
+                    <div class="right-column">
+                        <section class="content-panel">
+                            <div class="panel-title">📢 Recent Announcements</div>
+                            <div class="feed-list">
+                                @php
+                                    $sidebarAnnouncements = \App\Models\Announcement::latest()->take(3)->get();
+                                @endphp
+
+                                @if($sidebarAnnouncements->count() > 0)
+                                    @foreach($sidebarAnnouncements as $announcement)
+                                        <div class="feed-item">
+                                            <div class="feed-avatar">{{ strtoupper(substr($announcement->courseCode ?? 'D', 0, 1)) }}</div>
+                                            <div>
+                                                <div class="feed-msg-title">{{ $announcement->title }}</div>
+                                                <div style="font-size: 12px; color: #334155; margin-top: 2px;">{!! $announcement->message !!}</div>
+                                                <div class="feed-time">{{ $announcement->created_at ? $announcement->created_at->diffForHumans() : 'Recent' }}</div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                @else
+                                    <p style="color: #64748b; font-size: 13px;">No announcements posted yet.</p>
+                                @endif
+                            </div>
+                            <a href="{{ route('student.dashboard', ['tab' => 'announcements']) }}" class="btn-view-all">VIEW ALL</a>
+                        </section>
+                    </div>
 
                 </div>
-            </div>
-        @endif
+            @endif
 
-    </main>
-</div>
+        </main>
+    </div>
 
     <script>
     function clearBadgesInstantaneously() {
