@@ -24,8 +24,6 @@ return new class extends Migration
                   ->constrained()
                   ->onDelete('cascade');
 
-           
-
             $table->timestamps();
         });
     }

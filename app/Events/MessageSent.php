@@ -5,11 +5,11 @@ namespace App\Events;
 use App\Models\Message;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class MessageSent implements ShouldBroadcast
+class MessageSent implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -17,7 +17,10 @@ class MessageSent implements ShouldBroadcast
 
     public function __construct(Message $message)
     {
-        $this->message = $message;
+        $this->message = $message->load([
+            'user',
+            'replyTo',
+        ]);
     }
 
     public function broadcastOn()
@@ -29,6 +32,7 @@ class MessageSent implements ShouldBroadcast
 
         // 2. Check for any of your potential group column names
         $groupColumns = ['group_discussion_id', 'group_id', 'discussion_id'];
+
         foreach ($groupColumns as $column) {
             if (isset($this->message->{$column}) && $this->message->{$column}) {
                 return new Channel('chat.group.' . $this->message->{$column});
@@ -45,12 +49,20 @@ class MessageSent implements ShouldBroadcast
             'message' => [
                 'id' => $this->message->id,
                 'body' => $this->message->body,
+                'topic_id' => $this->message->topic_id,
                 'user' => [
-                    'name' => $this->message->user->name ?? 'Peer User'
+                    'name' => $this->message->user->name ?? 'Peer User',
                 ],
                 'user_id' => $this->message->user_id,
-                'created_at' => $this->message->created_at
-            ]
+                'reply_to_message_id' => $this->message->reply_to_message_id,
+                'created_at' => $this->message->created_at->toISOString(),
+            ],
         ];
+    }
+
+    // Explicitly define the event name so it perfectly matches your JS
+    public function broadcastAs()
+    {
+        return 'MessageSent';
     }
 }

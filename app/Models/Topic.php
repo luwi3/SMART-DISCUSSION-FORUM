@@ -10,7 +10,11 @@ class Topic extends Model
 protected $fillable = [
 'title',
 'description',
+'embedding',
 'user_id'
+];
+protected $casts = [
+    'embedding' => 'array',
 ];
 
 

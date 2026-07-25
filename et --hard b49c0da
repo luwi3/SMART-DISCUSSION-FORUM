@@ -1,0 +1,35 @@
+[33mde4b9db[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mAuthorization-database[m[33m, [m[1;31morigin/Authorization-database[m[33m)[m HEAD@{0}: commit (merge): Merge branch 'annoucement' of https://github.com/luwi3/SMART-DISCUSSION-FORUM into Authorization-database
+[33m5ccbb6d[m HEAD@{1}: commit (merge): Merge branch 'feature-auth-ui' of https://github.com/luwi3/SMART-DISCUSSION-FORUM into Authorization-database
+[33m3e6f678[m HEAD@{2}: commit: AI-COMMIT
+[33mb49c0da[m HEAD@{3}: commit: AI and deleting
+[33m0a9911b[m HEAD@{4}: commit: REPLY FEATURE
+[33m84a852c[m HEAD@{5}: checkout: moving from kisakye-dev to Authorization-database
+[33ma0e8b9d[m[33m ([m[1;31morigin/kisakye-dev[m[33m, [m[1;32mkisakye-dev[m[33m)[m HEAD@{6}: checkout: moving from Authorization-database to kisakye-dev
+[33m84a852c[m HEAD@{7}: reset: moving to HEAD
+[33m84a852c[m HEAD@{8}: commit: Merge branch 'feature-auth-ui' of https://github.com/luwi3/SMART-DISCUSSION-FORUM into Authorization-database
+[33m2f4e379[m HEAD@{9}: commit (merge): Current update
+[33md7a2ce1[m HEAD@{10}: commit: Integrate notification system and update forum authentication
+[33m5a9965e[m HEAD@{11}: reset: moving to HEAD
+[33m5a9965e[m HEAD@{12}: commit (merge): merge: resolved conflicts with kisakye-dev branch updates
+[33mb9038b4[m HEAD@{13}: commit: feat: updated user registration with dynamic role selection
+[33m493b4ae[m HEAD@{14}: commit (merge): Merge branch 'QUIZ' and resolve conflicts
+[33m272c2b2[m HEAD@{15}: commit: Add authentication database logic
+[33mfaa1014[m HEAD@{16}: pull origin feature-auth-ui: Fast-forward
+[33md0fee80[m HEAD@{17}: reset: moving to HEAD
+[33md0fee80[m HEAD@{18}: checkout: moving from main to Authorization-database
+[33mf735c90[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m HEAD@{19}: reset: moving to HEAD
+[33mf735c90[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m HEAD@{20}: reset: moving to origin/main
+[33mf735c90[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m HEAD@{21}: checkout: moving from Authorization-database to main
+[33md0fee80[m HEAD@{22}: reset: moving to HEAD
+[33md0fee80[m HEAD@{23}: pull origin feature-auth-ui: Fast-forward
+[33m0308222[m HEAD@{24}: checkout: moving from main to Authorization-database
+[33mf735c90[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m HEAD@{25}: checkout: moving from Authorization-database to main
+[33m0308222[m HEAD@{26}: checkout: moving from main to Authorization-database
+[33mf735c90[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m HEAD@{27}: checkout: moving from Authorization-database to main
+[33m0308222[m HEAD@{28}: checkout: moving from main to Authorization-database
+[33mf735c90[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m HEAD@{29}: checkout: moving from Authorization-database to main
+[33m0308222[m HEAD@{30}: checkout: moving from main to Authorization-database
+[33mf735c90[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m HEAD@{31}: checkout: moving from Authorization-database to main
+[33m0308222[m HEAD@{32}: pull origin feature-auth-ui: Fast-forward
+[33me1fab3f[m HEAD@{33}: checkout: moving from main to Authorization-database
+[33mf735c90[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m HEAD@{34}: clone: from https://github.com/luwi3/SMART-DISCUSSION-FORUM
