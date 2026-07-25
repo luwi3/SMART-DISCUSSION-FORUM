@@ -13,6 +13,8 @@ class LecturerSeeder extends Seeder
         // 👨‍🏫 Create Lecturer User account
         $lecturerUser = DB::table('users')->insertGetId([
             'name' => 'Dr. Alex Mukasa',
+             'username' => 'alex.mukasa',
+            
             'email' => 'lecturer@test.com',
             'password' => Hash::make('lecturer123'),
             'created_at' => now(),
@@ -20,12 +22,13 @@ class LecturerSeeder extends Seeder
         ]);
 
         // Link to the Lecturers profile registry table
-        DB::table('lecturers')->insert([
-            'staffNo' => 'LEC/2026/11',
-            'user_id' => $lecturerUser,
-            'name' => 'Dr. Alex Mukasa',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+       DB::table('lecturers')->insert([
+    'staffNo' => 'LEC/2026/11',
+    'user_id' => $lecturerUser,
+    'department' => 'Information Technology',
+    'created_at' => now(),
+    'updated_at' => now(),
+]);
+        
     }
 }
