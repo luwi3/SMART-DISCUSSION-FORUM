@@ -177,8 +177,15 @@
     @php
         try {
             $initialUnread = auth()->user()->unreadNotifications()->count();
+            $initialReplyUserIds = auth()->user()->unreadNotifications
+                ->filter(fn($n) => ($n->data['category'] ?? null) === 'reply')
+                ->pluck('data.from_user_id')
+                ->filter()
+                ->unique()
+                ->values();
         } catch (\Exception $e) {
             $initialUnread = 0;
+            $initialReplyUserIds = collect();
         }
         $studentStatus = $currentStudent->status ?? 'active';
     @endphp
@@ -391,6 +398,19 @@
 
             @elseif(isset($currentTab) && $currentTab === 'notifications')
                 <!-- 🔔 FULL NOTIFICATIONS VIEW -->
+                @php
+                    try {
+                        $dbNotifications = auth()->user()->unreadNotifications;
+                    } catch (\Exception $e) {
+                        $dbNotifications = collect();
+                    }
+
+                    $replyNotifications = $dbNotifications->filter(fn($n) => ($n->data['category'] ?? null) === 'reply')->values();
+                    $topicNotifications = $dbNotifications->filter(fn($n) => ($n->data['category'] ?? 'topic') !== 'reply')->values();
+
+                    $uniqueReplyUsers = $initialReplyUserIds->count();
+                @endphp
+
                 <div class="content-panel" style="max-width: 100%;">
                     <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center;">
                         <span>🔔 Alert Logs</span>
@@ -398,36 +418,62 @@
                     </div>
                     <p style="color: #64748b; font-size: 14px; margin: 12px 0 20px;">Review your recent forum updates and alerts below.</p>
 
-                    <div id="live-notifications-list" class="feed-list">
-                        @php
-                            try {
-                                $dbNotifications = auth()->user()->unreadNotifications;
-                            } catch (\Exception $e) {
-                                $dbNotifications = [];
-                            }
-                        @endphp
+                    <!-- ↩️ REPLIES SECTION -->
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom: 4px;">
+                        <span style="font-size: 14px; font-weight: 700; color: #1e293b;">↩️ Replies</span>
+                        <span class="badge" id="reply-people-badge" style="display: {{ $uniqueReplyUsers > 0 ? 'inline-block' : 'none' }};">{{ $uniqueReplyUsers }}</span>
+                    </div>
+                    <p style="font-size: 12px; color: #64748b; margin-bottom: 14px;">
+                        <span id="reply-people-count">{{ $uniqueReplyUsers }}</span>
+                        <span id="reply-people-label">{{ Str::plural('person', $uniqueReplyUsers) }}</span> replied to your messages
+                    </p>
 
-                        @if(count($dbNotifications) > 0)
-                            @foreach($dbNotifications as $notification)
-                                @php
-                                    $topicId = $notification->data['topic_id'] ?? ($notification->data['id'] ?? null);
-                                    $targetUrl = $topicId ? url('/chat?topic=' . $topicId) : route('chat.index');
-                                @endphp
-                                <a href="{{ $targetUrl }}" class="feed-item-link">
-                                    <div class="feed-item" style="padding: 14px; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #0284c7;">
-                                        <div class="feed-avatar" style="background: #e0f2fe; color: #0284c7;">💬</div>
-                                        <div>
-                                            <div class="feed-msg-title" style="color: #0369a1;">
-                                                {{ $notification->data['message'] ?? ($notification->data['text'] ?? 'New notification received') }}
-                                            </div>
-                                            <div class="feed-time">{{ $notification->created_at->diffForHumans() }}</div>
+                    <div id="live-reply-notifications-list" class="feed-list" style="margin-bottom: 28px;">
+                        @forelse($replyNotifications as $notification)
+                            @php
+                                $targetUrl = $notification->data['url'] ?? route('chat.index');
+                            @endphp
+                            <a href="{{ url($targetUrl) }}" class="feed-item-link">
+                                <div class="feed-item" style="padding: 14px; background: #f0fdf4; border-radius: 8px; border-left: 4px solid #16a34a;">
+                                    <div class="feed-avatar" style="background: #dcfce7; color: #16a34a;">↩️</div>
+                                    <div>
+                                        <div class="feed-msg-title" style="color: #15803d;">
+                                            {{ $notification->data['message'] ?? 'New reply received' }}
                                         </div>
+                                        <div class="feed-time">{{ $notification->created_at->diffForHumans() }}</div>
                                     </div>
-                                </a>
-                            @endforeach
-                        @else
-                            <p id="no-notifications-fallback" style="color: #64748b; font-size: 14px;">Real-time notifications will stream live here.</p>
-                        @endif
+                                </div>
+                            </a>
+                        @empty
+                            <p id="no-reply-notifications-fallback" style="color: #64748b; font-size: 14px;">No one has replied to your messages yet.</p>
+                        @endforelse
+                    </div>
+
+                    <!-- 🗨️ TOPIC NOTIFICATIONS SECTION -->
+                    <div style="font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 14px; padding-top: 18px; border-top: 1px solid #f1f5f9;">
+                        🗨️ Topic Notifications
+                    </div>
+
+                    <div id="live-topic-notifications-list" class="feed-list">
+                        @forelse($topicNotifications as $notification)
+                            @php
+                                $topicId = $notification->data['topic_id'] ?? ($notification->data['id'] ?? null);
+                                $targetUrl = $notification->data['url'] ?? ($topicId ? url('/chat?topic=' . $topicId) : route('chat.index'));
+                            @endphp
+                            <a href="{{ url($targetUrl) }}" class="feed-item-link">
+                                <div class="feed-item" style="padding: 14px; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #0284c7;">
+                                    <div class="feed-avatar" style="background: #e0f2fe; color: #0284c7;">💬</div>
+                                    <div>
+                                        <div class="feed-msg-title" style="color: #0369a1;">
+                                            {{ $notification->data['message'] ?? ($notification->data['text'] ?? 'New notification received') }}
+                                        </div>
+                                        <div class="feed-time">{{ $notification->created_at->diffForHumans() }}</div>
+                                    </div>
+                                </div>
+                            </a>
+                        @empty
+                            <p id="no-topic-notifications-fallback" style="color: #64748b; font-size: 14px;">Real-time notifications will stream live here.</p>
+                        @endforelse
                     </div>
                 </div>
 
@@ -641,10 +687,28 @@
             const userId = "{{ auth()->id() }}";
             const topBadge = document.getElementById('notification-count');
             const sidebarBadge = document.getElementById('sidebar-badge-counter');
-            const logsContainer = document.getElementById('live-notifications-list');
+            const replyList = document.getElementById('live-reply-notifications-list');
+            const topicList = document.getElementById('live-topic-notifications-list');
+            const replyBadge = document.getElementById('reply-people-badge');
+            const replyCountEl = document.getElementById('reply-people-count');
+            const replyLabelEl = document.getElementById('reply-people-label');
             const currentTab = "{{ $currentTab ?? 'dashboard' }}";
 
             let unreadCount = parseInt("{{ $initialUnread }}") || 0;
+
+            // Distinct set of users who have replied to this student's messages,
+            // so the Replies badge shows "how many people", not "how many replies".
+            const replyPeopleSet = new Set(@json($initialReplyUserIds));
+
+            function updateReplyPeopleBadge() {
+                const count = replyPeopleSet.size;
+                if (replyCountEl) replyCountEl.innerText = count;
+                if (replyLabelEl) replyLabelEl.innerText = count === 1 ? 'person' : 'people';
+                if (replyBadge) {
+                    replyBadge.innerText = count;
+                    replyBadge.style.display = count > 0 ? 'inline-block' : 'none';
+                }
+            }
 
             if (currentTab === 'notifications') {
                 clearBadgesInstantaneously();
@@ -668,7 +732,9 @@
             if (userId && typeof Echo !== 'undefined') {
                 Echo.private(`App.Models.User.${userId}`)
                     .notification((notification) => {
-                        console.log('Real-time topic notification caught:', notification);
+                        console.log('Real-time notification caught:', notification);
+
+                        const isReply = notification.category === 'reply';
 
                         if (currentTab !== 'notifications') {
                             unreadCount++;
@@ -678,17 +744,25 @@
                             clearBadgesInstantaneously();
                         }
 
-                        if (logsContainer) {
-                            const fallbackText = document.getElementById('no-notifications-fallback');
+                        if (isReply && notification.from_user_id) {
+                            replyPeopleSet.add(notification.from_user_id);
+                            updateReplyPeopleBadge();
+                        }
+
+                        const targetList = isReply ? replyList : topicList;
+
+                        if (targetList) {
+                            const fallbackId = isReply ? 'no-reply-notifications-fallback' : 'no-topic-notifications-fallback';
+                            const fallbackText = document.getElementById(fallbackId);
                             if (fallbackText) {
                                 fallbackText.remove();
                             }
 
                             const topicId = notification.topic_id || notification.id || (notification.data ? notification.data.topic_id : '');
 
-                            let targetChatUrl = "{{ route('chat.index') }}";
+                            let targetChatUrl = notification.url || "{{ route('chat.index') }}";
 
-                            if (topicId) {
+                            if (!notification.url && topicId) {
                                 targetChatUrl = `${targetChatUrl}?topic=${topicId}`;
                             }
 
@@ -696,11 +770,17 @@
                             newLinkWrapper.href = targetChatUrl;
                             newLinkWrapper.className = 'feed-item-link';
 
+                            const icon = isReply ? '↩️' : '💬';
+                            const bg = isReply ? '#f0fdf4' : '#f0f9ff';
+                            const border = isReply ? '#16a34a' : '#0284c7';
+                            const avatarBg = isReply ? '#dcfce7' : '#e0f2fe';
+                            const textColor = isReply ? '#15803d' : '#0369a1';
+
                             newLinkWrapper.innerHTML = `
-                                <div class="feed-item" style="padding: 14px; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #0284c7;">
-                                    <div class="feed-avatar" style="background: #e0f2fe; color: #0284c7;">💬</div>
+                                <div class="feed-item" style="padding: 14px; background: ${bg}; border-radius: 8px; border-left: 4px solid ${border};">
+                                    <div class="feed-avatar" style="background: ${avatarBg}; color: ${border};">${icon}</div>
                                     <div>
-                                        <div class="feed-msg-title" style="color: #0369a1;">
+                                        <div class="feed-msg-title" style="color: ${textColor};">
                                             ${notification.message || (notification.data ? notification.data.message : 'New notification received')}
                                         </div>
                                         <div class="feed-time">Just now</div>
@@ -708,7 +788,7 @@
                                 </div>
                             `;
 
-                            logsContainer.insertBefore(newLinkWrapper, logsContainer.firstChild);
+                            targetList.insertBefore(newLinkWrapper, targetList.firstChild);
                         }
                     });
             }

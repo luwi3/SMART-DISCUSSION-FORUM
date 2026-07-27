@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Notifications\NewTopicNotification;
+use App\Notifications\NewReplyNotification;
+use Illuminate\Support\Facades\Notification;
 use App\Models\Student;
 use App\Services\TopicService;
 use App\Services\SpamDetectionService;
@@ -84,8 +86,14 @@ class ForumChatController extends Controller
 
         $mainChatQuery = Message::query()->where('user_id', '!=', $userId);
         if ($groupColumn) { $mainChatQuery->whereNull($groupColumn); }
-        if (Schema::hasColumn('messages', 'topic_id')) { $mainChatQuery->whereNull('topic_id'); }
-        
+
+        // Messages posted natively inside a topic room no longer show in the
+        // main chat feed (see the same flag in the main messages query below),
+        // so they must not bump this unread count either.
+        if (Schema::hasColumn('messages', 'created_in_topic')) {
+            $mainChatQuery->where('created_in_topic', false);
+        }
+
         $mainChatUnread = $mainChatQuery->when($mainChatLastView, function ($query) use ($mainChatLastView) {
             return $query->where('created_at', '>', $mainChatLastView);
         })->count();
@@ -208,9 +216,12 @@ class ForumChatController extends Controller
                 $mainMessagesQuery->whereNull($groupColumn);
             }
 
-            // 🔒 Exclude anything that belongs to a topic thread
-            if (Schema::hasColumn('messages', 'topic_id')) {
-                $mainMessagesQuery->whereNull('topic_id');
+            // Messages AI-classified into a topic stay visible here too — they
+            // originated in main chat and aren't moved out of it. Messages
+            // posted natively inside a topic room are excluded so they don't
+            // leak back into the main feed.
+            if (Schema::hasColumn('messages', 'created_in_topic')) {
+                $mainMessagesQuery->where('created_in_topic', false);
             }
 
             $mainMessagesQuery->where(function ($q) use ($currentStudent) {
@@ -353,6 +364,12 @@ class ForumChatController extends Controller
             && Schema::hasColumn('messages', 'topic_id')
         ) {
             $message->topic_id = $id;
+
+            // Posted directly inside the topic room, not AI-classified out of
+            // main chat — keep it out of the main chat feed.
+            if (Schema::hasColumn('messages', 'created_in_topic')) {
+                $message->created_in_topic = true;
+            }
         }
 
         /*
@@ -361,6 +378,16 @@ class ForumChatController extends Controller
         |--------------------------------------------------------------------------
         */
         $message->save();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Direct Reply Notification
+        |--------------------------------------------------------------------------
+        */
+        if (!empty($parentMessage) && $parentMessage->user_id !== $message->user_id) {
+            $message->load('user');
+            Notification::send($parentMessage->user, new NewReplyNotification($message));
+        }
 
         /*
         |--------------------------------------------------------------------------

@@ -7,9 +7,20 @@ use App\Models\Topic;
 use App\Models\User; // 👤 Imported to find users to notify
 use App\Notifications\NewTopicNotification; // 🔔 Imported your notification class
 use Illuminate\Support\Facades\Notification;
+use App\Services\LlamaService;
+use App\Services\EmbeddingService;
 
 class TopicController extends Controller
 {
+    protected $llamaService;
+    protected $embeddingService;
+
+    public function __construct(LlamaService $llamaService, EmbeddingService $embeddingService)
+    {
+        $this->llamaService = $llamaService;
+        $this->embeddingService = $embeddingService;
+    }
+
     public function create()
     {
         return view('topics.create');
@@ -23,20 +34,31 @@ class TopicController extends Controller
             'description' => 'required|string',
         ]);
 
-        // 2. Create and store the topic record in $topic for notifications
+        // 2. Llama adds academic context to the title/description, capped at
+        // 30 words total, then that enriched text is embedded so the topic
+        // can be matched against related discussions.
+        $contextText = $this->llamaService->addContextToTopic(
+            $validated['title'],
+            $validated['description']
+        );
+
+        $embedding = $this->embeddingService->createEmbedding($contextText);
+
+        // 3. Create and store the topic record in $topic for notifications
         $topic = Topic::create([
             'title' => $validated['title'],
             'description' => $validated['description'],
+            'embedding' => $embedding,
             'user_id' => auth()->id(),
         ]);
 
-        // 3. 🔔 NOTIFICATION SYSTEM: Get all users except the creator
+        // 4. 🔔 NOTIFICATION SYSTEM: Get all users except the creator
         $usersToNotify = User::where('id', '!=', auth()->id())->get();
-        
+
         // Send the notification via database + Reverb broadcast pipeline
         Notification::send($usersToNotify, new NewTopicNotification($topic));
 
-        // 4. Respond appropriately depending on how the request was made
+        // 5. Respond appropriately depending on how the request was made
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
                 'success' => true,

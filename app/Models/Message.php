@@ -16,11 +16,16 @@ class Message extends Model
         'user_id',
         'group_id',
         'topic_id',
+        'created_in_topic',
         'reply_to_message_id',
         'thread_id',
         'course_code',
         'ai_description',
         'deleted_by',
+    ];
+
+    protected $casts = [
+        'created_in_topic' => 'boolean',
     ];
 
     /**

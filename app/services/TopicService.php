@@ -216,7 +216,7 @@ class TopicService
         */
 
 
-        if ($highestSimilarity >= 0.90) {
+        if ($highestSimilarity >= 0.6) {
 
             return $bestTopic;
 
