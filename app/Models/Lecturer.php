@@ -23,6 +23,6 @@ class Lecturer extends Model
     // Connection back to the main login User account
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

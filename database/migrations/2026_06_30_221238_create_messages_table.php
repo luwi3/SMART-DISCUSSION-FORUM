@@ -12,15 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('messages', function (Blueprint $table) {
-           $table->id();
-        $table->text('body'); // The actual text message chat bubble
-        $table->foreignId('user_id')->constrained()->onDelete('cascade'); // The sender
-        
-        // These are nullable because a message belongs to EITHER a group OR a topic
-        
-        $table->foreignId('topic_id')->nullable()->constrained()->onDelete('cascade');
-        
-        $table->timestamps();
+            $table->id();
+            $table->text('body'); // The actual text message chat bubble
+            $table->foreignId('user_id')->constrained()->onDelete('cascade'); // The sender
+            
+            // These are nullable because a message belongs to EITHER a group, a topic, OR neither (Global Broadcast)
+            $table->foreignId('topic_id')->nullable()->constrained()->onDelete('cascade');
+           
+            
+            $table->timestamps();
         });
     }
 

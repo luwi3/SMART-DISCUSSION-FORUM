@@ -13,10 +13,17 @@ return new class extends Migration
     {
         Schema::create('group_discussions', function (Blueprint $table) {
             $table->id();
+            // 🌟 Tracks the user who created the group
+            $table->foreignId('user_id')->constrained()->onDelete('cascade'); 
+            
             $table->string('name');
+            
+            // 🌟 Matches the "Group Description" textarea field in your form
+            $table->text('description'); 
+            
             $table->timestamps();
         });
-    } // ◄ Check this: Your original file is likely missing this closing curly brace!
+    }
 
     /**
      * Reverse the migrations.

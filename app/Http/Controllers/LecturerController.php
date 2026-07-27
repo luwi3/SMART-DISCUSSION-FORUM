@@ -13,34 +13,35 @@ class LecturerController extends Controller
         return view('dashboards.register-lecturer');
     }
 
-    public function store(Request $request)
-    {
-        // 1. Validate all incoming form fields
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'username' => 'required|string|max:255|unique:users',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8',
-            'staffNo' => 'required|string|unique:lecturers,staffNo',
-            'department' => 'required|string|max:255',
-        ]);
+  public function store(Request $request)
+{
+    $validated = $request->validate([
+        'name' => 'required|string|max:255',
+        'username' => 'required|string|max:255|unique:users',
+        'email' => 'required|string|email|max:255|unique:users',
+        'password' => 'required|string|min:8',
+        'staffNo' => 'required|string|unique:lecturers,staffNo',
+        'department' => 'required|string|max:255',
+    ]);
 
-        // 2. Step One: Create the User login account
-        $user = User::create([
-            'name' => $validated['name'],
-            'username' => $validated['username'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-        ]);
+    $user = User::create([
+        'name' => $validated['name'],
+        'username' => $validated['username'],
+        'email' => $validated['email'],
+        'password' => Hash::make($validated['password']),
+        'role' => 'lecturer',
+    ]);
 
-        // 3. Step Two: Create the Lecturer record linked to that User
-        Lecturer::create([
-            'staffNo' => $validated['staffNo'],
-            'user_id' => $user->id, // 🔗 Links the lecturer to the newly created user ID
-            'department' => $validated['department'],
-        ]);
+    Lecturer::create([
+        'staffNo' => $validated['staffNo'],
+        'user_id' => $user->id,
+        'department' => $validated['department'],
+    ]);
 
-        // 4. Redirect back with a success message
-        return redirect()->route('admin.lecturers.create')->with('success', 'Lecturer registered successfully!');
+    if ($request->wantsJson()) {
+        return response()->json(['status' => 'success']);
     }
+
+    return redirect()->route('admin.lecturers.create')->with('success', 'Lecturer registered successfully!');
+}
 }

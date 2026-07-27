@@ -60,16 +60,11 @@ return [
     |--------------------------------------------------------------------------
     |
     | Here you may specify the default timezone for your application, which
-    | will be used by the PHP date and date-time functions. The timezone
-    | is set to "UTC" by default as it is suitable for most use cases.
+    | will be used by the PHP date and date-time functions.
     |
     */
 
-    //'timezone' => 'UTC',
-    // config/app.php
-
-// Change 'UTC' to your exact local region timezone
-   'timezone' => 'Africa/Kampala',
+    'timezone' => 'Africa/Kampala',
 
     /*
     |--------------------------------------------------------------------------
