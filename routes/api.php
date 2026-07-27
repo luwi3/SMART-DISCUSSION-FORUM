@@ -11,6 +11,7 @@ use App\Http\Controllers\TopicController;
 use App\Http\Controllers\ForumChatController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\LecturerController;
+use App\Http\Controllers\ResourceController;
 
 
 Route::post('/login', [AuthController::class, 'login']);

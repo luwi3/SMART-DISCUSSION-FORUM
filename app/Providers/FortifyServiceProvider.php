@@ -41,6 +41,14 @@ class FortifyServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // 🚫 Stop Fortify from auto-registering its own login/register/password/
+        // verification routes. This app already defines its own complete set of
+        // auth routes in routes/auth.php (using our own App\Http\Controllers\Auth\*
+        // controllers, including the custom registration flow), so we keep that as
+        // the single source of truth and avoid Fortify duplicating route names
+        // like "password.confirm", "login", "register", etc.
+        Fortify::ignoreRoutes();
+
         $this->configureActions();
         $this->configureViews();
         $this->configureRateLimiting();
