@@ -17,17 +17,17 @@ class TopicController extends Controller
 
     public function store(Request $request)
     {
-        // 1. Validate 'title' and 'description'
-        $request->validate([
-            'title' => 'required',
-            'description' => 'required'
+        // 1. Validate 'title' and 'description' with strong input constraints
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'required|string',
         ]);
 
-        // 2. Map form data and create the topic record
+        // 2. Create and store the topic record in $topic for notifications
         $topic = Topic::create([
-            'title' => $request->title,
-            'description' => $request->description,
-            'user_id' => auth()->id()
+            'title' => $validated['title'],
+            'description' => $validated['description'],
+            'user_id' => auth()->id(),
         ]);
 
         // 3. 🔔 NOTIFICATION SYSTEM: Get all users except the creator
