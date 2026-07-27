@@ -405,6 +405,22 @@
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
     };
+    //notification spam function
+    function showNotification(message) {
+
+    const notification = document.createElement('div');
+
+    notification.className =
+        "fixed bottom-5 right-5 bg-red-500 text-white px-5 py-3 rounded-lg shadow-lg z-50 text-sm";
+
+    notification.textContent = message;
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+        notification.remove();
+    }, 4000);
+}
 
     // Reply box controls
     const replyBox = document.getElementById('reply-box');
@@ -634,7 +650,14 @@
                 .then((data) => {
                     // ADDED: handle the spam case — remove the optimistic bubble and
                     // notify the sender, then stop (skip the normal success logic below).
-                   
+                    if (data && data.spam === true) {
+                        if (createdRow) {
+                            createdRow.remove();
+                        }
+                        showNotification(
+                       data.spamMessage || 'This message was deleted because it was detected as spam.'
+                      );
+                        return;
                     }
 
                     // UNCHANGED: existing normal-message success logic.
