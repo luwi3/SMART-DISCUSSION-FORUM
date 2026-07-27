@@ -151,6 +151,52 @@
     <!-- Active Right Side Panel Chat Streams Messaging Core Interface -->
     <div class="flex-1 flex flex-col h-full bg-[#f8fafc] relative">
 
+        @php
+            $shareTopicId = null;
+            if ($type === 'topic' && $id) {
+                $shareTopicId = $id;
+            } elseif (request('topic')) {
+                $shareTopicId = request('topic');
+            }
+        @endphp
+
+        @if($shareTopicId && isset($currentStreamTarget) && !($currentStreamTarget->is_broadcast ?? false))
+            <div class="px-8 py-3 border-b border-slate-200 bg-white flex items-center justify-between shrink-0">
+                <div class="flex items-center space-x-2 min-w-0">
+                    <i class="fa-solid fa-book-bookmark text-blue-400 shrink-0"></i>
+                    <h2 class="text-sm font-bold text-slate-800 truncate">{{ $currentStreamTarget->title ?? 'Discussion Topic' }}</h2>
+                </div>
+
+                <div class="relative inline-block text-left shrink-0" id="share-wrapper">
+                    <button type="button" id="share-toggle" class="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-200 transition-all text-xs font-semibold">
+                        <i class="fa-solid fa-share-nodes text-slate-500"></i>
+                        <span>Share</span>
+                    </button>
+
+                    <div id="share-menu" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden divide-y divide-slate-100 z-50">
+                        <a href="#" data-share="whatsapp" class="flex items-center space-x-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50">
+                            <i class="fa-brands fa-whatsapp text-green-500 w-4"></i><span>WhatsApp</span>
+                        </a>
+                        <a href="#" data-share="twitter" class="flex items-center space-x-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50">
+                            <i class="fa-brands fa-x-twitter text-slate-900 w-4"></i><span>X (Twitter)</span>
+                        </a>
+                        <a href="#" data-share="facebook" class="flex items-center space-x-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50">
+                            <i class="fa-brands fa-facebook text-blue-600 w-4"></i><span>Facebook</span>
+                        </a>
+                        <a href="#" data-share="telegram" class="flex items-center space-x-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50">
+                            <i class="fa-brands fa-telegram text-sky-500 w-4"></i><span>Telegram</span>
+                        </a>
+                        <a href="#" data-share="email" class="flex items-center space-x-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50">
+                            <i class="fa-solid fa-envelope text-slate-500 w-4"></i><span>Email</span>
+                        </a>
+                        <button type="button" id="copy-link-btn" class="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 text-left">
+                            <i class="fa-solid fa-link text-slate-500 w-4"></i><span id="copy-link-label">Copy Link</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        @endif
+
         <div id="chat-messages-container" class="flex-1 overflow-y-auto px-8 py-6 space-y-4 pb-28 scroll-smooth">
             @if ($errors->any())
                 <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl m-4 shadow-sm flex items-start space-x-2">
@@ -165,24 +211,56 @@
 
             @if(count($messages) > 0)
                 @foreach($messages as $msg)
-                    <div class="flex items-end space-x-3 {{ $msg->user_id === auth()->id() ? 'flex-row-reverse space-x-reverse' : '' }} mb-1"
+                    @php
+                        $isMine = $msg->user_id === auth()->id();
+                        $isDeleted = $msg->trashed();
+                    @endphp
+                    <div class="flex items-end space-x-3 {{ $isMine ? 'flex-row-reverse space-x-reverse' : '' }} mb-1"
                          data-message-id="{{ $msg->id }}"
-                         data-sender="{{ $msg->user_id === auth()->id() ? 'You' : ($msg->user->name ?? 'Unknown') }}"
-                         data-body="{{ $msg->body }}">
+                         data-sender="{{ $isMine ? 'You' : ($msg->user->name ?? 'Unknown') }}"
+                         data-body="{{ $isDeleted ? '' : $msg->body }}"
+                         data-deleted="{{ $isDeleted ? '1' : '0' }}">
 
                         <div class="h-9 w-9 rounded-full bg-[#0b1329] text-slate-300 flex items-center justify-center text-xs font-bold shrink-0 shadow">
-                            @if($msg->user_id === auth()->id())
+                            @if($isMine)
                                 ME
                             @else
                                 {{ strtoupper(substr($msg->user->name ?? 'U', 0, 2)) }}
                             @endif
                         </div>
 
-                        <div class="flex flex-col max-w-xl {{ $msg->user_id === auth()->id() ? 'items-end' : 'items-start' }}">
-                            <div class="message-bubble relative px-4 py-2.5 shadow-md rounded-xl break-words w-full border
-                                {{ $msg->user_id === auth()->id()
+                        <div class="flex flex-col max-w-xl {{ $isMine ? 'items-end' : 'items-start' }}">
+                        @if($isDeleted)
+                            <div class="message-bubble-deleted flex items-center gap-2 px-4 py-2.5 rounded-xl w-full border border-dashed border-slate-300 bg-slate-50 italic text-slate-400 text-xs">
+                                <i class="fa-solid fa-ban text-[10px]"></i>
+                                <span>{{ (int) $msg->deleted_by === auth()->id() ? 'You deleted this message' : 'This message was deleted' }}</span>
+                            </div>
+                        @else
+                            <div class="message-bubble group relative px-4 pt-2.5 pb-5 shadow-md rounded-xl break-words w-full border
+                                {{ $isMine
                                     ? 'bg-sky-100 text-slate-900 border-sky-200 rounded-tr-none'
                                     : 'bg-white text-slate-800 border-slate-100 rounded-tl-none' }}">
+
+                                {{-- Floating action toolbar: dims to a hint until the bubble is hovered/focused --}}
+                                <div class="action-toolbar absolute -top-3 right-3 flex items-center gap-0.5 bg-white border border-slate-200 rounded-full shadow-sm px-1 py-1 opacity-70 group-hover:opacity-100 group-hover:shadow-md transition-all duration-150 z-20">
+                                    <button type="button"
+                                            class="reply-trigger w-6 h-6 flex items-center justify-center rounded-full text-slate-500 hover:text-sky-600 hover:bg-sky-50 transition-colors"
+                                            title="Reply">
+                                        <i class="fa-solid fa-reply text-[10px]"></i>
+                                    </button>
+
+                                    @if($msg->user_id === auth()->id())
+                                        <form action="{{ route('chat.destroy', $msg->id) }}" method="POST" class="delete-message-form inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit"
+                                                    class="w-6 h-6 flex items-center justify-center rounded-full text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                                    title="Delete">
+                                                <i class="fa-solid fa-trash-can text-[10px]"></i>
+                                            </button>
+                                        </form>
+                                    @endif
+                                </div>
 
                                 @if($msg->user_id !== auth()->id())
                                     <div class="text-[11px] font-bold text-emerald-600 mb-1 tracking-wide uppercase">
@@ -212,27 +290,6 @@
                                     {{ $msg->body }}
                                 </div>
 
-                                <div class="mt-2 pt-1 border-t border-slate-200/60 flex items-center justify-between space-x-2">
-                                    <button
-                                        type="button"
-                                        class="reply-trigger text-[10px] font-semibold text-blue-600 hover:text-blue-800 transition-colors flex items-center space-x-1">
-                                        <i class="fa-solid fa-reply text-[9px]"></i>
-                                        <span>Reply</span>
-                                    </button>
-
-                                    {{-- Delete Option for Owner --}}
-                                    @if($msg->user_id === auth()->id())
-                                        <form action="{{ route('chat.destroy', $msg->id) }}" method="POST" onsubmit="return confirm('Delete this message?');" class="inline">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="text-[10px] font-semibold text-red-500 hover:text-red-700 transition-colors flex items-center space-x-1">
-                                                <i class="fa-solid fa-trash-can text-[9px]"></i>
-                                                <span>Delete</span>
-                                            </button>
-                                        </form>
-                                    @endif
-                                </div>
-
                                 <span class="absolute bottom-1 right-2.5 text-[10px] select-none font-mono
                                     {{ $msg->user_id === auth()->id() ? 'text-slate-500' : 'text-gray-400' }}">
                                     {{ $msg->created_at ? $msg->created_at->format('H:i') : now()->format('H:i') }}
@@ -241,6 +298,7 @@
                                     @endif
                                 </span>
                             </div>
+                        @endif
                         </div>
 
                     </div>
@@ -376,9 +434,7 @@
     }, 4000);
 }
 
-    // ===============================
     // Reply box controls
-    // ===============================
     const replyBox = document.getElementById('reply-box');
     const replySender = document.getElementById('reply-sender');
     const replyText = document.getElementById('reply-text');
@@ -401,6 +457,25 @@
     }
 
     document.getElementById('cancel-reply-btn').addEventListener('click', cancelReply);
+
+    // Swap a message row's bubble for the "deleted" placeholder — used both
+    // for the deleter's own optimistic update and for live MessageDeleted
+    // broadcasts landing on everyone else's screen.
+    function renderAsDeleted(row, deletedByMe) {
+        if (!row) return;
+        row.dataset.deleted = '1';
+        row.dataset.body = '';
+
+        const bubbleWrap = row.querySelector('.flex.flex-col');
+        if (!bubbleWrap) return;
+
+        bubbleWrap.innerHTML = `
+            <div class="message-bubble-deleted flex items-center gap-2 px-4 py-2.5 rounded-xl w-full border border-dashed border-slate-300 bg-slate-50 italic text-slate-400 text-xs">
+                <i class="fa-solid fa-ban text-[10px]"></i>
+                <span>${deletedByMe ? 'You deleted this message' : 'This message was deleted'}</span>
+            </div>
+        `;
+    }
 
     // Event Delegation
     document.addEventListener('click', (e) => {
@@ -429,9 +504,39 @@
         }
     });
 
-    // ===============================
+    // Delete Message AJAX Handler — same optimistic pattern as sending: swap
+    // the bubble immediately, let the confirm() gate it, no full page reload.
+    document.addEventListener('submit', (e) => {
+        const form = e.target.closest('.delete-message-form');
+        if (!form) return;
+
+        e.preventDefault();
+        if (!confirm('Delete this message?')) return;
+
+        const row = form.closest('[data-message-id]');
+        const targetUrl = form.getAttribute('action');
+
+        fetch(targetUrl, {
+            method: 'POST',
+            body: new FormData(form),
+            credentials: 'same-origin',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+        })
+            .then((response) => {
+                if (!response.ok) throw new Error(`Delete failed (${response.status})`);
+                return response.json();
+            })
+            .then(() => renderAsDeleted(row, true))
+            .catch((error) => {
+                console.error('Delete failed:', error);
+                alert('Could not delete this message. Please try again.');
+            });
+    });
+
     // Restrict dropdown
-    // ===============================
     const toggleBtn = document.getElementById('dropdown-toggle');
     const menuEl = document.getElementById('dropdown-menu');
     const restrictLabel = document.getElementById('restrict-label');
@@ -468,9 +573,7 @@
         clearBtn.addEventListener('click', () => selectCourse('', 'All Courses'));
     }
 
-    // ===============================
     // Scrolling
-    // ===============================
     const scrollToBottom = () => {
         if (container) container.scrollTop = container.scrollHeight;
     };
@@ -494,12 +597,11 @@
             </button>` : '';
 
         const deleteForm = (isMe && messageId) ? `
-            <form action="/chat/messages/${messageId}" method="POST" onsubmit="return confirm('Delete this message?');" class="inline">
+            <form action="/chat/messages/${messageId}" method="POST" class="delete-message-form inline">
                 <input type="hidden" name="_token" value="${csrfToken}">
                 <input type="hidden" name="_method" value="DELETE">
-                <button type="submit" class="text-[10px] font-semibold text-red-500 hover:text-red-700 transition-colors flex items-center space-x-1">
-                    <i class="fa-solid fa-trash-can text-[9px]"></i>
-                    <span>Delete</span>
+                <button type="submit" class="w-6 h-6 flex items-center justify-center rounded-full text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors" title="Delete">
+                    <i class="fa-solid fa-trash-can text-[10px]"></i>
                 </button>
             </form>` : '';
 
@@ -514,17 +616,17 @@
                 ${avatarDisplay}
             </div>
             <div class="flex flex-col max-w-xl ${isMe ? 'items-end' : 'items-start'}">
-                <div class="message-bubble relative px-4 py-2.5 shadow-sm rounded-xl break-words w-full border
+                <div class="message-bubble group relative px-4 pt-2.5 pb-5 shadow-sm rounded-xl break-words w-full border
                     ${isMe ? 'bg-sky-100 text-slate-900 border-sky-200 rounded-tr-none' : 'bg-white text-slate-800 border-slate-100 rounded-tl-none'}">
-                    ${!isMe ? `<div class="text-[11px] font-bold text-emerald-600 mb-1 tracking-wide uppercase">${escapeHtml(senderName)}</div>` : ''}
-                    ${replyBlock}
-                    <div class="pr-14 text-sm font-normal leading-relaxed">${escapeHtml(body)}</div>
-                    <div class="mt-2 pt-1 border-t border-slate-200/60 flex items-center justify-between space-x-2">
-                        <button type="button" class="reply-trigger text-[10px] font-semibold text-blue-600 hover:text-blue-800 transition-colors flex items-center space-x-1">
-                            <i class="fa-solid fa-reply text-[9px]"></i><span>Reply</span>
+                    <div class="action-toolbar absolute -top-3 right-3 flex items-center gap-0.5 bg-white border border-slate-200 rounded-full shadow-sm px-1 py-1 opacity-70 group-hover:opacity-100 group-hover:shadow-md transition-all duration-150 z-20">
+                        <button type="button" class="reply-trigger w-6 h-6 flex items-center justify-center rounded-full text-slate-500 hover:text-sky-600 hover:bg-sky-50 transition-colors" title="Reply">
+                            <i class="fa-solid fa-reply text-[10px]"></i>
                         </button>
                         ${deleteForm}
                     </div>
+                    ${!isMe ? `<div class="text-[11px] font-bold text-emerald-600 mb-1 tracking-wide uppercase">${escapeHtml(senderName)}</div>` : ''}
+                    ${replyBlock}
+                    <div class="pr-14 text-sm font-normal leading-relaxed">${escapeHtml(body)}</div>
                     <span class="absolute bottom-1 right-2.5 text-[10px] select-none font-mono ${isMe ? 'text-slate-500' : 'text-gray-400'}">
                         ${timeStr}
                         ${isMe ? '<i class="fa-solid fa-check-double text-sky-600 ml-0.5"></i>' : ''}
@@ -543,9 +645,7 @@
         return messageRow;
     };
 
-    // ===============================
-    // SEND MESSAGE
-    // ===============================
+    // Send Message AJAX Handler
     const chatForm = document.getElementById('chat-form');
     if (chatForm) {
         chatForm.addEventListener('submit', function (e) {
@@ -628,15 +728,14 @@
                         if (createdRow) {
                             createdRow.dataset.messageId = data.message.id;
                             // Attach delete form dynamically now that we have the real message ID
-                            const actionBox = createdRow.querySelector('.border-t');
+                            const actionBox = createdRow.querySelector('.action-toolbar');
                             if (actionBox && !actionBox.querySelector('form')) {
                                 actionBox.insertAdjacentHTML('beforeend', `
-                                    <form action="/chat/messages/${data.message.id}" method="POST" onsubmit="return confirm('Delete this message?');" class="inline">
+                                    <form action="/chat/messages/${data.message.id}" method="POST" class="delete-message-form inline">
                                         <input type="hidden" name="_token" value="${csrfToken}">
                                         <input type="hidden" name="_method" value="DELETE">
-                                        <button type="submit" class="text-[10px] font-semibold text-red-500 hover:text-red-700 transition-colors flex items-center space-x-1">
-                                            <i class="fa-solid fa-trash-can text-[9px]"></i>
-                                            <span>Delete</span>
+                                        <button type="submit" class="w-6 h-6 flex items-center justify-center rounded-full text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors" title="Delete">
+                                            <i class="fa-solid fa-trash-can text-[10px]"></i>
                                         </button>
                                     </form>
                                 `);
@@ -663,41 +762,124 @@
     const queryTopicId = "{{ request('topic') }}";
     const currentChannelType = queryTopicId ? "topic" : "{{ $type ?? 'broadcast' }}";
     const currentChannelId = queryTopicId ? queryTopicId : "{{ $id ?? 'general' }}";
+    const studentCourseCode = @json($currentStudent->courseCode ?? null);
+
+    const handleIncomingMessage = (e) => {
+        if (parseInt(e.message.user_id) === currentUserId) return;
+
+        const senderName = e.message.user?.name ?? 'Peer User';
+        let replyTo = null;
+
+        if (e.message.reply_to) {
+            replyTo = {
+                id: e.message.reply_to.id,
+                sender: e.message.reply_to.user_name ?? 'Unknown',
+                body: e.message.reply_to.body ?? '',
+            };
+        } else if (
+            e.message.reply_to_message_id &&
+            messageCache[e.message.reply_to_message_id]
+        ) {
+            replyTo = {
+                id: e.message.reply_to_message_id,
+                sender: messageCache[e.message.reply_to_message_id].sender,
+                body: messageCache[e.message.reply_to_message_id].body,
+            };
+        }
+
+        appendNewMessage(
+            e.message.body,
+            senderName,
+            e.message.user_id,
+            e.message.id,
+            replyTo
+        );
+    };
+
+    // Someone else deleted a message we already have on screen — swap it to
+    // the placeholder live instead of waiting for a reload. Our own deletes
+    // are handled optimistically at the point of clicking, so skip those.
+    const handleIncomingDelete = (e) => {
+        if (parseInt(e.message.deleted_by) === currentUserId) return;
+
+        const row = document.querySelector(`[data-message-id="${e.message.id}"]`);
+        renderAsDeleted(row, false);
+    };
 
     if (window.Echo) {
         window.Echo.channel(`chat.${currentChannelType}.${currentChannelId}`)
-            .listen('.MessageSent', (e) => {
-                if (parseInt(e.message.user_id) === currentUserId) return;
+            .listen('.MessageSent', handleIncomingMessage)
+            .listen('.MessageDeleted', handleIncomingDelete);
 
-                const senderName = e.message.user?.name ?? 'Peer User';
-                let replyTo = null;
-
-                if (e.message.reply_to) {
-                    replyTo = {
-                        id: e.message.reply_to.id,
-                        sender: e.message.reply_to.user_name ?? 'Unknown',
-                        body: e.message.reply_to.body ?? '',
-                    };
-                } else if (
-                    e.message.reply_to_message_id &&
-                    messageCache[e.message.reply_to_message_id]
-                ) {
-                    replyTo = {
-                        id: e.message.reply_to_message_id,
-                        sender: messageCache[e.message.reply_to_message_id].sender,
-                        body: messageCache[e.message.reply_to_message_id].body,
-                    };
-                }
-
-                appendNewMessage(
-                    e.message.body,
-                    senderName,
-                    e.message.user_id,
-                    e.message.id,
-                    replyTo
-                );
-            });
+        // Course-restricted messages travel on their own private channel
+        // (see MessageSent::broadcastOn) — only subscribe if this student is
+        // actually registered to a course, and only on the main broadcast
+        // view where restricted messages are shown at all.
+        if (currentChannelType === 'broadcast' && studentCourseCode) {
+            window.Echo.private(`chat.course.${studentCourseCode}`)
+                .listen('.MessageSent', handleIncomingMessage)
+                .listen('.MessageDeleted', handleIncomingDelete);
+        }
     }
 </script>
+
+{{-- Requirement #12: builds real share links for the currently open topic.
+     Self-contained, doesn't touch any of the chat/websocket logic above. --}}
+@if($shareTopicId && isset($currentStreamTarget) && !($currentStreamTarget->is_broadcast ?? false))
+<script>
+(function() {
+    const shareToggle = document.getElementById('share-toggle');
+    const shareMenu = document.getElementById('share-menu');
+
+    if (shareToggle && shareMenu) {
+        shareToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            shareMenu.classList.toggle('hidden');
+        });
+        document.addEventListener('click', function() {
+            shareMenu.classList.add('hidden');
+        });
+        shareMenu.addEventListener('click', function(e) { e.stopPropagation(); });
+    }
+
+    // Always share the canonical /forum-workspace/topic/{id} URL, regardless
+    // of whether this page was reached via that path or via a ?topic= query.
+    const topicUrl = "{{ url('/forum-workspace/topic/' . $shareTopicId) }}";
+    const topicTitle = @json($currentStreamTarget->title ?? 'Discussion Topic');
+    const shareText = topicTitle + ' - Join the discussion:';
+
+    const shareLinks = {
+        whatsapp: 'https://wa.me/?text=' + encodeURIComponent(shareText + ' ' + topicUrl),
+        twitter: 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(shareText) + '&url=' + encodeURIComponent(topicUrl),
+        facebook: 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(topicUrl),
+        telegram: 'https://t.me/share/url?url=' + encodeURIComponent(topicUrl) + '&text=' + encodeURIComponent(shareText),
+        email: 'mailto:?subject=' + encodeURIComponent(topicTitle) + '&body=' + encodeURIComponent(shareText + ' ' + topicUrl)
+    };
+
+    document.querySelectorAll('[data-share]').forEach(function(link) {
+        const platform = link.getAttribute('data-share');
+        if (shareLinks[platform]) {
+            link.setAttribute('href', shareLinks[platform]);
+            link.setAttribute('target', '_blank');
+            link.setAttribute('rel', 'noopener noreferrer');
+        }
+    });
+
+    const copyBtn = document.getElementById('copy-link-btn');
+    const copyLabel = document.getElementById('copy-link-label');
+    if (copyBtn) {
+        copyBtn.addEventListener('click', function() {
+            navigator.clipboard.writeText(topicUrl).then(function() {
+                if (copyLabel) {
+                    const original = copyLabel.textContent;
+                    copyLabel.textContent = 'Copied!';
+                    setTimeout(function() { copyLabel.textContent = original; }, 1500);
+                }
+            });
+        });
+    }
+})();
+</script>
+@endif
 </body>
 </html>

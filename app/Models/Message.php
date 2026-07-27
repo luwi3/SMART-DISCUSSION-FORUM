@@ -20,6 +20,7 @@ class Message extends Model
         'thread_id',
         'course_code',
         'ai_description',
+        'deleted_by',
     ];
 
     /**

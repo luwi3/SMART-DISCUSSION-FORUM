@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Resource;
 use App\Models\Lecturer;
+use App\Models\Announcement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -13,14 +14,20 @@ class ResourceController extends Controller
     /**
      * Display a listing of resources uploaded by the lecturer along with the upload form.
      */
-    public function index()
+    public function index(Request $request)
     {
         $userId = Auth::id();
-        $lecturer = Lecturer::where('user_id', $userId)->first();
-        $staffNo = $lecturer ? $lecturer->staffNo : 'STAFF-TEST-01';
 
-        // Retrieve resources belonging to this lecturer
+        // A lecturer row is created atomically with the user account in
+        // LecturerController::store — it must already exist here.
+        $lecturer = Lecturer::where('user_id', $userId)->firstOrFail();
+        $staffNo = $lecturer->staffNo;
+
         $resources = Resource::where('staffNo', $staffNo)->orderBy('created_at', 'desc')->get();
+
+        if ($request->wantsJson()) {
+            return response()->json(compact('resources'));
+        }
 
         return view('resources.index', compact('resources'));
     }
@@ -31,29 +38,52 @@ class ResourceController extends Controller
     public function store(Request $request)
     {
         $userId = Auth::id();
-        $lecturer = Lecturer::where('user_id', $userId)->first();
-        $staffNo = $lecturer ? $lecturer->staffNo : 'STAFF-TEST-01';
+
+        // A lecturer row is created atomically with the user account in
+        // LecturerController::store — it must already exist here.
+        $lecturer = Lecturer::where('user_id', $userId)->firstOrFail();
+        $staffNo = $lecturer->staffNo;
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'courseCode' => 'required|string|max:50',
-            'file' => 'required|file|mimes:pdf,doc,docx,ppt,pptx,zip,png,jpg,jpeg|max:20480', // Max 20MB
+            'file' => 'required|file|mimes:pdf,doc,docx,ppt,pptx,zip,png,jpg,jpeg|max:20480',
         ]);
 
         if ($request->hasFile('file')) {
             $file = $request->file('file');
+            
             // Store file securely in the 'public/resources' directory
             $path = $file->store('resources', 'public');
 
-            Resource::create([
+            // Trim and uppercase course code to ensure exact matches across the app
+            $courseCode = trim(strtoupper($validated['courseCode']));
+
+            $resource = Resource::create([
                 'staffNo' => $staffNo,
-                'courseCode' => strtoupper($validated['courseCode']),
+                'courseCode' => $courseCode,
                 'title' => $validated['title'],
+                'file_name' => $file->getClientOriginalName(),
                 'file_path' => $path,
                 'file_type' => $file->getClientOriginalExtension(),
             ]);
 
-            return redirect()->back()->with('success', 'Learning resource uploaded successfully!');
+            // Automatically create a student announcement with the download link
+            Announcement::create([
+                'title' => 'New Resource: ' . $validated['title'],
+                'courseCode' => $courseCode,
+                'message' => "A new learning resource has been published for your course.<br><a href='" . asset('storage/' . $path) . "' class='btn btn-sm btn-primary mt-2' download>Download " . htmlspecialchars($validated['title']) . "</a>",
+            ]);
+
+            if ($request->wantsJson()) {
+                return response()->json(['status' => 'success', 'resource' => $resource]);
+            }
+
+            return redirect()->back()->with('success', 'Learning resource uploaded and broadcasted as an announcement successfully!');
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json(['error' => 'File upload failed.'], 422);
         }
 
         return redirect()->back()->with('error', 'File upload failed.');

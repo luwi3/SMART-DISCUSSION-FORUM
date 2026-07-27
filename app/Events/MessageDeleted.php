@@ -10,7 +10,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class MessageSent implements ShouldBroadcastNow
+class MessageDeleted implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -18,20 +18,17 @@ class MessageSent implements ShouldBroadcastNow
 
     public function __construct(Message $message)
     {
-        $this->message = $message->load([
-            'user',
-            'replyTo',
-        ]);
+        $this->message = $message;
     }
 
+    // Same channel a live message from this thread would have used —
+    // see MessageSent::broadcastOn(), kept in sync deliberately.
     public function broadcastOn()
     {
-        // 1. Check if the message belongs to a course topic
         if ($this->message->topic_id) {
             return new Channel('chat.topic.' . $this->message->topic_id);
         }
 
-        // 2. Check for any of your potential group column names
         $groupColumns = ['group_discussion_id', 'group_id', 'discussion_id'];
 
         foreach ($groupColumns as $column) {
@@ -40,14 +37,10 @@ class MessageSent implements ShouldBroadcastNow
             }
         }
 
-        // 3. A message restricted to a course code must only ever reach
-        // students on that course — a private channel so /broadcasting/auth
-        // (routes/channels.php) rejects anyone else's subscribe attempt.
         if ($this->message->course_code) {
             return new PrivateChannel('chat.course.' . $this->message->course_code);
         }
 
-        // 4. Fallback to the global main chat broadcast channel
         return new Channel('chat.broadcast.general');
     }
 
@@ -56,22 +49,14 @@ class MessageSent implements ShouldBroadcastNow
         return [
             'message' => [
                 'id' => $this->message->id,
-                'body' => $this->message->body,
-                'topic_id' => $this->message->topic_id,
-                'course_code' => $this->message->course_code,
-                'user' => [
-                    'name' => $this->message->user->name ?? 'Peer User',
-                ],
                 'user_id' => $this->message->user_id,
-                'reply_to_message_id' => $this->message->reply_to_message_id,
-                'created_at' => $this->message->created_at->toISOString(),
+                'deleted_by' => $this->message->deleted_by,
             ],
         ];
     }
 
-    // Explicitly define the event name so it perfectly matches your JS
     public function broadcastAs()
     {
-        return 'MessageSent';
+        return 'MessageDeleted';
     }
 }

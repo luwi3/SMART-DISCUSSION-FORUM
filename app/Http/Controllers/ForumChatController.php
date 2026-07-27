@@ -12,25 +12,22 @@ use App\Models\User;
 use App\Notifications\NewTopicNotification;
 use App\Models\Student;
 use App\Services\TopicService;
-use App\Jobs\ProcessMessageAI;
 use App\Services\SpamDetectionService;
+use App\Jobs\ProcessMessageAI;
 
 class ForumChatController extends Controller
 {
-    
+    // AI topic service
+    protected $topicService;
 
+    // AI spam detection service
+    protected $spamDetectionService;
 
-protected $spamDetectionService;
-protected $topicService;
-
-public function __construct(
-    SpamDetectionService $spamDetectionService,
-    TopicService $topicService
-)
-{
-    $this->spamDetectionService = $spamDetectionService;
-    $this->topicService = $topicService;
-}
+    public function __construct(TopicService $topicService, SpamDetectionService $spamDetectionService)
+    {
+        $this->topicService = $topicService;
+        $this->spamDetectionService = $spamDetectionService;
+    }
 
     public function index(Request $request, $type = null, $id = null)
     {
@@ -42,7 +39,7 @@ public function __construct(
 
         $userId = auth()->id();
 
-        // 🔍 Dynamic structural detection to find what column your group relationship uses
+        // Dynamic structural detection for group column
         $groupColumn = null;
         foreach (['group_discussion_id', 'group_id', 'discussion_id'] as $column) {
             if (Schema::hasColumn('messages', $column)) {
@@ -159,14 +156,17 @@ public function __construct(
                 }
 
                 if ($groupColumn) {
-                    $messages = Message::where($groupColumn, $id)->with('user')->orderBy('created_at', 'asc')->get();
+                    // withTrashed: a deleted message stays in the list as a
+                    // placeholder bubble instead of vanishing outright.
+                    $messages = Message::withTrashed()->where($groupColumn, $id)->with('user')->orderBy('created_at', 'asc')->get();
                 }
             } elseif ($type === 'topic') {
                 $currentStreamTarget = Topic::findOrFail($id);
-                $messages = Message::where('topic_id', $id)->with('user')->orderBy('created_at', 'asc')->get();
+                $messages = Message::withTrashed()->where('topic_id', $id)->with('user')->orderBy('created_at', 'asc')->get();
             }
         } else {
             $currentStreamTarget = (object) ['name' => 'General Stream', 'is_broadcast' => true];
+
             $query = Message::query();
             
             if ($groupColumn) {
@@ -179,22 +179,52 @@ public function __construct(
 
         $currentStudent = Student::where('user_id', auth()->id())->first();
 
-        $courses = Student::select('courseCode')
-            ->distinct()
-            ->whereNotNull('courseCode')
-            ->get();
+
+               // JSON response for API / Java desktop client
+        if ($request->wantsJson()) {
+            return response()->json(compact(
+                'topics',
+                'sidebarGroups',
+                'messages',
+                'type',
+                'id'
+            ));
+        }
+
+        // A student may only ever restrict a message to the course they're
+        // actually registered to (enforced again in store()) — so the picker
+        // only ever offers that one course, never every course in the system.
+        $courses = ($currentStudent && $currentStudent->courseCode)
+            ? collect([(object) ['courseCode' => $currentStudent->courseCode]])
+            : collect();
 
         if (!$type || $type === 'broadcast') {
-            $messages = Message::where(function ($q) use ($currentStudent) {
+            // withTrashed: a deleted message stays in the list as a
+            // placeholder bubble instead of vanishing outright.
+            $mainMessagesQuery = Message::withTrashed();
+
+            // 🔒 Exclude anything that belongs to a group discussion
+            if ($groupColumn) {
+                $mainMessagesQuery->whereNull($groupColumn);
+            }
+
+            // 🔒 Exclude anything that belongs to a topic thread
+            if (Schema::hasColumn('messages', 'topic_id')) {
+                $mainMessagesQuery->whereNull('topic_id');
+            }
+
+            $mainMessagesQuery->where(function ($q) use ($currentStudent) {
                 $q->whereNull('course_code');
 
                 if ($currentStudent) {
                     $q->orWhere('course_code', $currentStudent->courseCode);
                 }
-            })
-            ->with('user')
-            ->orderBy('created_at','asc')
-            ->get();
+            });
+
+            $messages = $mainMessagesQuery
+                ->with('user')
+                ->orderBy('created_at', 'asc')
+                ->get();
         }
 
         return view('chat.index', compact(
@@ -208,6 +238,7 @@ public function __construct(
             'mainChatUnread',
             'courses'
         ));
+
     }
 
     public function store(Request $request, $type = null, $id = null)
@@ -245,30 +276,24 @@ public function __construct(
             ]);
         }
 
+        // 4. Create and save new message
         $message = new Message();
         $message->user_id = auth()->id();
         $message->body = $request->body;
+
         /*
-|--------------------------------------------------------------------------
-| Spam Detection
-|--------------------------------------------------------------------------
-*/
+        |--------------------------------------------------------------------------
+        | Spam Detection
+        |--------------------------------------------------------------------------
+        */
+        $isSpam = $this->spamDetectionService->isSpam($message->body);
 
-$isSpam = $this->spamDetectionService
-                ->isSpam($message->body);
-
-
-if ($isSpam) {
-
-    return response()->json([
-
-        'spam' => true,
-
-        'message' => 'This message was deleted because it was detected as spam.'
-
-    ], 422);
-
-}
+        if ($isSpam) {
+            return response()->json([
+                'spam' => true,
+                'message' => 'This message was detected as spam and was not sent.'
+            ], 422);
+        }
 
         if ($request->filled('restrict_course_id')) {
             $message->course_code = $request->restrict_course_id;
@@ -431,15 +456,26 @@ if ($isSpam) {
 
         if (!$isOwner && !$isModerator) {
             if (request()->ajax() || request()->wantsJson()) {
-                return response()->json(['error' => 'You are not authorized to delete this message.'], 403);
+                return response()->json([
+                    'error' => 'You are not authorized to delete this message.'
+                ], 403);
             }
+
             abort(403, 'You are not authorized to delete this message.');
         }
 
+        $message->deleted_by = $currentUser->id;
+        $message->save();
         $message->delete();
 
+        broadcast(new \App\Events\MessageDeleted($message));
+
         if (request()->ajax() || request()->wantsJson()) {
-            return response()->json(['success' => true, 'message' => 'Message deleted.']);
+            return response()->json([
+                'success' => true,
+                'message_id' => $message->id,
+                'deleted_by' => $message->deleted_by,
+            ]);
         }
 
         return back()->with('success', 'Message deleted successfully.');

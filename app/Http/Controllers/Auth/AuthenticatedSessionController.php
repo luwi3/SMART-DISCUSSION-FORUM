@@ -30,11 +30,11 @@ class AuthenticatedSessionController extends Controller
 
     $user = $request->user();
 
-    if ($user->role === 'administrator') {
+    if ($user->role === 'administrator' || $user->role === 'admin') {
         return redirect()->route('admin.dashboard');
-    } elseif ($user->lecturer()->exists()) { // 👨‍🏫 Check the relationship instead of the role
-    return redirect()->route('lecturer.dashboard');
-}
+    } elseif ($user->role === 'lecturer') {
+        return redirect()->route('lecturer.dashboard');
+    }
     return redirect()->route('student.dashboard');
 }
     /**
