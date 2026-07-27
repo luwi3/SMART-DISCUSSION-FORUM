@@ -518,11 +518,27 @@
                     </div>
 
                     <div class="metric-card" style="width:240px;">
-                        <div class="m-title" style="color:#7c3aed;">Recommended Topic</div>
-                        <div class="m-val" style="font-size:18px; margin-top:10px; margin-bottom:15px;">Database Design</div>
-                        <a href="{{ route('chat.index') }}" class="btn-topic-action">VIEW TOPICS</a>
+                        <div class="m-title" style="color:#7c3aed;">Recommended Topics</div>
+                        <div class="m-sub" style="margin-bottom:15px;">Matched to what you've been discussing</div>
+                        <button type="button" id="recommend-topics-btn" class="btn-topic-action" style="border:none; cursor:pointer;">
+                            🔍 RECOMMEND TOPICS
+                        </button>
                     </div>
                 </section>
+
+                <!-- Recommended Topics Modal -->
+                <div id="recommend-topics-modal" style="display:none; position:fixed; inset:0; background:rgba(10,25,49,0.55); z-index:1000; align-items:center; justify-content:center; padding:20px;">
+                    <div style="background:white; width:100%; max-width:480px; border-radius:12px; padding:24px; box-shadow:0 10px 30px rgba(0,0,0,0.2); max-height:80vh; overflow-y:auto;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                            <h3 style="font-size:16px; font-weight:700; color:#1e293b;">🔍 Recommended Topics</h3>
+                            <button type="button" id="recommend-topics-close" style="background:none; border:none; font-size:18px; cursor:pointer; color:#64748b;">&times;</button>
+                        </div>
+                        <p style="font-size:12px; color:#64748b; margin-bottom:16px;">Based on what you've posted about, up to 5 topics you might want to join.</p>
+                        <div id="recommend-topics-list" class="feed-list">
+                            <p style="color:#64748b; font-size:14px;">Loading…</p>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="dashboard-grid">
 
@@ -655,6 +671,76 @@
             .then(data => console.log("Database notifications synchronized successfully:", data))
             .catch(err => console.error("Database sync notice:", err));
         }
+
+        // RECOMMENDED TOPICS MODAL
+        document.addEventListener('DOMContentLoaded', function () {
+            const recommendBtn = document.getElementById('recommend-topics-btn');
+            const modal = document.getElementById('recommend-topics-modal');
+            const closeBtn = document.getElementById('recommend-topics-close');
+            const list = document.getElementById('recommend-topics-list');
+
+            if (!recommendBtn || !modal || !list) return;
+
+            function escapeHtml(str) {
+                if (typeof str !== 'string') return '';
+                return str
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+
+            function closeModal() {
+                modal.style.display = 'none';
+            }
+
+            recommendBtn.addEventListener('click', function () {
+                modal.style.display = 'flex';
+                list.innerHTML = '<p style="color:#64748b; font-size:14px;">Loading…</p>';
+
+                fetch("{{ route('topics.recommended') }}", {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        const topics = data.topics || [];
+
+                        if (topics.length === 0) {
+                            list.innerHTML = '<p style="color:#64748b; font-size:14px;">No topics available yet. Start a discussion to get personalized suggestions!</p>';
+                            return;
+                        }
+
+                        list.innerHTML = topics.map(function (topic) {
+                            const base = "{{ url('/forum-workspace/topic') }}/" + topic.id;
+                            const url = topic.highlight_message_id
+                                ? base + '?highlight=' + topic.highlight_message_id
+                                : base;
+
+                            return `
+                                <a href="${url}" class="feed-item-link">
+                                    <div class="feed-item" style="padding: 14px; background: #faf5ff; border-radius: 8px; border-left: 4px solid #7c3aed;">
+                                        <div class="feed-avatar" style="background: #ede9fe; color: #7c3aed;">🔍</div>
+                                        <div>
+                                            <div class="feed-msg-title" style="color: #6d28d9;">${escapeHtml(topic.title)}</div>
+                                            <div style="font-size: 12px; color: #475569; margin-top: 2px;">${escapeHtml(topic.description ?? '')}</div>
+                                        </div>
+                                    </div>
+                                </a>
+                            `;
+                        }).join('<hr style="border:none; border-top:1px solid #f1f5f9; margin:4px 0;">');
+                    })
+                    .catch(err => {
+                        console.error('Failed to load recommended topics:', err);
+                        list.innerHTML = '<p style="color:#dc2626; font-size:14px;">Could not load recommendations. Please try again.</p>';
+                    });
+            });
+
+            if (closeBtn) closeBtn.addEventListener('click', closeModal);
+            modal.addEventListener('click', function (e) {
+                if (e.target === modal) closeModal();
+            });
+        });
 
         // MOBILE SIDEBAR TOGGLE
         document.addEventListener('DOMContentLoaded', function () {

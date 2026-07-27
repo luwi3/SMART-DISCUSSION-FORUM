@@ -22,10 +22,12 @@ class Message extends Model
         'course_code',
         'ai_description',
         'deleted_by',
+        'embedding',
     ];
 
     protected $casts = [
         'created_in_topic' => 'boolean',
+        'embedding' => 'array',
     ];
 
     /**

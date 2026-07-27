@@ -16,6 +16,7 @@ use App\Models\Student;
 use App\Services\TopicService;
 use App\Services\SpamDetectionService;
 use App\Jobs\ProcessMessageAI;
+use App\Jobs\EmbedMessage;
 
 class ForumChatController extends Controller
 {
@@ -378,6 +379,13 @@ class ForumChatController extends Controller
         |--------------------------------------------------------------------------
         */
         $message->save();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Embed Message (background — builds the student's interest profile)
+        |--------------------------------------------------------------------------
+        */
+        EmbedMessage::dispatch($message->id);
 
         /*
         |--------------------------------------------------------------------------

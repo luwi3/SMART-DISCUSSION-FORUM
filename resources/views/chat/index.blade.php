@@ -579,6 +579,22 @@
     };
     scrollToBottom();
 
+    // Arrived via a "Recommend Topics" link — scroll to and flash the
+    // message it was recommended for, so the student sees why it matched.
+    const highlightMessageId = new URLSearchParams(window.location.search).get('highlight');
+    if (highlightMessageId) {
+        const highlightTarget = document.querySelector(`[data-message-id="${highlightMessageId}"]`);
+        if (highlightTarget) {
+            highlightTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            const highlightBubble = highlightTarget.querySelector('.message-bubble');
+            if (highlightBubble) {
+                highlightBubble.classList.add('message-highlight');
+                setTimeout(() => highlightBubble.classList.remove('message-highlight'), 1800);
+            }
+        }
+    }
+
     // ===============================
     // Append a message DOM row
     // ===============================

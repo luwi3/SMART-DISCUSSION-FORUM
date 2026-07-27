@@ -9,21 +9,38 @@ use App\Notifications\NewTopicNotification; // 🔔 Imported your notification c
 use Illuminate\Support\Facades\Notification;
 use App\Services\LlamaService;
 use App\Services\EmbeddingService;
+use App\Services\RecommendationService;
 
 class TopicController extends Controller
 {
     protected $llamaService;
     protected $embeddingService;
+    protected $recommendationService;
 
-    public function __construct(LlamaService $llamaService, EmbeddingService $embeddingService)
-    {
+    public function __construct(
+        LlamaService $llamaService,
+        EmbeddingService $embeddingService,
+        RecommendationService $recommendationService
+    ) {
         $this->llamaService = $llamaService;
         $this->embeddingService = $embeddingService;
+        $this->recommendationService = $recommendationService;
     }
 
     public function create()
     {
         return view('topics.create');
+    }
+
+    /**
+     * Up to 5 topics matched to the student's own embedded message history,
+     * for the "Recommend Topics" button on the dashboard.
+     */
+    public function recommended(Request $request)
+    {
+        $topics = $this->recommendationService->recommendTopicsForStudent(auth()->user(), 5);
+
+        return response()->json(['topics' => $topics]);
     }
 
     public function store(Request $request)

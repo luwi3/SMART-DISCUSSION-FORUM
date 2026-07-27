@@ -174,6 +174,7 @@ Route::middleware(['auth', 'no.active.quiz'])->group(function () {
     // 📝 Dedicated Topic Action Handlers
     Route::get('/topics/create', [TopicController::class, 'create'])->name('topics.create');
     Route::post('/topics', [TopicController::class, 'store'])->name('topics.store');
+    Route::get('/topics/recommended', [TopicController::class, 'recommended'])->name('topics.recommended');
 
     // 📢 Standalone Announcements Workspace Route
     Route::get('/announcements', function() {
