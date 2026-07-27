@@ -31,7 +31,15 @@ class EnsureNoActiveQuiz
             $student = Student::where('user_id', $userId)->first();
 
             if ($student && $student->courseCode && $student->regNo) {
-                $liveQuizzes = Quiz::where('courseCode', $student->courseCode)
+                // 🔧 FIX: courseCode was compared with an exact match
+                // (Quiz::where('courseCode', $student->courseCode)). Quiz::store()
+                // saves courseCode as strtoupper() only (no trim), and Student::courseCode
+                // is whatever was typed at registration/admin-creation time — so a stray
+                // space or lowercase letter silently broke the match and this middleware
+                // never fired. Normalize both sides the same way before comparing.
+                $studentCourse = trim(strtoupper($student->courseCode));
+
+                $liveQuizzes = Quiz::whereRaw('TRIM(UPPER(courseCode)) = ?', [$studentCourse])
                     ->where('startTime', '<=', now())
                     ->where('expiryTime', '>=', now())
                     ->get();

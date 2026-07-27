@@ -20,25 +20,20 @@ class ParticipationController extends Controller
      */
     public function index()
     {
-        // 1. Fetch all active topics ordered by creation date
         $topics = Topic::orderBy('created_at', 'asc')->get();
 
-        // 2. 🛡️ STRICT WHITELIST: Only pull users whose role column is exactly 'student'
         $students = User::where('role', 'student')
                         ->orderBy('name', 'asc')
                         ->get();
 
-        // 3. Map student message metrics directly into a look-up grid matrix layout
         $matrix = [];
 
         foreach ($students as $student) {
             foreach ($topics as $topic) {
-                // Count rows using your exact message database keys
                 $messageCount = Message::where('topic_id', $topic->id)
                                        ->where('user_id', $student->id)
                                        ->count();
 
-                // 🧮 SYSTEM ALGORITHM: Each reply adds 2 points, capped at 20 marks total per topic
                 $calculatedScore = $messageCount * 2;
                 if ($calculatedScore > 20) {
                     $calculatedScore = 20;
@@ -46,7 +41,6 @@ class ParticipationController extends Controller
 
                 $matrix[$student->id][$topic->id] = $calculatedScore;
 
-                // Sync data down to your persistent tracking table
                 TopicParticipation::updateOrCreate(
                     [
                         'topic_id' => $topic->id,
@@ -73,22 +67,22 @@ class ParticipationController extends Controller
             return redirect('/login')->with('error', 'Please log in to view your dashboard.');
         }
 
-        // 1. Get the student's profile record — regNo is the key quiz_submissions uses,
-        //    NOT user_id, so every quiz-related lookup below goes through $student->regNo.
         $student = Student::where('user_id', $userId)->first();
-        $studentCourse = $student ? $student->courseCode : null;
+
+        // 🔧 FIX: normalize here, once, right after loading the student — everything
+        // below (both the query and the collection filters) now uses this same
+        // $studentCourse value instead of the raw, unnormalized column.
+        $studentCourse = $student && $student->courseCode
+            ? trim(strtoupper($student->courseCode))
+            : null;
         $studentRegNo  = $student ? $student->regNo : null;
 
-        // ➕ ADDED: expose the student record to the view under the name the
-        // dashboard blade expects, so the Status card/Profile tab can show the
-        // real active/warning/blacklisted state instead of a hardcoded value.
         $currentStudent = $student;
 
-        // 2. ✨ SYNCHRONIZED LOGIC: Get ALL active topics to match the lecturer matrix view perfectly
         $allTopics = Topic::all();
 
         $totalParticipationScore = 0;
-        $maxPossibleMarks = $allTopics->count() * 20; // 20 marks max per available topic
+        $maxPossibleMarks = $allTopics->count() * 20;
 
         foreach ($allTopics as $topic) {
             $replyCount = Message::where('topic_id', $topic->id)
@@ -104,8 +98,14 @@ class ParticipationController extends Controller
         }
 
         // 3. Quizzes currently within their live time window for this student's course
+        // 🔧 FIX: this was Quiz::where('courseCode', $course) — an exact match against
+        // the raw Student::courseCode. That's the bug behind the "No active evaluation
+        // windows" message you saw even while a quiz was inside its start/expiry window:
+        // the quiz's courseCode (uppercased on save) simply never matched the student's
+        // as-typed courseCode. TRIM/UPPER both sides so this lines up with the middleware
+        // and lockStatus() below.
         $activeQuizzes = Quiz::when($studentCourse, function ($query, $course) {
-                return $query->where('courseCode', $course);
+                return $query->whereRaw('TRIM(UPPER(courseCode)) = ?', [$course]);
             })
             ->where('startTime', '<=', now())
             ->where('expiryTime', '>=', now())
@@ -125,13 +125,10 @@ class ParticipationController extends Controller
         })->values();
 
         // 5. 🔒 LOCKDOWN: the first currently-live quiz this student has NOT submitted yet.
-        //    No separate "status" or "attempts" table needed — absence of a quiz_submissions
-        //    row for this regNo + quizID IS "in progress" under this schema.
         $activeQuiz = $activeQuizzes->first(function ($quiz) use ($submittedQuizIDs) {
             return !$submittedQuizIDs->contains($quiz->quizID);
         });
 
-        // 6. Handle Tab State (Defaults to 'dashboard', switches to 'announcements' if requested)
         $currentTab = $request->query('tab', 'dashboard');
         $announcements = Announcement::latest()->get();
 
@@ -143,7 +140,7 @@ class ParticipationController extends Controller
             'maxPossibleMarks',
             'currentTab',
             'announcements',
-            'currentStudent' // ➕ ADDED
+            'currentStudent'
         ));
     }
 
@@ -160,7 +157,12 @@ class ParticipationController extends Controller
             return response()->json(['locked' => false]);
         }
 
-        $liveQuizzes = Quiz::where('courseCode', $student->courseCode)
+        // 🔧 FIX: same TRIM/UPPER normalization as the other two — this endpoint
+        // is what your 20s poll on the dashboard hits, so before this fix a quiz
+        // going live mid-session would silently never trigger the redirect either.
+        $studentCourse = trim(strtoupper($student->courseCode));
+
+        $liveQuizzes = Quiz::whereRaw('TRIM(UPPER(courseCode)) = ?', [$studentCourse])
             ->where('startTime', '<=', now())
             ->where('expiryTime', '>=', now())
             ->get();

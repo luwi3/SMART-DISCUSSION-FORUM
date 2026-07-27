@@ -29,8 +29,21 @@ class QuizController extends Controller
     public function quizzesIndex()
     {
         $userId = Auth::id();
-        $lecturer = Lecturer::where('user_id', $userId)->first();
-        $staffNo = $lecturer ? $lecturer->staffNo : 'STAFF-TEST-01';
+
+        // 🔧 FIX: was Lecturer::where('user_id', $userId)->first() with a fallback of the
+        // literal string 'STAFF-TEST-01'. firstOrCreate() provisions a real lecturer row
+        // instead. 'department' is added because `lecturers.department` is NOT NULL with
+        // no default — omitting it threw "Field 'department' doesn't have a default value"
+        // the moment a lecturer row actually needed to be created.
+        $lecturer = Lecturer::firstOrCreate(
+            ['user_id' => $userId],
+            [
+                'staffNo' => 'STAFF-' . strtoupper(uniqid()),
+                'name' => Auth::user()->name ?? 'Lecturer',
+                'department' => 'General',
+            ]
+        );
+        $staffNo = $lecturer->staffNo;
 
         $quizMarks = DB::table('quizzes')
             ->join('quiz_submissions', 'quizzes.quizID', '=', 'quiz_submissions.quizID')
@@ -77,8 +90,21 @@ class QuizController extends Controller
      */
     public function store(Request $request)
     {
-        $lecturer = Lecturer::where('user_id', Auth::id())->first();
-        $staffNo = $lecturer ? $lecturer->staffNo : 'STAFF-TEST-01';
+        $userId = Auth::id();
+
+        // 🔧 FIX: was Lecturer::where('user_id', Auth::id())->first() with a fallback of
+        // the literal string 'STAFF-TEST-01', which caused a foreign key violation.
+        // firstOrCreate() provisions a real lecturer row. 'department' is required here
+        // too — same NOT NULL column, same fix.
+        $lecturer = Lecturer::firstOrCreate(
+            ['user_id' => $userId],
+            [
+                'staffNo' => 'STAFF-' . strtoupper(uniqid()),
+                'name' => Auth::user()->name ?? 'Lecturer',
+                'department' => 'General',
+            ]
+        );
+        $staffNo = $lecturer->staffNo;
 
         $rules = [
             'title' => 'required|string|max:255',
@@ -244,19 +270,19 @@ class QuizController extends Controller
     public function show($quizID)
     {
         $quiz = Quiz::where('quizID', $quizID)->firstOrFail();
-        
+
         $userId = Auth::id();
         if (!$userId) {
             return redirect('/login')->with('error', 'Please log in to attempt the quiz.');
         }
-        
+
         $student = Student::where('user_id', $userId)->first();
         $studentRegNo = $student ? $student->regNo : 'USR-' . $userId;
         $studentCourse = $student ? trim(strtoupper($student->courseCode)) : null;
         $quizCourse = trim(strtoupper($quiz->courseCode));
 
         if ($studentCourse && $studentCourse !== $quizCourse) {
-            return redirect('/dashboard')->with('error', 'You are not registered for this course quiz.');
+            return redirect()->route('student.dashboard')->with('error', 'You are not registered for this course quiz.');
         }
 
         $resolvedQuizID = $quiz->quizID;
@@ -267,11 +293,11 @@ class QuizController extends Controller
         $expiryTime = Carbon::parse($quiz->expiryTime);
 
         if ($now->lessThan($startTime)) {
-            return redirect('/dashboard')->with('error', 'This quiz has not started yet. It opens at ' . $startTime->format('M d, Y H:i'));
+            return redirect()->route('student.dashboard')->with('error', 'This quiz has not started yet. It opens at ' . $startTime->format('M d, Y H:i'));
         }
 
         if ($now->greaterThan($expiryTime)) {
-            return redirect('/dashboard')->with('error', 'This quiz session has already expired.');
+            return redirect()->route('student.dashboard')->with('error', 'This quiz session has already expired.');
         }
 
         $submission = DB::table('quiz_submissions')
@@ -281,7 +307,7 @@ class QuizController extends Controller
 
         if ($submission) {
             $totalQuestionsCount = Question::where('quizID', $resolvedQuizID)->count();
-            return redirect('/dashboard')->with('quiz_result', "Quiz finished! Your score: {$submission->marks} / {$totalQuestionsCount} marks.");
+            return redirect()->route('student.dashboard')->with('quiz_result', "Quiz finished! Your score: {$submission->marks} / {$totalQuestionsCount} marks.");
         }
 
         $remainingSeconds = $now->diffInSeconds($expiryTime, false);
@@ -297,7 +323,7 @@ class QuizController extends Controller
     {
         $quiz = Quiz::where('quizID', $quizID)->firstOrFail();
         $resolvedQuizID = $quiz->quizID;
-        
+
         $userId = Auth::id();
         if (!$userId) {
             return redirect('/login')->with('error', 'Session expired.');
@@ -305,14 +331,14 @@ class QuizController extends Controller
 
         $student = Student::where('user_id', $userId)->first();
         $studentRegNo = $student ? $student->regNo : 'USR-' . $userId;
-        
+
         $existingSubmission = DB::table('quiz_submissions')
             ->where('quizID', $resolvedQuizID)
             ->where('regNo', $studentRegNo)
             ->exists();
 
         if ($existingSubmission) {
-            return redirect('/dashboard')->with('error', 'Submission already registered.');
+            return redirect()->route('student.dashboard')->with('error', 'Submission already registered.');
         }
 
         $questions = Question::where('quizID', $resolvedQuizID)->get();
@@ -323,7 +349,7 @@ class QuizController extends Controller
         $correctCount = 0;
 
         foreach ($questions as $question) {
-            $questionKey = $question->id; 
+            $questionKey = $question->id;
             $studentChoice = $studentAnswers[$questionKey] ?? null;
             if ($studentChoice !== null && strtoupper($studentChoice) === strtoupper($question->correct_option)) {
                 $correctCount++;
@@ -343,10 +369,10 @@ class QuizController extends Controller
         ]);
 
         if ($isAutoSubmit == 1 || $now->greaterThanOrEqualTo($expiryTime)) {
-            return redirect('/dashboard')->with('quiz_result', "Quiz saved. Score: {$correctCount} / " . $questions->count());
+            return redirect()->route('student.dashboard')->with('quiz_result', "Quiz saved. Score: {$correctCount} / " . $questions->count());
         }
 
-        return redirect('/dashboard')->with('success', "Quiz submitted successfully!");
+        return redirect()->route('student.dashboard')->with('success', "Quiz submitted successfully!");
     }
 
     /**
@@ -381,7 +407,7 @@ class QuizController extends Controller
 
         // Fetch all current active quizzes for the student's course
         $activeQuizzes = Quiz::when($studentCourse, function ($query, $course) {
-                return $query->where('courseCode', $course);
+                return $query->whereRaw('TRIM(UPPER(courseCode)) = ?', [$course]);
             })
             ->where('startTime', '<=', now())
             ->where('expiryTime', '>=', now())

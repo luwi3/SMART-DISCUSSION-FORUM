@@ -17,12 +17,12 @@ class ResourceController extends Controller
     public function index()
     {
         $userId = Auth::id();
-        
+
         // Dynamically find or generate a lecturer record for the authenticated user
         $lecturer = Lecturer::firstOrCreate(
             ['user_id' => $userId],
             [
-                'staffNo' => 'STAFF-' . strtoupper(uniqid()), 
+                'staffNo' => 'STAFF-' . strtoupper(uniqid()),
                 'name' => Auth::user()->name ?? 'Lecturer'
             ]
         );
@@ -40,12 +40,12 @@ class ResourceController extends Controller
     public function store(Request $request)
     {
         $userId = Auth::id();
-        
+
         // Dynamically find or generate a lecturer record for the authenticated user
         $lecturer = Lecturer::firstOrCreate(
             ['user_id' => $userId],
             [
-                'staffNo' => 'STAFF-' . strtoupper(uniqid()), 
+                'staffNo' => 'STAFF-' . strtoupper(uniqid()),
                 'name' => Auth::user()->name ?? 'Lecturer'
             ]
         );
@@ -57,31 +57,34 @@ class ResourceController extends Controller
             'file' => 'required|file|mimes:pdf,doc,docx,ppt,pptx,zip,png,jpg,jpeg|max:20480', // Max 20MB
         ]);
 
-        if ($request->hasFile('file')) {
-            $file = $request->file('file');
-            // Store file securely in the 'public/resources' directory
-            $path = $file->store('resources', 'public');
+        $file = $request->file('file');
+        // Store file securely in the 'public/resources' directory
+        $path = $file->store('resources', 'public');
 
-            Resource::create([
-                'staffNo' => $staffNo,
-                'courseCode' => strtoupper($validated['courseCode']),
-                'title' => $validated['title'],
-                'file_name' => $file->getClientOriginalName(),
-                'file_path' => $path,
-                'file_type' => $file->getClientOriginalExtension(),
-            ]);
+        // 🔧 FIX: trim(strtoupper()) instead of strtoupper() alone. This is the same
+        // courseCode-normalization issue as the quiz bug — Quiz/Student comparisons
+        // elsewhere in the app use trim(strtoupper()), so a resource/announcement saved
+        // with only strtoupper() (still carrying a stray leading/trailing space) would
+        // silently never match a student's normalized courseCode when displayed.
+        $courseCode = trim(strtoupper($validated['courseCode']));
 
-            // Automatically create a student announcement with the download link
-            Announcement::create([
-                'title' => 'New Resource: ' . $validated['title'],
-                'courseCode' => strtoupper($validated['courseCode']),
-                'message' => "A new learning resource has been published for your course.<br><a href='" . asset('storage/' . $path) . "' class='btn btn-sm btn-primary mt-2' download>Download " . htmlspecialchars($validated['title']) . "</a>",
-            ]);
+        Resource::create([
+            'staffNo' => $staffNo,
+            'courseCode' => $courseCode,
+            'title' => $validated['title'],
+            'file_name' => $file->getClientOriginalName(),
+            'file_path' => $path,
+            'file_type' => $file->getClientOriginalExtension(),
+        ]);
 
-            return redirect()->back()->with('success', 'Learning resource uploaded and broadcasted as an announcement successfully!');
-        }
+        // Automatically create a student announcement with the download link
+        Announcement::create([
+            'title' => 'New Resource: ' . $validated['title'],
+            'courseCode' => $courseCode,
+            'message' => "A new learning resource has been published for your course.<br><a href='" . asset('storage/' . $path) . "' class='btn btn-sm btn-primary mt-2' download>Download " . htmlspecialchars($validated['title']) . "</a>",
+        ]);
 
-        return redirect()->back()->with('error', 'File upload failed.');
+        return redirect()->back()->with('success', 'Learning resource uploaded and broadcasted as an announcement successfully!');
     }
 
     /**
