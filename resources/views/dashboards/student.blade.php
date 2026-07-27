@@ -105,7 +105,6 @@
         .item-info-title { font-size: 14px; font-weight: 700; color: #334155; }
         .item-info-badge { font-size: 11px; color: #64748b; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-weight: 600; width: fit-content; }
 
-        /* Student Details Card Grid (Profile tab) */
         .details-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 15px; }
         .detail-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; border-radius: 8px; }
         .detail-label { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 6px; }
@@ -378,9 +377,9 @@
                                 <div class="list-row-item" style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
                                     <div style="display: flex; justify-content: space-between; width: 100%;">
                                         <span class="item-info-title" style="font-size: 16px;">{{ $announcement->title }}</span>
-                                        <span class="item-info-badge">{{ $announcement->courseCode }}</span>
+                                        <span class="item-info-badge">{{ $announcement->courseCode ?? 'ALL' }}</span>
                                     </div>
-                                    <div style="font-size: 14px; color: #475569; line-height: 1.5; width: 100%;">{!! $announcement->message !!}</div>
+                                    <div style="font-size: 14px; color: #475569; line-height: 1.5; width: 100%;">{!! $announcement->message ?? $announcement->content ?? $announcement->body !!}</div>
                                     <span style="font-size: 11px; color: #94a3b8;">Posted {{ $announcement->created_at ? $announcement->created_at->diffForHumans() : 'Recently' }}</span>
                                 </div>
                             @endforeach

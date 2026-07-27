@@ -11,14 +11,17 @@ class GroupDiscussionController extends Controller
     /**
      * 🌐 View all groups in the system (The marketplace discovery page)
      */
-    public function index()
-    {
-        // Fetch all groups along with member counts and load member details for management panels
-        $groups = GroupDiscussion::with(['members'])->withCount('members')->get();
-        
-        return view('groups.index', compact('groups'));
+    public function index(Request $request)
+{
+    // Fetch all groups along with member counts and load member details for management panels
+    $groups = GroupDiscussion::with(['members'])->withCount('members')->get();
+
+    if ($request->wantsJson()) {
+        return response()->json(compact('groups'));
     }
 
+    return view('groups.index', compact('groups'));
+}
     /**
      * Show the group creation form view interface
      */
@@ -74,20 +77,22 @@ class GroupDiscussionController extends Controller
     /**
      * 🔴 Creator Only: Permanently annihilate the entire group channel workspace
      */
-    public function destroy($id)
-    {
-        $group = GroupDiscussion::findOrFail($id);
+   public function destroy(Request $request, $id)
+{
+    $group = GroupDiscussion::findOrFail($id);
 
-        if ($group->user_id !== auth()->id()) {
-            abort(403, 'Unauthorized action. Only the group creator can delete this.');
-        }
-
-        // Cascades down, automatically liquidating relationship pivot profiles in the background
-        $group->delete(); 
-
-        return redirect()->route('groups.index')->with('success', 'Group deleted successfully!');
+    if ($group->user_id !== auth()->id()) {
+        abort(403, 'Unauthorized action. Only the group creator can delete this.');
     }
 
+    $group->delete();
+
+    if ($request->wantsJson()) {
+        return response()->json(['status' => 'success']);
+    }
+
+    return redirect()->route('groups.index')->with('success', 'Group deleted successfully!');
+}
     /**
      * 👤 Creator Only: Forcefully kick/remove a specific individual member from the group roster
      */

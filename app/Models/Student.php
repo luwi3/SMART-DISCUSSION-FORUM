@@ -23,23 +23,9 @@ class Student extends Model
         'banExpiry'
     ];
 
-    /**
-     * Connection back to the main login User account.
-     * Explicitly defines the foreign key 'user_id' and owner key 'id'
-     * to keep Eloquent from brokenly assuming 'user_regNo'.
-     */
+    // Connection back to the main login User account
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id', 'id');
-    }
-
-    /**
-     * 📊 Link to Quiz Submissions.
-     * Connects this student's unique custom string registration number 
-     * to their individual system-marked scores.
-     */
-    public function quizSubmissions()
-    {
-        return $this->hasMany(QuizSubmission::class, 'regNo', 'regNo');
+        return $this->belongsTo(User::class);
     }
 }

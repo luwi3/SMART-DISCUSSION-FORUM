@@ -18,8 +18,11 @@ class QuizController extends Controller
     /**
      * 👨‍🏫 1. Render the clean main Lecturer Dashboard workspace.
      */
-    public function lecturerDashboard()
+    public function lecturerDashboard(Request $request)
     {
+        if ($request->wantsJson()) {
+            return response()->json(['status' => 'ok']);
+        }
         return view('dashboards.lecturer');
     }
 
@@ -74,7 +77,10 @@ class QuizController extends Controller
 
         $groupedQuizzes = $quizMarks->groupBy('quizID');
 
-        return view('quizzes.index', compact('groupedQuizzes'));
+        // Also fetch all created quizzes for lecturer management actions (Edit/Delete)
+        $allLecturerQuizzes = Quiz::where('staffNo', $staffNo)->get();
+
+        return view('quizzes.index', compact('groupedQuizzes', 'allLecturerQuizzes'));
     }
 
     /**
@@ -187,11 +193,15 @@ class QuizController extends Controller
                 'title' => 'New Quiz Available: ' . $quiz->title,
                 'courseCode' => strtoupper($quiz->courseCode),
                 'message' => "A new quiz for course {$quiz->courseCode} has been scheduled.\n" .
-                          "Title: {$quiz->title}\n" .
-                          "Duration: {$quiz->duration} minutes\n" .
-                          "Starts At: " . Carbon::parse($quiz->startTime)->format('M d, Y H:i') . "\n" .
-                          "Ends At: " . Carbon::parse($quiz->expiryTime)->format('M d, Y H:i'),
+                             "Title: {$quiz->title}\n" .
+                             "Duration: {$quiz->duration} minutes\n" .
+                             "Starts At: " . Carbon::parse($quiz->startTime)->format('M d, Y H:i') . "\n" .
+                             "Ends At: " . Carbon::parse($quiz->expiryTime)->format('M d, Y H:i'),
             ]);
+
+            if ($request->wantsJson()) {
+                return response()->json(['status' => 'success', 'quizID' => $resolvedQuizID]);
+            }
 
             return redirect()->route('lecturer.quizzes.index')->with('success', 'Quiz published and announcement sent successfully!');
         });
@@ -265,14 +275,118 @@ class QuizController extends Controller
     }
 
     /**
+     * 👨‍🏫 3c. Edit Quiz Form (For Lecturers)
+     */
+    public function edit($quizID)
+    {
+        $quiz = Quiz::where('quizID', $quizID)->firstOrFail();
+        $questions = Question::where('quizID', $quiz->quizID)->get();
+
+        return view('quizzes.edit', compact('quiz', 'questions'));
+    }
+
+    /**
+     * 👨‍🏫 3d. Update Quiz and Questions Configuration
+     */
+    public function update(Request $request, $quizID)
+    {
+        $quiz = Quiz::where('quizID', $quizID)->firstOrFail();
+
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'courseCode' => 'required|string',
+            'duration' => 'required|integer|min:1',
+            'startTime' => 'required|date',
+            'expiryTime' => 'required|date|after:startTime',
+            'questions' => 'nullable|array',
+            'questions.*.id' => 'nullable|integer',
+            'questions.*.text' => 'required_with:questions|string',
+            'questions.*.a' => 'required_with:questions|string',
+            'questions.*.b' => 'required_with:questions|string',
+            'questions.*.c' => 'required_with:questions|string',
+            'questions.*.d' => 'required_with:questions|string',
+            'questions.*.correct' => 'required_with:questions|in:A,B,C,D',
+        ]);
+
+        DB::transaction(function () use ($quiz, $validated) {
+            $quiz->update([
+                'title' => $validated['title'],
+                'courseCode' => strtoupper($validated['courseCode']),
+                'duration' => $validated['duration'],
+                'startTime' => $validated['startTime'],
+                'expiryTime' => $validated['expiryTime'],
+            ]);
+
+            if (isset($validated['questions'])) {
+                $existingIds = [];
+                foreach ($validated['questions'] as $qData) {
+                    if (!empty($qData['id'])) {
+                        $existingIds[] = $qData['id'];
+                        Question::where('id', $qData['id'])->where('quizID', $quiz->quizID)->update([
+                            'question_text' => $qData['text'],
+                            'option_a' => $qData['a'],
+                            'option_b' => $qData['b'],
+                            'option_c' => $qData['c'],
+                            'option_d' => $qData['d'],
+                            'correct_option' => strtoupper(trim($qData['correct'])),
+                        ]);
+                    } else {
+                        $newQ = Question::create([
+                            'quizID' => $quiz->quizID,
+                            'question_text' => $qData['text'],
+                            'option_a' => $qData['a'],
+                            'option_b' => $qData['b'],
+                            'option_c' => $qData['c'],
+                            'option_d' => $qData['d'],
+                            'correct_option' => strtoupper(trim($qData['correct'])),
+                        ]);
+                        $existingIds[] = $newQ->id;
+                    }
+                }
+                // Cleanup removed questions
+                Question::where('quizID', $quiz->quizID)->whereNotIn('id', $existingIds)->delete();
+            }
+        });
+
+        if ($request->wantsJson()) {
+            return response()->json(['status' => 'success', 'message' => 'Quiz updated successfully!']);
+        }
+
+        return redirect()->route('lecturer.quizzes.index')->with('success', 'Quiz updated successfully!');
+    }
+
+    /**
+     * 👨‍🏫 3e. Delete Quiz along with Submissions & Questions
+     */
+    public function destroy(Request $request, $quizID)
+    {
+        $quiz = Quiz::where('quizID', $quizID)->firstOrFail();
+
+        DB::transaction(function () use ($quiz) {
+            Question::where('quizID', $quiz->quizID)->delete();
+            DB::table('quiz_submissions')->where('quizID', $quiz->quizID)->delete();
+            $quiz->delete();
+        });
+
+        if ($request->wantsJson()) {
+            return response()->json(['status' => 'success', 'message' => 'Quiz deleted successfully']);
+        }
+
+        return redirect()->route('lecturer.quizzes.index')->with('success', 'Quiz deleted successfully!');
+    }
+
+    /**
      * 🎓 4. Open a quiz for a student with strict window enforcement
      */
-    public function show($quizID)
+    public function show(Request $request, $quizID)
     {
         $quiz = Quiz::where('quizID', $quizID)->firstOrFail();
 
         $userId = Auth::id();
         if (!$userId) {
+            if ($request->wantsJson()) {
+                return response()->json(['error' => 'Please log in to attempt the quiz.'], 401);
+            }
             return redirect('/login')->with('error', 'Please log in to attempt the quiz.');
         }
 
@@ -282,22 +396,31 @@ class QuizController extends Controller
         $quizCourse = trim(strtoupper($quiz->courseCode));
 
         if ($studentCourse && $studentCourse !== $quizCourse) {
-            return redirect()->route('student.dashboard')->with('error', 'You are not registered for this course quiz.');
+            if ($request->wantsJson()) {
+                return response()->json(['error' => 'You are not registered for this course quiz.'], 403);
+            }
+            return redirect('/dashboard')->with('error', 'You are not registered for this course quiz.');
         }
 
         $resolvedQuizID = $quiz->quizID;
 
-        // Check time constraints strictly before opening
         $now = now();
         $startTime = Carbon::parse($quiz->startTime);
         $expiryTime = Carbon::parse($quiz->expiryTime);
 
         if ($now->lessThan($startTime)) {
-            return redirect()->route('student.dashboard')->with('error', 'This quiz has not started yet. It opens at ' . $startTime->format('M d, Y H:i'));
+            $msg = 'This quiz has not started yet. It opens at ' . $startTime->format('M d, Y H:i');
+            if ($request->wantsJson()) {
+                return response()->json(['error' => $msg], 403);
+            }
+            return redirect('/dashboard')->with('error', $msg);
         }
 
         if ($now->greaterThan($expiryTime)) {
-            return redirect()->route('student.dashboard')->with('error', 'This quiz session has already expired.');
+            if ($request->wantsJson()) {
+                return response()->json(['error' => 'This quiz session has already expired.'], 403);
+            }
+            return redirect('/dashboard')->with('error', 'This quiz session has already expired.');
         }
 
         $submission = DB::table('quiz_submissions')
@@ -307,11 +430,30 @@ class QuizController extends Controller
 
         if ($submission) {
             $totalQuestionsCount = Question::where('quizID', $resolvedQuizID)->count();
-            return redirect()->route('student.dashboard')->with('quiz_result', "Quiz finished! Your score: {$submission->marks} / {$totalQuestionsCount} marks.");
+            $msg = "Quiz finished! Your score: {$submission->marks} / {$totalQuestionsCount} marks.";
+            if ($request->wantsJson()) {
+                return response()->json(['error' => $msg, 'already_submitted' => true, 'score' => $submission->marks, 'total' => $totalQuestionsCount], 409);
+            }
+            return redirect('/dashboard')->with('quiz_result', $msg);
         }
 
         $remainingSeconds = $now->diffInSeconds($expiryTime, false);
         $questions = Question::where('quizID', $resolvedQuizID)->get();
+
+        if ($request->wantsJson()) {
+            // Strip correct_option so the client can't just read the answer key
+            $safeQuestions = $questions->map(function ($q) {
+                return [
+                    'id' => $q->id,
+                    'question_text' => $q->question_text,
+                    'option_a' => $q->option_a,
+                    'option_b' => $q->option_b,
+                    'option_c' => $q->option_c,
+                    'option_d' => $q->option_d,
+                ];
+            });
+            return response()->json(compact('quiz', 'remainingSeconds') + ['questions' => $safeQuestions]);
+        }
 
         return view('quizzes.show', compact('quiz', 'questions', 'remainingSeconds'));
     }
@@ -326,6 +468,9 @@ class QuizController extends Controller
 
         $userId = Auth::id();
         if (!$userId) {
+            if ($request->wantsJson()) {
+                return response()->json(['error' => 'Session expired.'], 401);
+            }
             return redirect('/login')->with('error', 'Session expired.');
         }
 
@@ -338,7 +483,10 @@ class QuizController extends Controller
             ->exists();
 
         if ($existingSubmission) {
-            return redirect()->route('student.dashboard')->with('error', 'Submission already registered.');
+            if ($request->wantsJson()) {
+                return response()->json(['error' => 'Submission already registered.'], 409);
+            }
+            return redirect('/dashboard')->with('error', 'Submission already registered.');
         }
 
         $questions = Question::where('quizID', $resolvedQuizID)->get();
@@ -349,7 +497,7 @@ class QuizController extends Controller
         $correctCount = 0;
 
         foreach ($questions as $question) {
-            $questionKey = $question->id;
+            $questionKey = (string) $question->id;
             $studentChoice = $studentAnswers[$questionKey] ?? null;
             if ($studentChoice !== null && strtoupper($studentChoice) === strtoupper($question->correct_option)) {
                 $correctCount++;
@@ -367,6 +515,10 @@ class QuizController extends Controller
             'created_at'    => $now,
             'updated_at'    => $now,
         ]);
+
+        if ($request->wantsJson()) {
+            return response()->json(['status' => 'success', 'score' => $correctCount, 'total' => $questions->count()]);
+        }
 
         if ($isAutoSubmit == 1 || $now->greaterThanOrEqualTo($expiryTime)) {
             return redirect()->route('student.dashboard')->with('quiz_result', "Quiz saved. Score: {$correctCount} / " . $questions->count());
@@ -431,7 +583,7 @@ class QuizController extends Controller
     /**
      * 🎓 8. Render Personal Performance Grade Sheets for Students
      */
-    public function viewStudentGrades()
+    public function viewStudentGrades(Request $request)
     {
         $userId = Auth::id();
         if (!$userId) {
@@ -445,6 +597,7 @@ class QuizController extends Controller
             ->join('quizzes', 'quiz_submissions.quizID', '=', 'quizzes.quizID')
             ->where('quiz_submissions.regNo', $studentRegNo)
             ->select(
+                'quizzes.quizID',
                 'quizzes.title as quiz_title',
                 'quizzes.courseCode',
                 'quiz_submissions.marks as score',
@@ -454,6 +607,41 @@ class QuizController extends Controller
             ->orderBy('quiz_submissions.timeSubmitted', 'desc')
             ->get();
 
+        if ($request->wantsJson()) {
+            return response()->json(compact('grades'));
+        }
+
         return view('quizzes.student_marks', compact('grades'));
+    }
+
+    /**
+     * 🎓 8b. View Specific Submission Details for Student Breakdown
+     */
+    public function showStudentSubmission(Request $request, $quizID)
+    {
+        $userId = Auth::id();
+        if (!$userId) {
+            if ($request->wantsJson()) {
+                return response()->json(['error' => 'Unauthenticated'], 401);
+            }
+            return redirect('/login')->with('error', 'Please log in.');
+        }
+
+        $student = Student::where('user_id', $userId)->first();
+        $studentRegNo = $student ? $student->regNo : 'USR-' . $userId;
+
+        $quiz = Quiz::where('quizID', $quizID)->firstOrFail();
+        $submission = DB::table('quiz_submissions')
+            ->where('quizID', $quiz->quizID)
+            ->where('regNo', $studentRegNo)
+            ->firstOrFail();
+
+        $totalQuestions = Question::where('quizID', $quiz->quizID)->count();
+
+        if ($request->wantsJson()) {
+            return response()->json(compact('quiz', 'submission', 'totalQuestions'));
+        }
+
+        return view('quizzes.student_submission_details', compact('quiz', 'submission', 'totalQuestions'));
     }
 }

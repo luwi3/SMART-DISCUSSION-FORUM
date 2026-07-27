@@ -71,7 +71,10 @@
             <div class="brand-text">SMART DISCUSSION FORUM</div>
         </div>
         <ul class="sidebar-menu">
-            <li class="menu-item active"><a href="{{ route('dashboard') }}">Dashboard</a></li>
+
+            <li class="menu-item active"><a href="?view=dashboard">Dashboard</a></li>
+            
+
             
             <li class="menu-item"><a href="{{ route('profile.edit') }}">Profile</a></li>
             

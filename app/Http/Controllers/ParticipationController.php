@@ -18,7 +18,7 @@ class ParticipationController extends Controller
     /**
      * 👨‍🏫 Display the dynamic, system-automated Topic Participation Grade Matrix for Lecturers.
      */
-    public function index()
+    public function index(Request $request)
     {
         $topics = Topic::orderBy('created_at', 'asc')->get();
 
@@ -38,19 +38,19 @@ class ParticipationController extends Controller
                 if ($calculatedScore > 20) {
                     $calculatedScore = 20;
                 }
+                $calculatedScore = min($messageCount * 2, 20);
 
                 $matrix[$student->id][$topic->id] = $calculatedScore;
 
                 TopicParticipation::updateOrCreate(
-                    [
-                        'topic_id' => $topic->id,
-                        'user_id'  => $student->id
-                    ],
-                    [
-                        'marks_earned' => $calculatedScore
-                    ]
+                    ['topic_id' => $topic->id, 'user_id' => $student->id],
+                    ['marks_earned' => $calculatedScore]
                 );
             }
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json(compact('topics', 'students', 'matrix'));
         }
 
         return view('participation.index', compact('topics', 'students', 'matrix'));
@@ -64,23 +64,20 @@ class ParticipationController extends Controller
     {
         $userId = Auth::id();
         if (!$userId) {
+            if ($request->wantsJson()) {
+                return response()->json(['error' => 'Unauthenticated'], 401);
+            }
             return redirect('/login')->with('error', 'Please log in to view your dashboard.');
         }
 
+        // 1. Get student profile & clean course code formatting
         $student = Student::where('user_id', $userId)->first();
-
-        // 🔧 FIX: normalize here, once, right after loading the student — everything
-        // below (both the query and the collection filters) now uses this same
-        // $studentCourse value instead of the raw, unnormalized column.
-        $studentCourse = $student && $student->courseCode
-            ? trim(strtoupper($student->courseCode))
-            : null;
+        $studentCourse = $student ? trim(strtoupper($student->courseCode)) : null;
         $studentRegNo  = $student ? $student->regNo : null;
-
         $currentStudent = $student;
 
+        // 2. Calculate participation marks
         $allTopics = Topic::all();
-
         $totalParticipationScore = 0;
         $maxPossibleMarks = $allTopics->count() * 20;
 
@@ -89,11 +86,7 @@ class ParticipationController extends Controller
                 ->where('user_id', $userId)
                 ->count();
 
-            $calculatedScore = $replyCount * 2;
-            if ($calculatedScore > 20) {
-                $calculatedScore = 20;
-            }
-
+            $calculatedScore = min($replyCount * 2, 20);
             $totalParticipationScore += $calculatedScore;
         }
 
@@ -111,6 +104,8 @@ class ParticipationController extends Controller
             ->where('expiryTime', '>=', now())
             ->get();
 
+        $completedQuizzes = collect();
+
         // 4. Which of those the student has already submitted (by regNo, not user_id)
         $submittedQuizIDs = collect();
         if ($studentRegNo) {
@@ -124,24 +119,33 @@ class ParticipationController extends Controller
             return $submittedQuizIDs->contains($quiz->quizID);
         })->values();
 
-        // 5. 🔒 LOCKDOWN: the first currently-live quiz this student has NOT submitted yet.
+        // 5. LOCKDOWN: First active quiz that hasn't been submitted
         $activeQuiz = $activeQuizzes->first(function ($quiz) use ($submittedQuizIDs) {
             return !$submittedQuizIDs->contains($quiz->quizID);
         });
 
+        // 6. Handle tab state and announcements (Eager-load user relationship if defined)
         $currentTab = $request->query('tab', 'dashboard');
-        $announcements = Announcement::latest()->get();
+        
+        // Eager load relationship if model supports it (e.g. with('user'))
+        $announcements = Announcement::latest()->get(); 
 
-        return view('dashboards.student', compact(
+        $data = compact(
             'activeQuizzes',
             'completedQuizzes',
             'activeQuiz',
             'totalParticipationScore',
             'maxPossibleMarks',
             'currentTab',
-            'announcements',
-            'currentStudent'
-        ));
+            'currentStudent',
+            'announcements'
+        );
+
+        if ($request->wantsJson()) {
+            return response()->json($data);
+        }
+
+        return view('dashboards.student', $data);
     }
 
     /**
@@ -157,12 +161,9 @@ class ParticipationController extends Controller
             return response()->json(['locked' => false]);
         }
 
-        // 🔧 FIX: same TRIM/UPPER normalization as the other two — this endpoint
-        // is what your 20s poll on the dashboard hits, so before this fix a quiz
-        // going live mid-session would silently never trigger the redirect either.
-        $studentCourse = trim(strtoupper($student->courseCode));
+        $cleanCourse = trim(strtoupper($student->courseCode));
 
-        $liveQuizzes = Quiz::whereRaw('TRIM(UPPER(courseCode)) = ?', [$studentCourse])
+        $liveQuizzes = Quiz::whereRaw('TRIM(UPPER(courseCode)) = ?', [$cleanCourse])
             ->where('startTime', '<=', now())
             ->where('expiryTime', '>=', now())
             ->get();
@@ -171,7 +172,7 @@ class ParticipationController extends Controller
             return response()->json(['locked' => false]);
         }
 
-        $submittedQuizIDs = \Illuminate\Support\Facades\DB::table('quiz_submissions')
+        $submittedQuizIDs = DB::table('quiz_submissions')
             ->where('regNo', $student->regNo)
             ->whereIn('quizID', $liveQuizzes->pluck('quizID'))
             ->pluck('quizID');

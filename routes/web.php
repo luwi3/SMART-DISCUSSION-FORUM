@@ -12,7 +12,8 @@ use App\Http\Controllers\ParticipationController;
 use App\Http\Controllers\TopicController;        
 use App\Http\Controllers\GroupDiscussionController;
 use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\TopicExportController;
+use App\Http\Controllers\AdminDashboardController; 
 use App\Models\Student;
 use App\Models\Group;
 use App\Services\EmbeddingService;
@@ -135,6 +136,12 @@ Route::middleware(['auth', 'no.active.quiz'])->group(function () {
     Route::post('/quizzes/store', [QuizController::class, 'store'])->name('quizzes.store');
     Route::post('/quizzes/{quizID}/import', [QuizController::class, 'importCSV'])->name('quizzes.import');
     
+    // 🛠️ Quiz Management (Edit, Update, Delete) & Submissions
+    Route::get('/quizzes/{quizID}/edit', [QuizController::class, 'edit'])->name('quizzes.edit');
+    Route::put('/quizzes/{quizID}', [QuizController::class, 'update'])->name('quizzes.update');
+    Route::delete('/quizzes/{quizID}', [QuizController::class, 'destroy'])->name('quizzes.destroy');
+    Route::get('/student/quiz-submissions/{quizID}', [QuizController::class, 'showStudentSubmission'])->name('student.submissions.show');
+
     // 📁 Course Resource Document Paths
     Route::get('/resources', [ResourceController::class, 'index'])->name('resources.index');
     Route::post('/resources', [ResourceController::class, 'store'])->name('resources.store');
@@ -242,6 +249,11 @@ Route::post('/admin/students/{regNo}/activate', function ($regNo) {
 
     return back()->with('success', 'Student status has been reset to active successfully!');
 })->middleware('auth')->where('regNo', '.*');
+
+// Safely added for PDF generation functionality
+Route::get('/topics/{id}/export-pdf', [TopicExportController::class, 'export'])
+    ->name('topics.export-pdf')
+    ->middleware('auth');
 
 // ==========================================
 // 6. DEFAULT AUTH SYSTEM FILE LOADER
