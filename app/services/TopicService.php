@@ -54,7 +54,7 @@ class TopicService
 
 
         /*
-        3. Generate embedding using MiniLM
+        3. Generate embedding using nomic-embed-text model
         */
 
         $embedding = $this->embeddingService
@@ -79,6 +79,7 @@ class TopicService
 
 
             $message->topic_id = $similarTopic->id;
+            $message->ai_description = $aiData['description'];
 
             $message->save();
 
@@ -115,6 +116,7 @@ class TopicService
 
 
         $message->topic_id = $topic->id;
+        $message->ai_description = $aiData['description'];
 
         $message->save();
 
@@ -184,15 +186,15 @@ class TopicService
         /*
         Decision point
 
-        >= 0.62
+        >= 0.6
         means it belongs to an existing topic
 
-        < 0.62
+        < 0.6
         means create new topic
         */
 
 
-        if ($highestSimilarity >= 0.62) {
+        if ($highestSimilarity >= 0.90) {
 
             return $bestTopic;
 

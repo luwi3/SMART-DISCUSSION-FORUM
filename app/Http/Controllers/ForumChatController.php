@@ -294,6 +294,9 @@ if ($isSpam) {
                 } else {
                     $message->thread_id = $parentMessage->id;
                 }
+                if ($parentMessage->topic_id) {
+                      $message->topic_id = $parentMessage->topic_id;
+                    }
             }
         }
 

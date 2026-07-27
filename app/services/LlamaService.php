@@ -35,8 +35,8 @@ Generate:
 Rules:
 
 - The title must be at most 8 words.
-- The description must be at most 12 words.
-- Combined total words MUST NOT exceed 28words.
+- The description must be at most 30 words.
+- Combined total words MUST NOT exceed 38 words.
 - The description must explain the main idea briefly.
 - Include important academic keywords related to the topic.
 - Do not mention AI.
@@ -55,7 +55,7 @@ Return exactly this format:
 
 {
     \"title\": \"Short topic title here\",
-    \"description\": \"Concise academic description under 20 words\"
+    \"description\": \"Concise academic description under 30 words\"
 }
 
 ";
@@ -73,7 +73,7 @@ Return exactly this format:
 
             "options" => [
 
-                "temperature" => 0.4,
+                "temperature" => 0.3,
 
                 "num_predict" => 125// Increased token safety headroom so JSON closes cleanly
 
@@ -139,12 +139,12 @@ Return exactly this format:
 
 
 
-        // PHP Hard Enforcer: Limits Title to 8 words & Description to 12 words (Max 20 total)
+        // PHP Hard Enforcer: Limits Title to 8 words & Description to 30 words (Max 38 total)
         return [
 
             'title' => Str::words(trim($aiData['title']), 8, ''),
 
-            'description' => Str::words(trim($aiData['description']), 20, '')
+            'description' => Str::words(trim($aiData['description']), 30, '')
 
         ];
 

@@ -13,13 +13,12 @@ class EmbeddingService
     public function __construct()
     {
         /*
-        URL of Python Flask embedding server
+        Ollama embedding API
+        nomic-embed-text runs inside Ollama
         */
 
-        $this->embeddingUrl = "http://127.0.0.1:5003/embed";
+        $this->embeddingUrl = "http://127.0.0.1:11434/api/embeddings";
     }
-
-
 
 
 
@@ -27,26 +26,27 @@ class EmbeddingService
     {
 
         /*
-        Send text to Python server
+        Send text to Ollama embedding server
         */
 
         $response = Http::post(
             $this->embeddingUrl,
             [
-                'text' => $text
+                'model' => 'nomic-embed-text',
+                'prompt' => $text
             ]
         );
 
 
 
         /*
-        Check if Python server failed
+        Check if Ollama failed
         */
 
         if($response->failed())
         {
             throw new \Exception(
-                "Embedding server failed"
+                "Ollama embedding server failed"
             );
         }
 
@@ -63,7 +63,6 @@ class EmbeddingService
           0.038,
           -0.055,
           ...
-          384 values
         ]
 
         */
