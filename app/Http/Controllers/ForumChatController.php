@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Notifications\NewTopicNotification;
 use App\Models\Student;
 use App\Services\TopicService;
+use App\Services\SpamDetectionService;
 use App\Jobs\ProcessMessageAI;
 
 class ForumChatController extends Controller
@@ -19,9 +20,13 @@ class ForumChatController extends Controller
     // AI topic service
     protected $topicService;
 
-    public function __construct(TopicService $topicService)
+    // AI spam detection service
+    protected $spamDetectionService;
+
+    public function __construct(TopicService $topicService, SpamDetectionService $spamDetectionService)
     {
         $this->topicService = $topicService;
+        $this->spamDetectionService = $spamDetectionService;
     }
 
     public function index(Request $request, $type = null, $id = null)
@@ -269,27 +274,20 @@ class ForumChatController extends Controller
         $message = new Message();
         $message->user_id = auth()->id();
         $message->body = $request->body;
+
         /*
-|--------------------------------------------------------------------------
-| Spam Detection
-|--------------------------------------------------------------------------
-*/
+        |--------------------------------------------------------------------------
+        | Spam Detection
+        |--------------------------------------------------------------------------
+        */
+        $isSpam = $this->spamDetectionService->isSpam($message->body);
 
-$isSpam = $this->spamDetectionService
-                ->isSpam($message->body);
-
-
-if ($isSpam) {
-
-    return response()->json([
-
-        'spam' => true,
-
-        'message' => 'This message was deleted because it was detected as spam.'
-
-    ], 422);
-
-}
+        if ($isSpam) {
+            return response()->json([
+                'spam' => true,
+                'message' => 'This message was detected as spam and was not sent.'
+            ], 422);
+        }
 
         if ($request->filled('restrict_course_id')) {
             $message->course_code = $request->restrict_course_id;
