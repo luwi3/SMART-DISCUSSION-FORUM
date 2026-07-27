@@ -156,11 +156,13 @@ class ForumChatController extends Controller
                 }
 
                 if ($groupColumn) {
-                    $messages = Message::where($groupColumn, $id)->with('user')->orderBy('created_at', 'asc')->get();
+                    // withTrashed: a deleted message stays in the list as a
+                    // placeholder bubble instead of vanishing outright.
+                    $messages = Message::withTrashed()->where($groupColumn, $id)->with('user')->orderBy('created_at', 'asc')->get();
                 }
             } elseif ($type === 'topic') {
                 $currentStreamTarget = Topic::findOrFail($id);
-                $messages = Message::where('topic_id', $id)->with('user')->orderBy('created_at', 'asc')->get();
+                $messages = Message::withTrashed()->where('topic_id', $id)->with('user')->orderBy('created_at', 'asc')->get();
             }
         } else {
             $currentStreamTarget = (object) ['name' => 'General Stream', 'is_broadcast' => true];
@@ -189,13 +191,17 @@ class ForumChatController extends Controller
             ));
         }
 
-        $courses = Student::select('courseCode')
-            ->distinct()
-            ->whereNotNull('courseCode')
-            ->get();
+        // A student may only ever restrict a message to the course they're
+        // actually registered to (enforced again in store()) — so the picker
+        // only ever offers that one course, never every course in the system.
+        $courses = ($currentStudent && $currentStudent->courseCode)
+            ? collect([(object) ['courseCode' => $currentStudent->courseCode]])
+            : collect();
 
         if (!$type || $type === 'broadcast') {
-            $mainMessagesQuery = Message::query();
+            // withTrashed: a deleted message stays in the list as a
+            // placeholder bubble instead of vanishing outright.
+            $mainMessagesQuery = Message::withTrashed();
 
             // 🔒 Exclude anything that belongs to a group discussion
             if ($groupColumn) {
@@ -455,12 +461,17 @@ class ForumChatController extends Controller
             abort(403, 'You are not authorized to delete this message.');
         }
 
+        $message->deleted_by = $currentUser->id;
+        $message->save();
         $message->delete();
+
+        broadcast(new \App\Events\MessageDeleted($message));
 
         if (request()->ajax() || request()->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Message deleted.'
+                'message_id' => $message->id,
+                'deleted_by' => $message->deleted_by,
             ]);
         }
 

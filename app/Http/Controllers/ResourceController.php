@@ -18,14 +18,9 @@ class ResourceController extends Controller
     {
         $userId = Auth::id();
 
-        // Dynamically find or generate a lecturer record for the authenticated user
-        $lecturer = Lecturer::firstOrCreate(
-            ['user_id' => $userId],
-            [
-                'staffNo' => 'STAFF-' . strtoupper(uniqid()),
-                'name' => Auth::user()->name ?? 'Lecturer'
-            ]
-        );
+        // A lecturer row is created atomically with the user account in
+        // LecturerController::store — it must already exist here.
+        $lecturer = Lecturer::where('user_id', $userId)->firstOrFail();
         $staffNo = $lecturer->staffNo;
 
         $resources = Resource::where('staffNo', $staffNo)->orderBy('created_at', 'desc')->get();
@@ -44,13 +39,9 @@ class ResourceController extends Controller
     {
         $userId = Auth::id();
 
-        $lecturer = Lecturer::firstOrCreate(
-            ['user_id' => $userId],
-            [
-                'staffNo' => 'STAFF-' . strtoupper(uniqid()),
-                'name' => Auth::user()->name ?? 'Lecturer'
-            ]
-        );
+        // A lecturer row is created atomically with the user account in
+        // LecturerController::store — it must already exist here.
+        $lecturer = Lecturer::where('user_id', $userId)->firstOrFail();
         $staffNo = $lecturer->staffNo;
 
         $validated = $request->validate([

@@ -33,19 +33,9 @@ class QuizController extends Controller
     {
         $userId = Auth::id();
 
-        // 🔧 FIX: was Lecturer::where('user_id', $userId)->first() with a fallback of the
-        // literal string 'STAFF-TEST-01'. firstOrCreate() provisions a real lecturer row
-        // instead. 'department' is added because `lecturers.department` is NOT NULL with
-        // no default — omitting it threw "Field 'department' doesn't have a default value"
-        // the moment a lecturer row actually needed to be created.
-        $lecturer = Lecturer::firstOrCreate(
-            ['user_id' => $userId],
-            [
-                'staffNo' => 'STAFF-' . strtoupper(uniqid()),
-                'name' => Auth::user()->name ?? 'Lecturer',
-                'department' => 'General',
-            ]
-        );
+        // A lecturer row is created atomically with the user account in
+        // LecturerController::store — it must already exist here.
+        $lecturer = Lecturer::where('user_id', $userId)->firstOrFail();
         $staffNo = $lecturer->staffNo;
 
         $quizMarks = DB::table('quizzes')
@@ -98,18 +88,9 @@ class QuizController extends Controller
     {
         $userId = Auth::id();
 
-        // 🔧 FIX: was Lecturer::where('user_id', Auth::id())->first() with a fallback of
-        // the literal string 'STAFF-TEST-01', which caused a foreign key violation.
-        // firstOrCreate() provisions a real lecturer row. 'department' is required here
-        // too — same NOT NULL column, same fix.
-        $lecturer = Lecturer::firstOrCreate(
-            ['user_id' => $userId],
-            [
-                'staffNo' => 'STAFF-' . strtoupper(uniqid()),
-                'name' => Auth::user()->name ?? 'Lecturer',
-                'department' => 'General',
-            ]
-        );
+        // A lecturer row is created atomically with the user account in
+        // LecturerController::store — it must already exist here.
+        $lecturer = Lecturer::where('user_id', $userId)->firstOrFail();
         $staffNo = $lecturer->staffNo;
 
         $rules = [

@@ -4,7 +4,6 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ForumChatController;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\LecturerController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\ResourceController;
@@ -15,10 +14,8 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TopicExportController;
 use App\Http\Controllers\AdminDashboardController; 
 use App\Models\Student;
-use App\Models\Group;
 use App\Services\EmbeddingService;
 use App\Services\LlamaService;
-use Carbon\Carbon;
 
 // Test routes for AI/ML features
 Route::get('/test-llama', function(LlamaService $llama){
@@ -32,25 +29,6 @@ Route::get('/test-embedding', function(EmbeddingService $service){
         "Students discussing database normalization"
     );
     return $result;
-});
-
-// ==========================================
-// REAL-TIME BROADCAST CHANNELS
-// ==========================================
-Broadcast::channel('chat.{type}.{id}', function ($user, $type, $id) {
-    if ($type === 'broadcast') {
-        return true;
-    }
-
-    if ($type === 'group') {
-        return Group::where('id', $id)
-            ->whereHas('members', function ($query) use ($user) {
-                $query->where('users.id', $user->id);
-            })->exists();
-    }
-
-    // Fallback or course topic validation rules
-    return true;
 });
 
 // ==========================================
@@ -85,29 +63,29 @@ Route::get('/notifications', [NotificationController::class, 'index'])
 
 // 🎓 Student Dashboard Route
 Route::get('/student/dashboard', [ParticipationController::class, 'studentDashboard'])
-    ->middleware(['auth', 'verified', 'no.active.quiz'])
+    ->middleware(['auth', 'verified', 'role:student', 'no.active.quiz'])
     ->name('student.dashboard');
 
 // 👨‍🏫 Lecturer Dashboard Route
 Route::get('/lecturer/dashboard', [QuizController::class, 'lecturerDashboard'])
-    ->middleware(['auth', 'verified'])
+    ->middleware(['auth', 'verified', 'role:lecturer'])
     ->name('lecturer.dashboard');
 
 // 📋 Standalone Lecturer Quiz List & Submissions Workspace Page
 Route::get('/lecturer/quizzes', [QuizController::class, 'quizzesIndex'])
-    ->middleware(['auth', 'verified'])
+    ->middleware(['auth', 'verified', 'role:lecturer'])
     ->name('lecturer.quizzes.index');
 
 // 🔑 Administrator Dashboard Route
 Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])
-    ->middleware(['auth', 'verified'])
+    ->middleware(['auth', 'verified', 'role:administrator,admin'])
     ->name('admin.dashboard');
 
 
 // ==========================================
 // 3. ADMIN MANAGEMENT ROUTES
 // ==========================================
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'role:administrator,admin'])->group(function () {
     Route::get('/admin/lecturers/create', [LecturerController::class, 'create'])->name('admin.lecturers.create');
     Route::post('/admin/lecturers', [LecturerController::class, 'store'])->name('admin.lecturers.store');
 });
@@ -131,26 +109,30 @@ Route::middleware(['auth', 'no.active.quiz'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     
-    // 📝 Quiz Module Engine Paths
-    Route::get('/quizzes/create', [QuizController::class, 'create'])->name('quizzes.create');
-    Route::post('/quizzes/store', [QuizController::class, 'store'])->name('quizzes.store');
-    Route::post('/quizzes/{quizID}/import', [QuizController::class, 'importCSV'])->name('quizzes.import');
-    
-    // 🛠️ Quiz Management (Edit, Update, Delete) & Submissions
-    Route::get('/quizzes/{quizID}/edit', [QuizController::class, 'edit'])->name('quizzes.edit');
-    Route::put('/quizzes/{quizID}', [QuizController::class, 'update'])->name('quizzes.update');
-    Route::delete('/quizzes/{quizID}', [QuizController::class, 'destroy'])->name('quizzes.destroy');
+    // 👨‍🏫 Lecturer-only management: quiz authoring, resources, participation grading
+    Route::middleware('role:lecturer')->group(function () {
+        // 📝 Quiz Module Engine Paths
+        Route::get('/quizzes/create', [QuizController::class, 'create'])->name('quizzes.create');
+        Route::post('/quizzes/store', [QuizController::class, 'store'])->name('quizzes.store');
+        Route::post('/quizzes/{quizID}/import', [QuizController::class, 'importCSV'])->name('quizzes.import');
+
+        // 🛠️ Quiz Management (Edit, Update, Delete)
+        Route::get('/quizzes/{quizID}/edit', [QuizController::class, 'edit'])->name('quizzes.edit');
+        Route::put('/quizzes/{quizID}', [QuizController::class, 'update'])->name('quizzes.update');
+        Route::delete('/quizzes/{quizID}', [QuizController::class, 'destroy'])->name('quizzes.destroy');
+
+        // 📁 Course Resource Document Paths
+        Route::get('/resources', [ResourceController::class, 'index'])->name('resources.index');
+        Route::post('/resources', [ResourceController::class, 'store'])->name('resources.store');
+        Route::delete('/resources/{id}', [ResourceController::class, 'destroy'])->name('resources.destroy');
+
+        // 📊 Student Participation Grade Matrix Paths
+        Route::get('/participation', [ParticipationController::class, 'index'])->name('participation.index');
+        Route::post('/participation/save', [ParticipationController::class, 'store'])->name('participation.store');
+    });
+
     Route::get('/student/quiz-submissions/{quizID}', [QuizController::class, 'showStudentSubmission'])->name('student.submissions.show');
 
-    // 📁 Course Resource Document Paths
-    Route::get('/resources', [ResourceController::class, 'index'])->name('resources.index');
-    Route::post('/resources', [ResourceController::class, 'store'])->name('resources.store');
-    Route::delete('/resources/{id}', [ResourceController::class, 'destroy'])->name('resources.destroy');
-    
-    // 📊 Student Participation Grade Matrix Paths
-    Route::get('/participation', [ParticipationController::class, 'index'])->name('participation.index');
-    Route::post('/participation/save', [ParticipationController::class, 'store'])->name('participation.store');
-    
     // 🎯 Dynamic Assessment Handlers
     Route::get('/quizzes/{quizID}', [QuizController::class, 'show'])->name('quizzes.show');
     Route::post('/quizzes/{quizID}/submit', [QuizController::class, 'submit'])->name('quizzes.submit');

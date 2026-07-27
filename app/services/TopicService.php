@@ -82,6 +82,8 @@ class TopicService
 
             $message->save();
 
+            $this->moveThreadToTopic($message, $similarTopic);
+
 
             return $similarTopic;
 
@@ -118,10 +120,30 @@ class TopicService
 
         $message->save();
 
+        $this->moveThreadToTopic($message, $topic);
+
 
 
         return $topic;
 
+    }
+
+
+
+
+    /**
+     * Every reply anywhere under this root carries thread_id = root's own
+     * id (see ForumChatController::store()), no matter how deep the reply
+     * chain goes. So the whole conversation moves with the root message —
+     * same reassignment, same rows, same senders/timestamps/content,
+     * nothing recreated. withTrashed() so a deleted reply stays correctly
+     * grouped with its thread instead of being left behind in main chat.
+     */
+    private function moveThreadToTopic(Message $rootMessage, Topic $topic): void
+    {
+        Message::withTrashed()
+            ->where('thread_id', $rootMessage->id)
+            ->update(['topic_id' => $topic->id]);
     }
 
 
