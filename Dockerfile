@@ -25,6 +25,14 @@ WORKDIR /var/www
 
 COPY . .
 
+# Ensure storage and bootstrap/cache directories exist with write permissions
+RUN mkdir -p storage/framework/cache/data \
+    storage/framework/sessions \
+    storage/framework/views \
+    storage/logs \
+    bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
+
 RUN composer install --no-dev --optimize-autoloader
 
 EXPOSE 8000
