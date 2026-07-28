@@ -37,7 +37,9 @@ RUN mkdir -p storage/framework/cache/data \
     bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-RUN composer install --no-dev --optimize-autoloader
+RUN composer config --global process-timeout 2000
+RUN composer install --no-dev --optimize-autoloader || \
+    (echo "Composer install failed, retrying once..." && sleep 5 && composer install --no-dev --optimize-autoloader)
 
 # Build frontend assets so Vite generates public/build/manifest.json
 RUN npm install && npm run build
