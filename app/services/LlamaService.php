@@ -13,7 +13,7 @@ class LlamaService
 
     public function __construct()
     {
-        $this->llamaUrl = "http://127.0.0.1:11434/api/generate";
+        $this->llamaUrl = config('services.ollama.url', 'http://127.0.0.1:11434') . '/api/generate';
     }
 
 

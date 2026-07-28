@@ -16,7 +16,7 @@ class EmbeddingService
         URL of Python Flask embedding server
         */
 
-        $this->embeddingUrl = "http://127.0.0.1:5003/embed";
+        $this->embeddingUrl = config('services.embedding.url', 'http://127.0.0.1:5003') . '/embed';
     }
 
 

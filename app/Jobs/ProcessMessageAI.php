@@ -10,6 +10,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class ProcessMessageAI implements ShouldQueue
 {
@@ -58,30 +59,27 @@ class ProcessMessageAI implements ShouldQueue
         |--------------------------------------------------------------------------
         | Run AI processing
         |--------------------------------------------------------------------------
+        |
+        | Wrapped in try/catch: if the Ollama / embedding servers are unreachable
+        | (e.g. not running in this environment), we log it and move on quietly
+        | instead of letting the exception bubble up. This matters especially
+        | when QUEUE_CONNECTION=sync, since this job then runs inline inside the
+        | same HTTP request that sent the chat message — an uncaught exception
+        | here would otherwise turn "send a message" into a 500 error for the user.
         */
 
-        $topicService->processNewMessage($message);
+        try {
+            $topicService->processNewMessage($message);
 
+            // Refresh message after TopicService updates it
+            $message->refresh();
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Refresh message after TopicService updates it
-        |--------------------------------------------------------------------------
-        */
-
-        $message->refresh();
-
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Notify all users that topic was assigned
-        |--------------------------------------------------------------------------
-        */
-
-        event(new TopicAssigned($message));
-
-
+            // Notify all users that topic was assigned
+            event(new TopicAssigned($message));
+        } catch (\Throwable $e) {
+            Log::warning('AI topic processing skipped: ' . $e->getMessage(), [
+                'message_id' => $this->messageId,
+            ]);
+        }
     }
 }

@@ -11,6 +11,10 @@ RUN apt-get update && apt-get install -y \
     unzip \
     nginx
 
+# Install Node.js (needed to build frontend assets with Vite)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs
+
 # Clear cache
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
@@ -34,6 +38,9 @@ RUN mkdir -p storage/framework/cache/data \
     && chmod -R 775 storage bootstrap/cache
 
 RUN composer install --no-dev --optimize-autoloader
+
+# Build frontend assets so Vite generates public/build/manifest.json
+RUN npm install && npm run build
 
 # Render assigns the port dynamically at runtime via $PORT — do not hardcode it.
 # EXPOSE is just documentation here since the real bind happens in CMD below.
