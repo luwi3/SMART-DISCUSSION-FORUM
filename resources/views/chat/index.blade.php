@@ -18,6 +18,7 @@
         }
         .message-highlight {
             animation: messageHighlightFlash 1.8s ease-out;
+            border-radius: 10px;
         }
     </style>
 </head>
@@ -548,13 +549,12 @@
             if (target) {
                 target.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-                const bubble = target.querySelector('.message-bubble');
-                if (bubble) {
-                    bubble.classList.remove('message-highlight');
-                    void bubble.offsetWidth;
-                    bubble.classList.add('message-highlight');
-                    setTimeout(() => bubble.classList.remove('message-highlight'), 1800);
-                }
+                // Highlight the whole row (avatar + bubble), not just the
+                // bubble — WhatsApp-style full-row flash.
+                target.classList.remove('message-highlight');
+                void target.offsetWidth;
+                target.classList.add('message-highlight');
+                setTimeout(() => target.classList.remove('message-highlight'), 1800);
             }
         }
     });
@@ -642,11 +642,9 @@
         if (highlightTarget) {
             highlightTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-            const highlightBubble = highlightTarget.querySelector('.message-bubble');
-            if (highlightBubble) {
-                highlightBubble.classList.add('message-highlight');
-                setTimeout(() => highlightBubble.classList.remove('message-highlight'), 1800);
-            }
+            // Highlight the whole row, matching the quote-jump behavior above.
+            highlightTarget.classList.add('message-highlight');
+            setTimeout(() => highlightTarget.classList.remove('message-highlight'), 1800);
         }
     }
 
