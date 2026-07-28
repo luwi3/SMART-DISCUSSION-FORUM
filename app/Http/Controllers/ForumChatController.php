@@ -99,8 +99,16 @@ class ForumChatController extends Controller
             return $query->where('created_at', '>', $mainChatLastView);
         })->count();
 
-        // 2. Fetch Topics with dynamic unread calculation
-        $topics = Topic::orderBy('title', 'asc')->get()->map(function ($topic) use ($userId) {
+        // 2. Fetch the 10 most recently active topics (by their newest
+        // message, not creation date) with dynamic unread calculation.
+        // Topics with no messages yet sort after ones with activity, then
+        // fall back to creation date among themselves.
+        $topics = Topic::withMax('messages', 'created_at')
+            ->orderByDesc('messages_max_created_at')
+            ->orderByDesc('created_at')
+            ->take(10)
+            ->get()
+            ->map(function ($topic) use ($userId) {
             $lastView = DB::table('chat_views')
                 ->where('user_id', $userId)
                 ->where('chat_type', 'topic')
@@ -406,12 +414,14 @@ class ForumChatController extends Controller
         $isNewDiscussion = ($message->thread_id === null);
         $isNotAlreadyTopic = ($message->topic_id === null);
         $isNotGroupChat = !($type === 'group' && $id !== 'general');
+        $isSubstantial = Message::isSubstantial($message->body);
 
         if (
             $isGeneralChat &&
             $isNewDiscussion &&
             $isNotAlreadyTopic &&
-            $isNotGroupChat
+            $isNotGroupChat &&
+            $isSubstantial
         ) {
             ProcessMessageAI::dispatch($message->id);
         }

@@ -13,6 +13,13 @@ class RecommendationService
     // interest profile — bounded for recency and to keep averaging cheap.
     private const PROFILE_MESSAGE_LIMIT = 50;
 
+    protected $embeddingService;
+
+    public function __construct(EmbeddingService $embeddingService)
+    {
+        $this->embeddingService = $embeddingService;
+    }
+
     public function recommendTopicsForStudent(User $user, int $limit = 5): Collection
     {
         $profile = $this->buildStudentProfile($user);
@@ -21,11 +28,35 @@ class RecommendationService
             return $this->fallbackTopics($limit);
         }
 
+        return $this->scoreTopicsAgainst($profile, $limit);
+    }
+
+    /**
+     * Same relevance scoring as recommendTopicsForStudent(), but seeded by
+     * an explicit search phrase instead of the student's message history —
+     * for the "Search Topics" button, where the student already knows what
+     * they're looking for rather than waiting to be matched passively.
+     */
+    public function searchTopics(string $query, int $limit = 10): Collection
+    {
+        $trimmed = trim($query);
+
+        if ($trimmed === '') {
+            return collect();
+        }
+
+        $queryEmbedding = $this->embeddingService->createEmbedding($trimmed);
+
+        return $this->scoreTopicsAgainst($queryEmbedding, $limit);
+    }
+
+    private function scoreTopicsAgainst(array $vector, int $limit): Collection
+    {
         return Topic::whereNotNull('embedding')
             ->get()
             ->map(fn (Topic $topic) => [
                 'topic' => $topic,
-                'similarity' => $this->cosineSimilarity($profile, $topic->embedding),
+                'similarity' => $this->cosineSimilarity($vector, $topic->embedding),
             ])
             ->sortByDesc('similarity')
             ->take($limit)

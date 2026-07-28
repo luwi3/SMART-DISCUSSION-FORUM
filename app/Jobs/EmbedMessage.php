@@ -14,11 +14,6 @@ class EmbedMessage implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    // Below this many words a message is too thin to carry any real topic
-    // signal ("hey", "thanks", "ok lol") — skip it rather than waste an
-    // embedding-server call and dilute the student's interest profile.
-    private const MIN_WORDS = 4;
-
     public $messageId;
 
     public function __construct($messageId)
@@ -35,7 +30,7 @@ class EmbedMessage implements ShouldQueue
             return;
         }
 
-        if (str_word_count(trim($message->body)) < self::MIN_WORDS) {
+        if (!Message::isSubstantial($message->body)) {
             return;
         }
 

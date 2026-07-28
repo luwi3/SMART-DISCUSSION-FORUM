@@ -80,12 +80,12 @@
                     <i class="fa-solid" :class="openTopics ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
                 </button>
 
-                <ul x-show="openTopics" x-transition class="space-y-2">
+                <ul id="active-topics-list" x-show="openTopics" x-transition class="space-y-2">
                     @foreach($topics as $topic)
                         @php
                             $isActiveTopic = ($type === 'topic' && $id == $topic->id) || (request('topic') == $topic->id);
                         @endphp
-                        <li>
+                        <li data-topic-item="{{ $topic->id }}">
                             <a href="{{ url('/forum-workspace/topic/' . $topic->id) }}"
                                class="flex items-center justify-between px-3 py-2.5 text-xs rounded-md transition-all duration-200 relative group
                                {{ $isActiveTopic
@@ -98,11 +98,11 @@
                                     </span>
                                 </div>
 
-                                @if(isset($topic->unread_count) && $topic->unread_count > 0)
-                                    <span class="bg-red-500 text-white font-bold text-[10px] px-2 py-0.5 rounded-full min-w-[20px] text-center shrink-0 shadow-sm ml-2">
-                                        {{ $topic->unread_count }}
-                                    </span>
-                                @endif
+                                <span data-topic-badge
+                                      class="bg-red-500 text-white font-bold text-[10px] px-2 py-0.5 rounded-full min-w-[20px] text-center shrink-0 shadow-sm ml-2"
+                                      style="display: {{ (isset($topic->unread_count) && $topic->unread_count > 0) ? 'inline-block' : 'none' }};">
+                                    {{ $topic->unread_count ?? 0 }}
+                                </span>
                             </a>
                         </li>
                     @endforeach
@@ -210,11 +210,32 @@
             @endif
 
             @if(count($messages) > 0)
+                @php $lastDateKey = null; @endphp
                 @foreach($messages as $msg)
                     @php
                         $isMine = $msg->user_id === auth()->id();
                         $isDeleted = $msg->trashed();
+                        $msgDate = $msg->created_at ?? now();
+                        $dateKey = $msgDate->format('Y-m-d');
+
+                        if ($dateKey !== $lastDateKey) {
+                            $lastDateKey = $dateKey;
+                            $dateLabel = $msgDate->isToday()
+                                ? 'Today'
+                                : ($msgDate->isYesterday() ? 'Yesterday' : $msgDate->format('F j, Y'));
+                        } else {
+                            $dateLabel = null;
+                        }
                     @endphp
+
+                    @if($dateLabel)
+                        <div class="flex justify-center my-4" data-date-separator="{{ $dateKey }}">
+                            <span class="bg-white text-slate-500 text-[11px] font-semibold px-3 py-1 rounded-full shadow-sm border border-slate-200">
+                                {{ $dateLabel }}
+                            </span>
+                        </div>
+                    @endif
+
                     <div class="flex items-end space-x-3 {{ $isMine ? 'flex-row-reverse space-x-reverse' : '' }} mb-1"
                          data-message-id="{{ $msg->id }}"
                          data-sender="{{ $isMine ? 'You' : ($msg->user->name ?? 'Unknown') }}"
@@ -407,6 +428,40 @@
             body: el.dataset.body,
         };
     });
+
+    // ===============================
+    // Date separators (WhatsApp-style) for messages appended after load —
+    // the initial batch already got theirs server-side (see the messages
+    // loop above); this just keeps the running total in sync for new arrivals.
+    // ===============================
+    let lastRenderedDateKey = "{{ $lastDateKey ?? '' }}";
+
+    const dateKeyFor = (d) =>
+        d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+
+    const dateLabelFor = (dateKey) => {
+        const today = dateKeyFor(new Date());
+        const yesterdayDate = new Date();
+        yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+        const yesterday = dateKeyFor(yesterdayDate);
+
+        if (dateKey === today) return 'Today';
+        if (dateKey === yesterday) return 'Yesterday';
+
+        const [y, m, d] = dateKey.split('-');
+        return new Date(y, m - 1, d).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+    };
+
+    const insertDateSeparatorIfNeeded = () => {
+        const key = dateKeyFor(new Date());
+        if (key === lastRenderedDateKey || !container) return;
+        lastRenderedDateKey = key;
+
+        const sep = document.createElement('div');
+        sep.className = 'flex justify-center my-4';
+        sep.innerHTML = `<span class="bg-white text-slate-500 text-[11px] font-semibold px-3 py-1 rounded-full shadow-sm border border-slate-200">${dateLabelFor(key)}</span>`;
+        container.appendChild(sep);
+    };
 
     const escapeHtml = (str) => {
         if (typeof str !== 'string') return '';
@@ -601,6 +656,8 @@
     const appendNewMessage = (body, senderName, senderId, messageId, replyTo = null) => {
         if (!container) return;
         if (fallbackEmpty) { fallbackEmpty.remove(); fallbackEmpty = null; }
+
+        insertDateSeparatorIfNeeded();
 
         const isMe = parseInt(senderId) === currentUserId;
         const avatarDisplay = isMe ? "ME" : senderName.substring(0, 2).toUpperCase();
@@ -822,6 +879,76 @@
         renderAsDeleted(row, false);
     };
 
+    // ===============================
+    // Sidebar "Active Topics" live updates — a message landing in a topic
+    // we're NOT currently viewing bumps that topic's badge instantly, and a
+    // topic the AI just created/assigned to appears in the list right away,
+    // instead of waiting for the next full page load.
+    // ===============================
+    const topicsList = document.getElementById('active-topics-list');
+    const topicBaseUrl = "{{ url('/forum-workspace/topic') }}";
+
+    const bumpTopicSidebarBadge = (topicId) => {
+        const li = document.querySelector(`[data-topic-item="${topicId}"]`);
+        if (!li) return;
+        const badge = li.querySelector('[data-topic-badge]');
+        if (!badge) return;
+        badge.textContent = (parseInt(badge.textContent) || 0) + 1;
+        badge.style.display = 'inline-block';
+    };
+
+    // One Echo channel subscription per sidebar topic so a message in a topic
+    // we're not looking at can still update its badge. Skipped for whichever
+    // topic is currently open — that one's already covered by the primary
+    // subscription below, and its badge intentionally stays cleared while open.
+    const subscribeToTopicChannel = (topicId) => {
+        if (!window.Echo) return;
+        if (currentChannelType === 'topic' && String(currentChannelId) === String(topicId)) return;
+
+        window.Echo.channel(`chat.topic.${topicId}`)
+            .listen('.MessageSent', (e) => {
+                if (parseInt(e.message.user_id) === currentUserId) return;
+                bumpTopicSidebarBadge(topicId);
+            });
+    };
+
+    @json($topics->pluck('id'))
+        .forEach(subscribeToTopicChannel);
+
+    const handleTopicAssigned = (e) => {
+        const topic = e.message.topic;
+        if (!topic || !topicsList) return;
+
+        const existing = document.querySelector(`[data-topic-item="${topic.id}"]`);
+        if (existing) {
+            // Already in the sidebar — just move it to the top (most recently
+            // active) and let the normal badge bump reflect the new message.
+            topicsList.insertBefore(existing, topicsList.firstChild);
+            if (parseInt(e.message.user_id) !== currentUserId) bumpTopicSidebarBadge(topic.id);
+            return;
+        }
+
+        const li = document.createElement('li');
+        li.setAttribute('data-topic-item', topic.id);
+        li.innerHTML = `
+            <a href="${topicBaseUrl}/${topic.id}" class="flex items-center justify-between px-3 py-2.5 text-xs rounded-md transition-all duration-200 relative group hover:bg-slate-800 hover:text-white text-slate-400">
+                <div class="flex items-center space-x-2 truncate">
+                    <i class="fa-solid fa-book-bookmark text-slate-500 group-hover:text-blue-400 transition-colors"></i>
+                    <span class="truncate">${escapeHtml(topic.title)}</span>
+                </div>
+                <span data-topic-badge class="bg-red-500 text-white font-bold text-[10px] px-2 py-0.5 rounded-full min-w-[20px] text-center shrink-0 shadow-sm ml-2" style="display:none;">0</span>
+            </a>
+        `;
+
+        topicsList.insertBefore(li, topicsList.firstChild);
+        subscribeToTopicChannel(topic.id);
+
+        // Keep the sidebar capped at 10, same as a fresh page load would show.
+        while (topicsList.children.length > 10) {
+            topicsList.removeChild(topicsList.lastElementChild);
+        }
+    };
+
     if (window.Echo) {
         window.Echo.channel(`chat.${currentChannelType}.${currentChannelId}`)
             .listen('.MessageSent', handleIncomingMessage)
@@ -836,6 +963,12 @@
                 .listen('.MessageSent', handleIncomingMessage)
                 .listen('.MessageDeleted', handleIncomingDelete);
         }
+
+        // Unconditional — a topic can be created/assigned while we're viewing
+        // main chat, a different topic, or a group, so this isn't tied to
+        // currentChannelType the way the main MessageSent subscription is.
+        window.Echo.channel('chat.broadcast.general')
+            .listen('.TopicAssigned', handleTopicAssigned);
     }
 </script>
 

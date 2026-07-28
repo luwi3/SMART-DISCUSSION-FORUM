@@ -175,6 +175,7 @@ Route::middleware(['auth', 'no.active.quiz'])->group(function () {
     Route::get('/topics/create', [TopicController::class, 'create'])->name('topics.create');
     Route::post('/topics', [TopicController::class, 'store'])->name('topics.store');
     Route::get('/topics/recommended', [TopicController::class, 'recommended'])->name('topics.recommended');
+    Route::get('/topics/search-recommend', [TopicController::class, 'searchRecommend'])->name('topics.search-recommend');
 
     // 📢 Standalone Announcements Workspace Route
     Route::get('/announcements', function() {

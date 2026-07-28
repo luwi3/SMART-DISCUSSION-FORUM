@@ -518,10 +518,13 @@
                     </div>
 
                     <div class="metric-card" style="width:240px;">
-                        <div class="m-title" style="color:#7c3aed;">Recommended Topics</div>
-                        <div class="m-sub" style="margin-bottom:15px;">Matched to what you've been discussing</div>
+                        <div class="m-title" style="color:#7c3aed;">Discover Topics</div>
+                        <div class="m-sub" style="margin-bottom:15px;">Matched to what you've been discussing, or search for something specific</div>
                         <button type="button" id="recommend-topics-btn" class="btn-topic-action" style="border:none; cursor:pointer;">
                             🔍 RECOMMEND TOPICS
+                        </button>
+                        <button type="button" id="search-topics-btn" class="btn-topic-action" style="border:none; cursor:pointer; background:#0d9488; margin-top:8px;" onmouseover="this.style.background='#0f766e'" onmouseout="this.style.background='#0d9488'">
+                            🔎 SEARCH TOPICS
                         </button>
                     </div>
                 </section>
@@ -537,6 +540,25 @@
                         <div id="recommend-topics-list" class="feed-list">
                             <p style="color:#64748b; font-size:14px;">Loading…</p>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Search Topics Modal -->
+                <div id="search-topics-modal" style="display:none; position:fixed; inset:0; background:rgba(10,25,49,0.55); z-index:1000; align-items:center; justify-content:center; padding:20px;">
+                    <div style="background:white; width:100%; max-width:480px; border-radius:12px; padding:24px; box-shadow:0 10px 30px rgba(0,0,0,0.2); max-height:80vh; overflow-y:auto;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                            <h3 style="font-size:16px; font-weight:700; color:#1e293b;">🔎 Search Topics</h3>
+                            <button type="button" id="search-topics-close" style="background:none; border:none; font-size:18px; cursor:pointer; color:#64748b;">&times;</button>
+                        </div>
+                        <p style="font-size:12px; color:#64748b; margin-bottom:12px;">Type a keyword or topic and find matching discussions.</p>
+
+                        <div style="display:flex; gap:8px; margin-bottom:16px;">
+                            <input type="text" id="search-topics-input" placeholder="e.g. database normalization, binary trees..."
+                                   style="flex:1; padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none;">
+                            <button type="button" id="search-topics-submit" style="background:#0d9488; color:white; border:none; padding:10px 16px; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer;">Search</button>
+                        </div>
+
+                        <div id="search-topics-list" class="feed-list"></div>
                     </div>
                 </div>
 
@@ -570,6 +592,7 @@
                                     <p style="font-size:12px; opacity:0.9;">Explore & join groups</p>
                                 </div>
                             </a>
+
                         </section>
                         <section class="content-panel" style="margin-top: 10px;">
                             <h3 class="panel-title">✍️ Available Assessments</h3>
@@ -672,6 +695,50 @@
             .catch(err => console.error("Database sync notice:", err));
         }
 
+        // Shared by both the Recommend Topics and Search Topics modals
+        function escapeHtml(str) {
+            if (typeof str !== 'string') return '';
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        const TOPIC_LIST_THEMES = {
+            recommend: { bg: '#faf5ff', border: '#7c3aed', avatarBg: '#ede9fe', text: '#6d28d9', icon: '🔍' },
+            search: { bg: '#f0fdfa', border: '#0d9488', avatarBg: '#ccfbf1', text: '#0f766e', icon: '🔎' },
+        };
+
+        function renderTopicList(container, topics, themeKey, emptyMessage) {
+            if (topics.length === 0) {
+                container.innerHTML = `<p style="color:#64748b; font-size:14px;">${emptyMessage}</p>`;
+                return;
+            }
+
+            const theme = TOPIC_LIST_THEMES[themeKey];
+
+            container.innerHTML = topics.map(function (topic) {
+                const base = "{{ url('/forum-workspace/topic') }}/" + topic.id;
+                const url = topic.highlight_message_id
+                    ? base + '?highlight=' + topic.highlight_message_id
+                    : base;
+
+                return `
+                    <a href="${url}" class="feed-item-link">
+                        <div class="feed-item" style="padding: 14px; background: ${theme.bg}; border-radius: 8px; border-left: 4px solid ${theme.border};">
+                            <div class="feed-avatar" style="background: ${theme.avatarBg}; color: ${theme.border};">${theme.icon}</div>
+                            <div>
+                                <div class="feed-msg-title" style="color: ${theme.text};">${escapeHtml(topic.title)}</div>
+                                <div style="font-size: 12px; color: #475569; margin-top: 2px;">${escapeHtml(topic.description ?? '')}</div>
+                            </div>
+                        </div>
+                    </a>
+                `;
+            }).join('<hr style="border:none; border-top:1px solid #f1f5f9; margin:4px 0;">');
+        }
+
         // RECOMMENDED TOPICS MODAL
         document.addEventListener('DOMContentLoaded', function () {
             const recommendBtn = document.getElementById('recommend-topics-btn');
@@ -680,16 +747,6 @@
             const list = document.getElementById('recommend-topics-list');
 
             if (!recommendBtn || !modal || !list) return;
-
-            function escapeHtml(str) {
-                if (typeof str !== 'string') return '';
-                return str
-                    .replace(/&/g, '&amp;')
-                    .replace(/</g, '&lt;')
-                    .replace(/>/g, '&gt;')
-                    .replace(/"/g, '&quot;')
-                    .replace(/'/g, '&#039;');
-            }
 
             function closeModal() {
                 modal.style.display = 'none';
@@ -704,36 +761,64 @@
                 })
                     .then(response => response.json())
                     .then(data => {
-                        const topics = data.topics || [];
-
-                        if (topics.length === 0) {
-                            list.innerHTML = '<p style="color:#64748b; font-size:14px;">No topics available yet. Start a discussion to get personalized suggestions!</p>';
-                            return;
-                        }
-
-                        list.innerHTML = topics.map(function (topic) {
-                            const base = "{{ url('/forum-workspace/topic') }}/" + topic.id;
-                            const url = topic.highlight_message_id
-                                ? base + '?highlight=' + topic.highlight_message_id
-                                : base;
-
-                            return `
-                                <a href="${url}" class="feed-item-link">
-                                    <div class="feed-item" style="padding: 14px; background: #faf5ff; border-radius: 8px; border-left: 4px solid #7c3aed;">
-                                        <div class="feed-avatar" style="background: #ede9fe; color: #7c3aed;">🔍</div>
-                                        <div>
-                                            <div class="feed-msg-title" style="color: #6d28d9;">${escapeHtml(topic.title)}</div>
-                                            <div style="font-size: 12px; color: #475569; margin-top: 2px;">${escapeHtml(topic.description ?? '')}</div>
-                                        </div>
-                                    </div>
-                                </a>
-                            `;
-                        }).join('<hr style="border:none; border-top:1px solid #f1f5f9; margin:4px 0;">');
+                        renderTopicList(list, data.topics || [], 'recommend', 'No topics available yet. Start a discussion to get personalized suggestions!');
                     })
                     .catch(err => {
                         console.error('Failed to load recommended topics:', err);
                         list.innerHTML = '<p style="color:#dc2626; font-size:14px;">Could not load recommendations. Please try again.</p>';
                     });
+            });
+
+            if (closeBtn) closeBtn.addEventListener('click', closeModal);
+            modal.addEventListener('click', function (e) {
+                if (e.target === modal) closeModal();
+            });
+        });
+
+        // SEARCH TOPICS MODAL
+        document.addEventListener('DOMContentLoaded', function () {
+            const searchBtn = document.getElementById('search-topics-btn');
+            const modal = document.getElementById('search-topics-modal');
+            const closeBtn = document.getElementById('search-topics-close');
+            const input = document.getElementById('search-topics-input');
+            const submitBtn = document.getElementById('search-topics-submit');
+            const list = document.getElementById('search-topics-list');
+
+            if (!searchBtn || !modal || !input || !submitBtn || !list) return;
+
+            function closeModal() {
+                modal.style.display = 'none';
+            }
+
+            function runSearch() {
+                const query = input.value.trim();
+                if (!query) return;
+
+                list.innerHTML = '<p style="color:#64748b; font-size:14px;">Searching…</p>';
+
+                fetch("{{ route('topics.search-recommend') }}?query=" + encodeURIComponent(query), {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        renderTopicList(list, data.topics || [], 'search', 'No topics matched your search.');
+                    })
+                    .catch(err => {
+                        console.error('Topic search failed:', err);
+                        list.innerHTML = '<p style="color:#dc2626; font-size:14px;">Search failed. Please try again.</p>';
+                    });
+            }
+
+            searchBtn.addEventListener('click', function () {
+                modal.style.display = 'flex';
+                list.innerHTML = '';
+                input.value = '';
+                input.focus();
+            });
+
+            submitBtn.addEventListener('click', runSearch);
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') runSearch();
             });
 
             if (closeBtn) closeBtn.addEventListener('click', closeModal);

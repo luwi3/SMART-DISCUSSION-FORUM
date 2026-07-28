@@ -43,6 +43,21 @@ class TopicController extends Controller
         return response()->json(['topics' => $topics]);
     }
 
+    /**
+     * Up to 10 topics matched to an explicit search phrase, for the
+     * "Search Topics" button — discovery on demand rather than passive.
+     */
+    public function searchRecommend(Request $request)
+    {
+        $validated = $request->validate([
+            'query' => 'required|string|max:255',
+        ]);
+
+        $topics = $this->recommendationService->searchTopics($validated['query'], 10);
+
+        return response()->json(['topics' => $topics]);
+    }
+
     public function store(Request $request)
     {
         // 1. Validate 'title' and 'description' with strong input constraints
@@ -84,7 +99,9 @@ class TopicController extends Controller
             ], 201);
         }
 
-        // Normal browser form submission -> redirect back to the switchboard dashboard
-        return redirect()->route('dashboard')->with('success', 'Topic created successfully!');
+        // Normal browser form submission -> open the new topic's chat room
+        // immediately so the student can start typing without an extra click
+        return redirect()->route('chat.index', ['type' => 'topic', 'id' => $topic->id])
+            ->with('success', 'Topic created successfully!');
     }
 }
