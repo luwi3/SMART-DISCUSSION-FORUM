@@ -35,6 +35,8 @@ RUN mkdir -p storage/framework/cache/data \
 
 RUN composer install --no-dev --optimize-autoloader
 
+# Render assigns the port dynamically at runtime via $PORT — do not hardcode it.
+# EXPOSE is just documentation here since the real bind happens in CMD below.
 EXPOSE 8000
 
-CMD php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan serve --host 0.0.0.0 --port 8000
+CMD php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan serve --host 0.0.0.0 --port ${PORT:-8000}
