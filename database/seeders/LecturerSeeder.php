@@ -14,9 +14,10 @@ class LecturerSeeder extends Seeder
         $lecturerUser = DB::table('users')->insertGetId([
             'name' => 'Dr. Alex Mukasa',
              'username' => 'alex.mukasa',
-            
+
             'email' => 'lecturer@test.com',
             'password' => Hash::make('lecturer123'),
+            'role' => 'lecturer',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
