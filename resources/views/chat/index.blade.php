@@ -40,9 +40,12 @@
 
         <div class="p-4 border-b border-slate-900 flex items-center justify-between">
             <h1 class="text-xs font-bold tracking-wider text-slate-400 uppercase">Workspaces</h1>
-            <span class="text-[11px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full border border-slate-700 font-mono">
-                {{ auth()->user()->username ?? auth()->user()->name }}
-            </span>
+            <div class="flex items-center gap-2">
+                <span class="text-[11px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full border border-slate-700 font-mono">
+                    {{ auth()->user()->username ?? auth()->user()->name }}
+                </span>
+                <button type="button" @click="sidebarOpen = false" class="lg:hidden text-slate-400 hover:text-white text-lg leading-none px-1" aria-label="Close menu">&times;</button>
+            </div>
         </div>
 
         <div class="flex-1 overflow-y-auto p-4 space-y-6">
@@ -158,9 +161,7 @@
 
         <!-- Mobile-only top bar with sidebar toggle -->
         <div class="lg:hidden flex items-center px-4 py-3 border-b border-slate-200 bg-white shrink-0">
-            <button type="button" @click="sidebarOpen = true" class="text-slate-600 hover:text-slate-900 mr-3" aria-label="Open workspaces menu">
-                <i class="fa-solid fa-bars text-lg"></i>
-            </button>
+            <button type="button" @click="sidebarOpen = true" class="text-slate-600 hover:text-slate-900 mr-3 text-xl leading-none px-1" aria-label="Open workspaces menu">☰</button>
             <span class="text-sm font-bold text-slate-800">Smart Forum Workspace</span>
         </div>
 
