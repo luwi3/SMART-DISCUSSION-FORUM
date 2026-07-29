@@ -9,7 +9,9 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     zip \
     unzip \
-    nginx
+    nginx \
+    supervisor \
+    gettext-base
 
 # Install Node.js (needed to build frontend assets with Vite)
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
@@ -44,8 +46,17 @@ RUN composer install --no-dev --optimize-autoloader || \
 # Build frontend assets so Vite generates public/build/manifest.json
 RUN npm install && npm run build
 
-# Render assigns the port dynamically at runtime via $PORT — do not hardcode it.
-# EXPOSE is just documentation here since the real bind happens in CMD below.
-EXPOSE 8000
+# Remove nginx's default site so only our own templated config (below)
+# binds to Render's port — leaving both would conflict.
+RUN rm -f /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf
 
-CMD php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan serve --host 0.0.0.0 --port ${PORT:-8000}
+RUN mkdir -p /etc/nginx/templates
+COPY docker/nginx.conf.template /etc/nginx/templates/default.conf.template
+COPY docker/supervisord.conf /etc/supervisord.conf
+
+RUN chmod +x docker-entrypoint.sh
+ENTRYPOINT ["./docker-entrypoint.sh"]
+
+# Render assigns the port dynamically at runtime via $PORT — nginx binds
+# to it (via the templated config above), not PHP directly anymore.
+EXPOSE 8000
