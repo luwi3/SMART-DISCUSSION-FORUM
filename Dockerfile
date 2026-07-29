@@ -11,7 +11,9 @@ RUN apt-get update && apt-get install -y \
     unzip \
     nginx \
     supervisor \
-    gettext-base
+    gettext-base \
+    python3 \
+    python3-pip
 
 # Install Node.js (needed to build frontend assets with Vite)
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
@@ -25,6 +27,17 @@ RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
 
 # Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Install the embedding server's Python dependencies here (before COPY . .)
+# so this slow, rarely-changing layer isn't invalidated by app code edits.
+# CPU-only torch wheel avoids pulling in an unnecessary multi-GB CUDA build.
+RUN pip3 install --no-cache-dir --break-system-packages \
+    torch --index-url https://download.pytorch.org/whl/cpu \
+    && pip3 install --no-cache-dir --break-system-packages flask sentence-transformers
+
+# Bake the embedding model into the image so no internet access is needed
+# to fetch it at container startup.
+RUN python3 -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
 
 # Set working directory
 WORKDIR /var/www
@@ -53,6 +66,7 @@ RUN rm -f /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf
 RUN mkdir -p /etc/nginx/templates
 COPY docker/nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY docker/supervisord.conf /etc/supervisord.conf
+COPY docker/embedding_server.py /var/www/embedding_server.py
 
 RUN chmod +x docker-entrypoint.sh
 ENTRYPOINT ["./docker-entrypoint.sh"]
