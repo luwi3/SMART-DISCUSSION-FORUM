@@ -19,7 +19,8 @@
         .btn-return:hover { background-color: #1e3a8a; }
 
         /* Table Layout Styling */
-        table { width: 100%; border-collapse: collapse; text-align: left; margin-top: 10px; }
+        .table-scroll { width: 100%; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; text-align: left; margin-top: 10px; min-width: 600px; }
         th { background-color: #f8fafc; color: #475569; font-size: 13px; font-weight: 700; padding: 14px 18px; border-bottom: 2px solid #e2e8f0; text-transform: uppercase; letter-spacing: 0.5px; }
         td { padding: 16px 18px; border-bottom: 1px solid #e2e8f0; font-size: 14px; color: #334155; }
         tr:hover { background-color: #f8fafc; }
@@ -34,6 +35,12 @@
         .score-huge { font-size: 64px; font-weight: 800; color: #2563eb; margin: 15px 0; }
         .score-huge.passed { color: #16a34a; }
         .student-detail-row { margin-top: 15px; border-top: 1px dashed #e2e8f0; padding-top: 15px; font-size: 14px; color: #475569; line-height: 1.6; }
+
+        @media (max-width: 640px) {
+            body { padding: 16px; }
+            .gradebook-container { padding: 18px; }
+            .header { flex-direction: column; align-items: flex-start; gap: 10px; }
+        }
     </style>
 </head>
 <body>
@@ -61,6 +68,7 @@
 
     <!-- 👨‍🏫 VIEW 1: LECTURER MODE (Shows the full master submission spreadsheet log) -->
     @if(Auth::user()->role === 'lecturer')
+        <div class="table-scroll">
         <table>
             <thead>
                 <tr>
@@ -93,6 +101,7 @@
                 @endforelse
             </tbody>
         </table>
+        </div>
 
     <!-- 🎓 VIEW 2: STUDENT MODE (Displays the secure single evaluated student card block) -->
     @else

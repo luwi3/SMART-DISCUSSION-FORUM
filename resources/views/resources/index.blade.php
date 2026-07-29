@@ -41,7 +41,8 @@
         .btn-submit:hover { background-color: #1d4ed8; }
 
         /* History Table Styling */
-        .resource-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+        .table-scroll { width: 100%; overflow-x: auto; }
+        .resource-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; min-width: 480px; }
         .resource-table th { background-color: #f8fafc; padding: 14px 16px; font-weight: 600; color: #64748b; border-bottom: 2px solid #e2e8f0; text-transform: uppercase; font-size: 11px; tracking: 0.05em; }
         .resource-table td { padding: 16px; border-bottom: 1px solid #e2e8f0; color: #334155; vertical-align: middle; }
         
@@ -52,6 +53,12 @@
         .btn-delete { background: none; border: none; color: #dc2626; font-weight: 600; font-size: 13px; cursor: pointer; text-decoration: none; }
         .btn-delete:hover { text-decoration: underline; }
         .empty-state { text-align: center; padding: 40px 0; color: #94a3b8; font-style: italic; }
+
+        @media (max-width: 640px) {
+            body { padding: 20px 14px; }
+            .card { padding: 18px; }
+            .top-navbar { flex-wrap: wrap; gap: 10px; }
+        }
     </style>
 </head>
 <body>
@@ -121,6 +128,7 @@
                 @if($resources->isEmpty())
                     <p class="empty-state">No shared references uploaded yet.</p>
                 @else
+                    <div class="table-scroll">
                     <table class="resource-table">
                         <thead>
                             <tr>
@@ -151,6 +159,7 @@
                             @endforeach
                         </tbody>
                     </table>
+                    </div>
                 @endif
             </section>
         </div>

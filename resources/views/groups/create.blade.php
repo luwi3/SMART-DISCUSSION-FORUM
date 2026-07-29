@@ -18,15 +18,21 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            padding: 20px;
         }
 
         .container {
             background: #1e293b;
-            width: 500px;
+            width: 100%;
+            max-width: 500px;
             padding: 35px;
             border-radius: 16px;
             box-shadow: 0 5px 20px rgba(0,0,0,0.2);
             border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        @media (max-width: 480px) {
+            .container { padding: 24px; }
         }
 
         h1 {

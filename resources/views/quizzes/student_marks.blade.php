@@ -60,6 +60,30 @@
         .grade-score { font-size: 18px; font-weight: 800; color: #2563eb; }
         .grade-total { font-size: 13px; color: #64748b; font-weight: 500; }
         .grade-time { font-size: 12px; color: #94a3b8; margin-top: 4px; display: block; }
+
+        .mobile-menu-toggle { display: none; background: none; border: none; color: white; font-size: 20px; cursor: pointer; margin-right: 16px; padding: 4px; }
+        .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(10, 25, 49, 0.55); z-index: 900; }
+        .sidebar-backdrop.active { display: block; }
+
+        @media (max-width: 768px) {
+            .mobile-menu-toggle { display: inline-flex; align-items: center; }
+            .top-brand-bar { padding: 14px 18px; }
+            .main-content { padding: 20px; gap: 20px; }
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                z-index: 950;
+                transform: translateX(-100%);
+                transition: transform 0.25s ease;
+                box-shadow: 6px 0 24px rgba(0,0,0,0.25);
+            }
+            .sidebar.mobile-open { transform: translateX(0); }
+            .content-panel { padding: 18px; }
+            .list-row-item { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .grade-display { text-align: left; }
+        }
     </style>
 </head>
 <body>
@@ -72,7 +96,10 @@
     @endphp
 
     <div class="top-brand-bar">
-        <span>SMART DISCUSSION FORUM</span>
+        <div style="display: flex; align-items: center;">
+            <button type="button" class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Open menu">☰</button>
+            <span>SMART DISCUSSION FORUM</span>
+        </div>
 
         <div id="notification-dropdown" style="position: relative; display: inline-block;">
             <a href="{{ route('student.dashboard', ['tab' => 'notifications']) }}" style="background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; position: relative;">
@@ -87,8 +114,9 @@
     </div>
 
     <div class="workspace-layout">
+        <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
 
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <ul class="sidebar-menu">
                 <li class="menu-item {{ request()->routeIs('student.dashboard') && (!request('tab') || request('tab') === 'main') ? 'active' : '' }}">
                     <a href="{{ route('student.dashboard', ['tab' => 'main']) }}">Main Menu</a>
@@ -181,5 +209,25 @@
         </main>
 
     </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const toggleBtn = document.getElementById('mobile-menu-toggle');
+        const sidebarEl = document.getElementById('sidebar');
+        const backdrop = document.getElementById('sidebar-backdrop');
+
+        function openSidebar() {
+            if (sidebarEl) sidebarEl.classList.add('mobile-open');
+            if (backdrop) backdrop.classList.add('active');
+        }
+        function closeSidebar() {
+            if (sidebarEl) sidebarEl.classList.remove('mobile-open');
+            if (backdrop) backdrop.classList.remove('active');
+        }
+
+        if (toggleBtn) toggleBtn.addEventListener('click', openSidebar);
+        if (backdrop) backdrop.addEventListener('click', closeSidebar);
+    });
+</script>
 </body>
 </html>

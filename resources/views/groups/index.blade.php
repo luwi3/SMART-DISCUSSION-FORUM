@@ -216,14 +216,36 @@
             font-size: 12px;
         }
         .kick-btn:hover { text-decoration: underline; }
+
+        .mobile-menu-toggle { display: none; background: none; border: none; font-size: 20px; cursor: pointer; padding: 4px; color: #f8fafc; margin-bottom: 16px; }
+        .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 900; }
+        .sidebar-backdrop.active { display: block; }
+
+        @media (max-width: 768px) {
+            .mobile-menu-toggle { display: inline-flex; align-items: center; }
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                z-index: 950;
+                transform: translateX(-100%);
+                transition: transform 0.25s ease;
+                box-shadow: 6px 0 24px rgba(0,0,0,0.4);
+            }
+            .sidebar.mobile-open { transform: translateX(0); }
+            .main-content { padding: 20px; }
+            .page-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+        }
     </style>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body>
 
     <div class="workspace-layout">
-        
-        <aside class="sidebar">
+        <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+        <aside class="sidebar" id="sidebar">
             <ul class="sidebar-menu">
                 <li class="menu-item"><a href="{{ route('student.dashboard') }}">Main Menu</a></li>
                 <li class="menu-item"><a href="#">Profile</a></li>
@@ -263,7 +285,8 @@
         </aside>
 
         <main class="main-content">
-            
+            <button type="button" class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Open menu">☰ Menu</button>
+
             <div class="page-header">
                 <div>
                     <h1 class="page-title">🌐 Discover Study Groups</h1>
@@ -341,5 +364,24 @@
         </main>
     </div>
 
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const toggleBtn = document.getElementById('mobile-menu-toggle');
+        const sidebarEl = document.getElementById('sidebar');
+        const backdrop = document.getElementById('sidebar-backdrop');
+
+        function openSidebar() {
+            if (sidebarEl) sidebarEl.classList.add('mobile-open');
+            if (backdrop) backdrop.classList.add('active');
+        }
+        function closeSidebar() {
+            if (sidebarEl) sidebarEl.classList.remove('mobile-open');
+            if (backdrop) backdrop.classList.remove('active');
+        }
+
+        if (toggleBtn) toggleBtn.addEventListener('click', openSidebar);
+        if (backdrop) backdrop.addEventListener('click', closeSidebar);
+    });
+</script>
 </body>
 </html>

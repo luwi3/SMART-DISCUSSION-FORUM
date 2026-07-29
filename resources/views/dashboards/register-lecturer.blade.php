@@ -28,10 +28,33 @@
         .form-input:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
         .submit-btn { background-color: #2563eb; color: white; border: none; padding: 12px 24px; font-size: 14px; font-weight: 700; border-radius: 6px; cursor: pointer; transition: background 0.2s; }
         .submit-btn:hover { background-color: #1d4ed8; }
+
+        .mobile-menu-toggle { display: none; background: none; border: none; font-size: 20px; cursor: pointer; margin-right: 16px; padding: 4px; color: #1e293b; }
+        .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(3, 43, 136, 0.35); z-index: 900; }
+        .sidebar-backdrop.active { display: block; }
+
+        @media (max-width: 768px) {
+            .mobile-menu-toggle { display: inline-flex; align-items: center; }
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                z-index: 950;
+                transform: translateX(-100%);
+                transition: transform 0.25s ease;
+                box-shadow: 6px 0 24px rgba(0,0,0,0.25);
+            }
+            .sidebar.mobile-open { transform: translateX(0); }
+            .dashboard-body { padding: 18px; }
+            .form-card { padding: 20px; }
+            .top-navbar { padding: 14px 18px; }
+        }
     </style>
 </head>
 <body>
-    <aside class="sidebar">
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+    <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand">
             <svg class="brand-icon" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/></svg>
             <div class="brand-text">SMART DISCUSSION FORUM</div>
@@ -53,7 +76,10 @@
         </div>
     </aside>
     <main class="main-content">
-        <nav class="top-navbar"><div class="nav-title">SMART DISCUSSION FORUM</div></nav>
+        <nav class="top-navbar">
+            <button type="button" class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Open menu">☰</button>
+            <div class="nav-title">SMART DISCUSSION FORUM</div>
+        </nav>
         <div class="dashboard-body">
             <div class="form-card">
                 <h2 class="form-title">Register New Lecturer 🧑‍🏫</h2>
@@ -102,5 +128,25 @@
             </div>
         </div>
     </main>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const toggleBtn = document.getElementById('mobile-menu-toggle');
+        const sidebarEl = document.getElementById('sidebar');
+        const backdrop = document.getElementById('sidebar-backdrop');
+
+        function openSidebar() {
+            if (sidebarEl) sidebarEl.classList.add('mobile-open');
+            if (backdrop) backdrop.classList.add('active');
+        }
+        function closeSidebar() {
+            if (sidebarEl) sidebarEl.classList.remove('mobile-open');
+            if (backdrop) backdrop.classList.remove('active');
+        }
+
+        if (toggleBtn) toggleBtn.addEventListener('click', openSidebar);
+        if (backdrop) backdrop.addEventListener('click', closeSidebar);
+    });
+</script>
 </body>
 </html>

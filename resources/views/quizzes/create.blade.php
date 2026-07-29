@@ -42,6 +42,12 @@
         .btn-submit { background: #0b2265; color: white; border: none; padding: 12px 20px; font-weight: 600; border-radius: 6px; cursor: pointer; font-size: 16px; width: 100%; margin-top: 20px; transition: background 0.2s; }
         .btn-submit:hover { background: #1e3a8a; }
         .alert-error { background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 14px; }
+
+        @media (max-width: 640px) {
+            body { padding: 20px 12px; }
+            .form-container { padding: 20px; }
+            .row, .import-method-selector, .options-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>

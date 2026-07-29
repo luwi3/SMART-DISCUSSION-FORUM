@@ -14,7 +14,8 @@
         .matrix-desc { font-size: 14px; color: #64748b; margin-top: 4px; }
         
         /* Grid Table Styling matching your sketch */
-        .grade-table { width: 100%; border-collapse: collapse; margin-top: 20px; text-align: left; }
+        .table-scroll { width: 100%; overflow-x: auto; }
+        .grade-table { width: 100%; border-collapse: collapse; margin-top: 20px; text-align: left; min-width: 500px; }
         .grade-table th, .grade-table td { padding: 14px 18px; border: 1px solid #cbd5e1; font-size: 14px; }
         
         .grade-table th { background-color: #f8fafc; color: #0f172a; font-weight: 700; }
@@ -27,6 +28,11 @@
         
         .back-btn { display: inline-block; margin-bottom: 20px; color: #2563eb; text-decoration: none; font-weight: 600; font-size: 14px; }
         .back-btn:hover { text-decoration: underline; }
+
+        @media (max-width: 640px) {
+            body { padding: 20px 14px; }
+            .matrix-container { padding: 18px; }
+        }
     </style>
 </head>
 <body>
@@ -39,6 +45,7 @@
             <p class="matrix-desc">System-automated marks calculated out of 20 based on student forum replies per topic.</p>
         </div>
 
+        <div class="table-scroll">
         <table class="grade-table">
             <thead>
                 <tr>
@@ -83,6 +90,7 @@
                 @endif
             </tbody>
         </table>
+        </div>
     </div>
 
 </body>

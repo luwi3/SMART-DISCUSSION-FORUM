@@ -65,10 +65,39 @@
         .content-panel { background: white; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03); }
         .panel-heading { color: #0b2265; margin-bottom: 6px; font-size: 18px; font-weight: 700; }
         .panel-desc { color: #64748b; font-size: 14px; margin-bottom: 20px; }
+
+        .mobile-menu-toggle { display: none; background: none; border: none; font-size: 20px; cursor: pointer; padding: 4px; color: #0b2265; margin-bottom: 16px; }
+        .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(11, 34, 101, 0.35); z-index: 900; }
+        .sidebar-backdrop.active { display: block; }
+
+        @media (max-width: 900px) {
+            .action-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 768px) {
+            .mobile-menu-toggle { display: inline-flex; align-items: center; }
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                z-index: 950;
+                transform: translateX(-100%);
+                transition: transform 0.25s ease;
+                box-shadow: 6px 0 24px rgba(0,0,0,0.25);
+            }
+            .sidebar.mobile-open { transform: translateX(0); }
+            .main-content { padding: 20px; }
+        }
+
+        @media (max-width: 480px) {
+            .action-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
-    <aside class="sidebar">
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+    <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand">Smart Discussion Forum</div>
         <ul class="sidebar-menu">
             <li class="menu-item {{ request()->is('dashboard') || request()->is('lecturer/dashboard') || request()->is('/') ? 'active' : '' }}">
@@ -101,6 +130,8 @@
     </aside>
 
     <main class="main-content">
+        <button type="button" class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Open menu">☰ Menu</button>
+
         @if(session('success'))
             <div class="alert-banner">
                 ✓ {{ session('success') }}
@@ -142,5 +173,25 @@
             </div>
         </div>
     </main>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const toggleBtn = document.getElementById('mobile-menu-toggle');
+        const sidebarEl = document.getElementById('sidebar');
+        const backdrop = document.getElementById('sidebar-backdrop');
+
+        function openSidebar() {
+            if (sidebarEl) sidebarEl.classList.add('mobile-open');
+            if (backdrop) backdrop.classList.add('active');
+        }
+        function closeSidebar() {
+            if (sidebarEl) sidebarEl.classList.remove('mobile-open');
+            if (backdrop) backdrop.classList.remove('active');
+        }
+
+        if (toggleBtn) toggleBtn.addEventListener('click', openSidebar);
+        if (backdrop) backdrop.addEventListener('click', closeSidebar);
+    });
+</script>
 </body>
 </html>

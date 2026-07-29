@@ -24,16 +24,22 @@
         .quiz-sub-badge { font-size: 14px; color: #64748b; margin-top: 4px; font-weight: 500; }
 
         /* Data table matching your sketch dimensions */
-        .evaluation-table { width: 100%; border-collapse: collapse; text-align: left; margin-top: 10px; }
+        .table-scroll { width: 100%; overflow-x: auto; }
+        .evaluation-table { width: 100%; border-collapse: collapse; text-align: left; margin-top: 10px; min-width: 560px; }
         .evaluation-table th, .evaluation-table td { padding: 14px 16px; border: 1px solid #cbd5e1; font-size: 14px; }
-        
+
         .evaluation-table th { background-color: #f8fafc; color: #0f172a; font-weight: 700; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; }
         .student-name-text { font-weight: 600; color: #1e293b; }
         .reg-no-text { font-family: 'Courier New', Courier, monospace; font-weight: 600; color: #475569; }
         .marks-obtained-data { font-weight: 700; color: #1e40af; }
         .submission-date-text { color: #64748b; font-size: 13px; }
-        
+
         .no-records { padding: 20px; text-align: center; color: #94a3b8; font-style: italic; }
+
+        @media (max-width: 640px) {
+            body { padding: 20px 14px; }
+            .quiz-evaluation-block { padding: 16px; }
+        }
     </style>
 </head>
 <body>
@@ -58,6 +64,7 @@
                         <div class="quiz-sub-badge">group: {{ $firstSubmission->courseCode ?? 'BSSE' }} • Submissions: {{ $submissions->count() }}</div>
                     </div>
 
+                    <div class="table-scroll">
                     <table class="evaluation-table">
                         <thead>
                             <tr>
@@ -73,20 +80,20 @@
                                     <td class="student-name-text">
                                         {{ $submission->student_name }}
                                     </td>
-                                    
+
                                     <td class="reg-no-text">
                                         {{ $submission->student_reg }}
                                     </td>
-                                    
+
                                     <td class="marks-obtained-data">
-                                        {{ $submission->score }} / {{ $submission->total_questions ?? 2 }} = 
+                                        {{ $submission->score }} / {{ $submission->total_questions ?? 2 }} =
                                         @if(($submission->total_questions ?? 2) > 0)
                                             {{ round(($submission->score / $submission->total_questions) * 100) }}%
                                         @else
                                             0%
                                         @endif
                                     </td>
-                                    
+
                                     <td class="submission-date-text">
                                         {{ \Carbon\Carbon::parse($submission->timeSubmitted)->format('d M Y, h:i A') }}
                                     </td>
@@ -94,6 +101,7 @@
                             @endforeach
                         </tbody>
                     </table>
+                    </div>
 
                 </section>
             @endforeach

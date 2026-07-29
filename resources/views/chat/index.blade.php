@@ -24,9 +24,13 @@
 </head>
 <body class="bg-gray-100 antialiased font-sans">
 
-<div class="flex h-screen bg-white">
+<div class="flex h-screen bg-white" x-data="{ sidebarOpen: false }">
+    <!-- Mobile-only backdrop, shown while the sidebar drawer is open -->
+    <div x-show="sidebarOpen" x-transition.opacity @click="sidebarOpen = false" class="fixed inset-0 bg-black/50 z-30 lg:hidden" style="display: none;"></div>
+
     <!-- Sidebar Left Layout Workspace Pane -->
-    <div class="w-64 bg-[#0b1329] text-slate-300 flex flex-col border-r border-slate-900">
+    <div class="w-64 bg-[#0b1329] text-slate-300 flex flex-col border-r border-slate-900 fixed inset-y-0 left-0 z-40 transform transition-transform duration-200 lg:static lg:translate-x-0"
+         :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
 
         <div class="p-3 bg-[#070d1c] border-b border-slate-900">
            <a href="{{ route('dashboard') }}" class="flex items-center text-gray-400 hover:text-white px-4 py-3 transition">
@@ -150,7 +154,15 @@
     </div>
 
     <!-- Active Right Side Panel Chat Streams Messaging Core Interface -->
-    <div class="flex-1 flex flex-col h-full bg-[#f8fafc] relative">
+    <div class="flex-1 flex flex-col h-full bg-[#f8fafc] relative min-w-0">
+
+        <!-- Mobile-only top bar with sidebar toggle -->
+        <div class="lg:hidden flex items-center px-4 py-3 border-b border-slate-200 bg-white shrink-0">
+            <button type="button" @click="sidebarOpen = true" class="text-slate-600 hover:text-slate-900 mr-3" aria-label="Open workspaces menu">
+                <i class="fa-solid fa-bars text-lg"></i>
+            </button>
+            <span class="text-sm font-bold text-slate-800">Smart Forum Workspace</span>
+        </div>
 
         @php
             $shareTopicId = null;
@@ -162,7 +174,7 @@
         @endphp
 
         @if($shareTopicId && isset($currentStreamTarget) && !($currentStreamTarget->is_broadcast ?? false))
-            <div class="px-8 py-3 border-b border-slate-200 bg-white flex items-center justify-between shrink-0">
+            <div class="px-4 lg:px-8 py-3 border-b border-slate-200 bg-white flex items-center justify-between shrink-0">
                 <div class="flex items-center space-x-2 min-w-0">
                     <i class="fa-solid fa-book-bookmark text-blue-400 shrink-0"></i>
                     <h2 class="text-sm font-bold text-slate-800 truncate">{{ $currentStreamTarget->title ?? 'Discussion Topic' }}</h2>
@@ -198,7 +210,7 @@
             </div>
         @endif
 
-        <div id="chat-messages-container" class="flex-1 overflow-y-auto px-8 py-6 space-y-4 pb-28 scroll-smooth">
+        <div id="chat-messages-container" class="flex-1 overflow-y-auto px-4 lg:px-8 py-6 space-y-4 pb-28 scroll-smooth">
             @if ($errors->any())
                 <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl m-4 shadow-sm flex items-start space-x-2">
                     <i class="fa-solid fa-circle-exclamation mt-0.5 text-red-500"></i>
