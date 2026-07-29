@@ -28,5 +28,15 @@ Broadcast::channel('chat.{type}.{id}', function ($user, $type, $id) {
             ->exists();
     }
 
+    // 4. Course-restricted broadcast stream: only students registered to that
+    // course code may listen. This is a private channel — anyone else's
+    // subscribe attempt is rejected at /broadcasting/auth, so a restricted
+    // message never reaches a student outside the course, live or otherwise.
+    if ($type === 'course') {
+        return \App\Models\Student::where('user_id', $user->id)
+            ->where('courseCode', $id)
+            ->exists();
+    }
+
     return false;
 });

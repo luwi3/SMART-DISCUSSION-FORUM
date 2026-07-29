@@ -34,6 +34,10 @@ class ParticipationController extends Controller
                                        ->where('user_id', $student->id)
                                        ->count();
 
+                $calculatedScore = $messageCount * 2;
+                if ($calculatedScore > 20) {
+                    $calculatedScore = 20;
+                }
                 $calculatedScore = min($messageCount * 2, 20);
 
                 $matrix[$student->id][$topic->id] = $calculatedScore;
@@ -87,6 +91,12 @@ class ParticipationController extends Controller
         }
 
         // 3. Quizzes currently within their live time window for this student's course
+        // 🔧 FIX: this was Quiz::where('courseCode', $course) — an exact match against
+        // the raw Student::courseCode. That's the bug behind the "No active evaluation
+        // windows" message you saw even while a quiz was inside its start/expiry window:
+        // the quiz's courseCode (uppercased on save) simply never matched the student's
+        // as-typed courseCode. TRIM/UPPER both sides so this lines up with the middleware
+        // and lockStatus() below.
         $activeQuizzes = Quiz::when($studentCourse, function ($query, $course) {
                 return $query->whereRaw('TRIM(UPPER(courseCode)) = ?', [$course]);
             })

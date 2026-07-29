@@ -62,6 +62,10 @@ class TopicAssigned implements ShouldBroadcastNow
                 ],
 
 
+                'user_id' => $this->message->user_id,
+
+
+
                 'user' => [
 
                     'name' => $this->message->user->name ?? 'User'

@@ -26,6 +26,7 @@ class ProcessMessageAI implements ShouldQueue
     public function __construct($messageId)
     {
         $this->messageId = $messageId;
+        $this->onQueue('ai-classification');
     }
 
 

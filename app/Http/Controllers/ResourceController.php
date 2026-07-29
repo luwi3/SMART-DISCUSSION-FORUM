@@ -18,69 +18,77 @@ public function index(Request $request)
 {
     $userId = Auth::id();
 
-    $lecturer = Lecturer::firstOrCreate(
-        ['user_id' => $userId],
-        ['staffNo' => 'STAFF-' . strtoupper(uniqid()), 'name' => Auth::user()->name ?? 'Lecturer']
-    );
-    $staffNo = $lecturer->staffNo;
+        // A lecturer row is created atomically with the user account in
+        // LecturerController::store — it must already exist here.
+        $lecturer = Lecturer::where('user_id', $userId)->firstOrFail();
+        $staffNo = $lecturer->staffNo;
 
-    $resources = Resource::where('staffNo', $staffNo)->orderBy('created_at', 'desc')->get();
-
-    if ($request->wantsJson()) {
-        return response()->json(compact('resources'));
-    }
-
-    return view('resources.index', compact('resources'));
-}
-
-public function store(Request $request)
-{
-    $userId = Auth::id();
-
-    $lecturer = Lecturer::firstOrCreate(
-        ['user_id' => $userId],
-        ['staffNo' => 'STAFF-' . strtoupper(uniqid()), 'name' => Auth::user()->name ?? 'Lecturer']
-    );
-    $staffNo = $lecturer->staffNo;
-
-    $validated = $request->validate([
-        'title' => 'required|string|max:255',
-        'courseCode' => 'required|string|max:50',
-        'file' => 'required|file|mimes:pdf,doc,docx,ppt,pptx,zip,png,jpg,jpeg|max:20480',
-    ]);
-
-    if ($request->hasFile('file')) {
-        $file = $request->file('file');
-        $path = $file->store('resources', 'public');
-
-        $resource = Resource::create([
-            'staffNo' => $staffNo,
-            'courseCode' => strtoupper($validated['courseCode']),
-            'title' => $validated['title'],
-            'file_name' => $file->getClientOriginalName(),
-            'file_path' => $path,
-            'file_type' => $file->getClientOriginalExtension(),
-        ]);
-
-        Announcement::create([
-            'title' => 'New Resource: ' . $validated['title'],
-            'courseCode' => strtoupper($validated['courseCode']),
-            'message' => "A new learning resource has been published for your course.<br><a href='" . asset('storage/' . $path) . "' class='btn btn-sm btn-primary mt-2' download>Download " . htmlspecialchars($validated['title']) . "</a>",
-        ]);
+        $resources = Resource::where('staffNo', $staffNo)->orderBy('created_at', 'desc')->get();
 
         if ($request->wantsJson()) {
-            return response()->json(['status' => 'success', 'resource' => $resource]);
+            return response()->json(compact('resources'));
         }
 
-        return redirect()->back()->with('success', 'Learning resource uploaded and broadcasted as an announcement successfully!');
+        return view('resources.index', compact('resources'));
     }
 
-    if ($request->wantsJson()) {
-        return response()->json(['error' => 'File upload failed.'], 422);
+    /**
+     * Process and securely upload a new learning resource file.
+     */
+    public function store(Request $request)
+    {
+        $userId = Auth::id();
+
+        // A lecturer row is created atomically with the user account in
+        // LecturerController::store — it must already exist here.
+        $lecturer = Lecturer::where('user_id', $userId)->firstOrFail();
+        $staffNo = $lecturer->staffNo;
+
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'courseCode' => 'required|string|max:50',
+            'file' => 'required|file|mimes:pdf,doc,docx,ppt,pptx,zip,png,jpg,jpeg|max:20480',
+        ]);
+
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            
+            // Store file securely in the 'public/resources' directory
+            $path = $file->store('resources', 'public');
+
+            // Trim and uppercase course code to ensure exact matches across the app
+            $courseCode = trim(strtoupper($validated['courseCode']));
+
+            $resource = Resource::create([
+                'staffNo' => $staffNo,
+                'courseCode' => $courseCode,
+                'title' => $validated['title'],
+                'file_name' => $file->getClientOriginalName(),
+                'file_path' => $path,
+                'file_type' => $file->getClientOriginalExtension(),
+            ]);
+
+            // Automatically create a student announcement with the download link
+            Announcement::create([
+                'title' => 'New Resource: ' . $validated['title'],
+                'courseCode' => $courseCode,
+                'message' => "A new learning resource has been published for your course.<br><a href='" . asset('storage/' . $path) . "' class='btn btn-sm btn-primary mt-2' download>Download " . htmlspecialchars($validated['title']) . "</a>",
+            ]);
+
+            if ($request->wantsJson()) {
+                return response()->json(['status' => 'success', 'resource' => $resource]);
+            }
+
+            return redirect()->back()->with('success', 'Learning resource uploaded and broadcasted as an announcement successfully!');
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json(['error' => 'File upload failed.'], 422);
+        }
+
+        return redirect()->back()->with('error', 'File upload failed.');
     }
 
-    return redirect()->back()->with('error', 'File upload failed.');
-}
     /**
      * Remove the resource file from storage and delete the database entry.
      */

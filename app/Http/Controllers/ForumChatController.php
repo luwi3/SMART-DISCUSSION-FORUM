@@ -10,10 +10,13 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Notifications\NewTopicNotification;
+use App\Notifications\NewReplyNotification;
+use Illuminate\Support\Facades\Notification;
 use App\Models\Student;
 use App\Services\TopicService;
 use App\Services\SpamDetectionService;
 use App\Jobs\ProcessMessageAI;
+use App\Jobs\EmbedMessage;
 
 class ForumChatController extends Controller
 {
@@ -84,14 +87,28 @@ class ForumChatController extends Controller
 
         $mainChatQuery = Message::query()->where('user_id', '!=', $userId);
         if ($groupColumn) { $mainChatQuery->whereNull($groupColumn); }
-        if (Schema::hasColumn('messages', 'topic_id')) { $mainChatQuery->whereNull('topic_id'); }
-        
+
+        // Messages posted natively inside a topic room no longer show in the
+        // main chat feed (see the same flag in the main messages query below),
+        // so they must not bump this unread count either.
+        if (Schema::hasColumn('messages', 'created_in_topic')) {
+            $mainChatQuery->where('created_in_topic', false);
+        }
+
         $mainChatUnread = $mainChatQuery->when($mainChatLastView, function ($query) use ($mainChatLastView) {
             return $query->where('created_at', '>', $mainChatLastView);
         })->count();
 
-        // 2. Fetch Topics with dynamic unread calculation
-        $topics = Topic::orderBy('title', 'asc')->get()->map(function ($topic) use ($userId) {
+        // 2. Fetch the 10 most recently active topics (by their newest
+        // message, not creation date) with dynamic unread calculation.
+        // Topics with no messages yet sort after ones with activity, then
+        // fall back to creation date among themselves.
+        $topics = Topic::withMax('messages', 'created_at')
+            ->orderByDesc('messages_max_created_at')
+            ->orderByDesc('created_at')
+            ->take(10)
+            ->get()
+            ->map(function ($topic) use ($userId) {
             $lastView = DB::table('chat_views')
                 ->where('user_id', $userId)
                 ->where('chat_type', 'topic')
@@ -156,11 +173,13 @@ class ForumChatController extends Controller
                 }
 
                 if ($groupColumn) {
-                    $messages = Message::where($groupColumn, $id)->with('user')->orderBy('created_at', 'asc')->get();
+                    // withTrashed: a deleted message stays in the list as a
+                    // placeholder bubble instead of vanishing outright.
+                    $messages = Message::withTrashed()->where($groupColumn, $id)->with('user')->orderBy('created_at', 'asc')->get();
                 }
             } elseif ($type === 'topic') {
                 $currentStreamTarget = Topic::findOrFail($id);
-                $messages = Message::where('topic_id', $id)->with('user')->orderBy('created_at', 'asc')->get();
+                $messages = Message::withTrashed()->where('topic_id', $id)->with('user')->orderBy('created_at', 'asc')->get();
             }
         } else {
             $currentStreamTarget = (object) ['name' => 'General Stream', 'is_broadcast' => true];
@@ -189,22 +208,29 @@ class ForumChatController extends Controller
             ));
         }
 
-        $courses = Student::select('courseCode')
-            ->distinct()
-            ->whereNotNull('courseCode')
-            ->get();
+        // A student may only ever restrict a message to the course they're
+        // actually registered to (enforced again in store()) — so the picker
+        // only ever offers that one course, never every course in the system.
+        $courses = ($currentStudent && $currentStudent->courseCode)
+            ? collect([(object) ['courseCode' => $currentStudent->courseCode]])
+            : collect();
 
         if (!$type || $type === 'broadcast') {
-            $mainMessagesQuery = Message::query();
+            // withTrashed: a deleted message stays in the list as a
+            // placeholder bubble instead of vanishing outright.
+            $mainMessagesQuery = Message::withTrashed();
 
             // 🔒 Exclude anything that belongs to a group discussion
             if ($groupColumn) {
                 $mainMessagesQuery->whereNull($groupColumn);
             }
 
-            // 🔒 Exclude anything that belongs to a topic thread
-            if (Schema::hasColumn('messages', 'topic_id')) {
-                $mainMessagesQuery->whereNull('topic_id');
+            // Messages AI-classified into a topic stay visible here too — they
+            // originated in main chat and aren't moved out of it. Messages
+            // posted natively inside a topic room are excluded so they don't
+            // leak back into the main feed.
+            if (Schema::hasColumn('messages', 'created_in_topic')) {
+                $mainMessagesQuery->where('created_in_topic', false);
             }
 
             $mainMessagesQuery->where(function ($q) use ($currentStudent) {
@@ -313,6 +339,9 @@ class ForumChatController extends Controller
                 } else {
                     $message->thread_id = $parentMessage->id;
                 }
+                if ($parentMessage->topic_id) {
+                      $message->topic_id = $parentMessage->topic_id;
+                    }
             }
         }
 
@@ -344,6 +373,12 @@ class ForumChatController extends Controller
             && Schema::hasColumn('messages', 'topic_id')
         ) {
             $message->topic_id = $id;
+
+            // Posted directly inside the topic room, not AI-classified out of
+            // main chat — keep it out of the main chat feed.
+            if (Schema::hasColumn('messages', 'created_in_topic')) {
+                $message->created_in_topic = true;
+            }
         }
 
         /*
@@ -355,6 +390,23 @@ class ForumChatController extends Controller
 
         /*
         |--------------------------------------------------------------------------
+        | Embed Message (background — builds the student's interest profile)
+        |--------------------------------------------------------------------------
+        */
+        EmbedMessage::dispatch($message->id);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Direct Reply Notification
+        |--------------------------------------------------------------------------
+        */
+        if (!empty($parentMessage) && $parentMessage->user_id !== $message->user_id) {
+            $message->load('user');
+            Notification::send($parentMessage->user, new NewReplyNotification($message));
+        }
+
+        /*
+        |--------------------------------------------------------------------------
         | AI Topic Processing
         |--------------------------------------------------------------------------
         */
@@ -362,12 +414,14 @@ class ForumChatController extends Controller
         $isNewDiscussion = ($message->thread_id === null);
         $isNotAlreadyTopic = ($message->topic_id === null);
         $isNotGroupChat = !($type === 'group' && $id !== 'general');
+        $isSubstantial = Message::isSubstantial($message->body);
 
         if (
             $isGeneralChat &&
             $isNewDiscussion &&
             $isNotAlreadyTopic &&
-            $isNotGroupChat
+            $isNotGroupChat &&
+            $isSubstantial
         ) {
             ProcessMessageAI::dispatch($message->id);
         }
@@ -455,12 +509,17 @@ class ForumChatController extends Controller
             abort(403, 'You are not authorized to delete this message.');
         }
 
+        $message->deleted_by = $currentUser->id;
+        $message->save();
         $message->delete();
+
+        broadcast(new \App\Events\MessageDeleted($message));
 
         if (request()->ajax() || request()->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Message deleted.'
+                'message_id' => $message->id,
+                'deleted_by' => $message->deleted_by,
             ]);
         }
 

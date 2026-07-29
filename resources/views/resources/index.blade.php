@@ -70,6 +70,19 @@
         @if(session('error'))
             <div class="alert-banner alert-danger">❌ {{ session('error') }}</div>
         @endif
+        {{-- 🔧 FIX: validation failures (missing/blank courseCode, disallowed file type,
+             file over 20MB) were being silently swallowed — the form just reloaded with
+             no feedback because nothing ever read Laravel's $errors bag. This surfaces
+             them so a rejected upload is visible instead of looking like nothing happened. --}}
+        @if($errors->any())
+            <div class="alert-banner alert-danger">
+                <ul style="margin: 0; padding-left: 18px;">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
 
         <div class="workspace-grid">
             <!-- Left Side: Interactive Upload Panel -->

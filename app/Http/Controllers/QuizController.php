@@ -32,8 +32,11 @@ class QuizController extends Controller
     public function quizzesIndex()
     {
         $userId = Auth::id();
-        $lecturer = Lecturer::where('user_id', $userId)->first();
-        $staffNo = $lecturer ? $lecturer->staffNo : 'STAFF-TEST-01';
+
+        // A lecturer row is created atomically with the user account in
+        // LecturerController::store — it must already exist here.
+        $lecturer = Lecturer::where('user_id', $userId)->firstOrFail();
+        $staffNo = $lecturer->staffNo;
 
         $quizMarks = DB::table('quizzes')
             ->join('quiz_submissions', 'quizzes.quizID', '=', 'quiz_submissions.quizID')
@@ -83,8 +86,12 @@ class QuizController extends Controller
      */
     public function store(Request $request)
     {
-        $lecturer = Lecturer::where('user_id', Auth::id())->first();
-        $staffNo = $lecturer ? $lecturer->staffNo : 'STAFF-TEST-01';
+        $userId = Auth::id();
+
+        // A lecturer row is created atomically with the user account in
+        // LecturerController::store — it must already exist here.
+        $lecturer = Lecturer::where('user_id', $userId)->firstOrFail();
+        $staffNo = $lecturer->staffNo;
 
         $rules = [
             'title' => 'required|string|max:255',
@@ -495,10 +502,10 @@ class QuizController extends Controller
         }
 
         if ($isAutoSubmit == 1 || $now->greaterThanOrEqualTo($expiryTime)) {
-            return redirect('/dashboard')->with('quiz_result', "Quiz saved. Score: {$correctCount} / " . $questions->count());
+            return redirect()->route('student.dashboard')->with('quiz_result', "Quiz saved. Score: {$correctCount} / " . $questions->count());
         }
 
-        return redirect('/dashboard')->with('success', "Quiz submitted successfully!");
+        return redirect()->route('student.dashboard')->with('success', "Quiz submitted successfully!");
     }
 
     /**
@@ -533,7 +540,7 @@ class QuizController extends Controller
 
         // Fetch all current active quizzes for the student's course
         $activeQuizzes = Quiz::when($studentCourse, function ($query, $course) {
-                return $query->where('courseCode', $course);
+                return $query->whereRaw('TRIM(UPPER(courseCode)) = ?', [$course]);
             })
             ->where('startTime', '<=', now())
             ->where('expiryTime', '>=', now())

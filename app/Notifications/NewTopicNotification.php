@@ -24,6 +24,10 @@ class NewTopicNotification extends Notification
     public function toDatabase(object $notifiable): array
     {
         return [
+            // NOTE: kept distinct from 'type' — Laravel's broadcast channel
+            // overwrites a top-level 'type' key with the notification's FQCN,
+            // so 'category' is used instead to survive the broadcast payload.
+            'category' => 'topic',
             'title' => 'New Topic',
             'message' => ($this->topic->user->name ?? 'Someone') . ' created a new topic: ' . $this->topic->title,
             'url' => '/forum-workspace/topic/' . $this->topic->id,
@@ -37,6 +41,7 @@ class NewTopicNotification extends Notification
     public function toBroadcast(object $notifiable): BroadcastMessage
     {
         return new BroadcastMessage([
+            'category' => 'topic',
             'title' => 'New Topic',
             'message' => ($this->topic->user->name ?? 'Someone') . ' created a new topic: ' . $this->topic->title,
             'url' => '/forum-workspace/topic/' . $this->topic->id,

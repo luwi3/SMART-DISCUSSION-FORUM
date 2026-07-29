@@ -6,27 +6,28 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('messages', function (Blueprint $table) {
             $table->id();
-            $table->text('body'); // The actual text message chat bubble
-            $table->foreignId('user_id')->constrained()->onDelete('cascade'); // The sender
-            
-            // These are nullable because a message belongs to EITHER a group, a topic, OR neither (Global Broadcast)
-            $table->foreignId('topic_id')->nullable()->constrained()->onDelete('cascade');
-           
-            
+
+            $table->text('body');
+
+            // Sender
+            $table->foreignId('user_id')
+                  ->constrained()
+                  ->onDelete('cascade');
+
+            // Topic chat
+            $table->foreignId('topic_id')
+                  ->nullable()
+                  ->constrained()
+                  ->onDelete('cascade');
+
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('messages');

@@ -18,6 +18,7 @@
         }
         .message-highlight {
             animation: messageHighlightFlash 1.8s ease-out;
+            border-radius: 10px;
         }
     </style>
 </head>
@@ -80,12 +81,12 @@
                     <i class="fa-solid" :class="openTopics ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
                 </button>
 
-                <ul x-show="openTopics" x-transition class="space-y-2">
+                <ul id="active-topics-list" x-show="openTopics" x-transition class="space-y-2">
                     @foreach($topics as $topic)
                         @php
                             $isActiveTopic = ($type === 'topic' && $id == $topic->id) || (request('topic') == $topic->id);
                         @endphp
-                        <li>
+                        <li data-topic-item="{{ $topic->id }}">
                             <a href="{{ url('/forum-workspace/topic/' . $topic->id) }}"
                                class="flex items-center justify-between px-3 py-2.5 text-xs rounded-md transition-all duration-200 relative group
                                {{ $isActiveTopic
@@ -98,11 +99,11 @@
                                     </span>
                                 </div>
 
-                                @if(isset($topic->unread_count) && $topic->unread_count > 0)
-                                    <span class="bg-red-500 text-white font-bold text-[10px] px-2 py-0.5 rounded-full min-w-[20px] text-center shrink-0 shadow-sm ml-2">
-                                        {{ $topic->unread_count }}
-                                    </span>
-                                @endif
+                                <span data-topic-badge
+                                      class="bg-red-500 text-white font-bold text-[10px] px-2 py-0.5 rounded-full min-w-[20px] text-center shrink-0 shadow-sm ml-2"
+                                      style="display: {{ (isset($topic->unread_count) && $topic->unread_count > 0) ? 'inline-block' : 'none' }};">
+                                    {{ $topic->unread_count ?? 0 }}
+                                </span>
                             </a>
                         </li>
                     @endforeach
@@ -210,25 +211,78 @@
             @endif
 
             @if(count($messages) > 0)
+                @php $lastDateKey = null; @endphp
                 @foreach($messages as $msg)
-                    <div class="flex items-end space-x-3 {{ $msg->user_id === auth()->id() ? 'flex-row-reverse space-x-reverse' : '' }} mb-1"
+                    @php
+                        $isMine = $msg->user_id === auth()->id();
+                        $isDeleted = $msg->trashed();
+                        $msgDate = $msg->created_at ?? now();
+                        $dateKey = $msgDate->format('Y-m-d');
+
+                        if ($dateKey !== $lastDateKey) {
+                            $lastDateKey = $dateKey;
+                            $dateLabel = $msgDate->isToday()
+                                ? 'Today'
+                                : ($msgDate->isYesterday() ? 'Yesterday' : $msgDate->format('F j, Y'));
+                        } else {
+                            $dateLabel = null;
+                        }
+                    @endphp
+
+                    @if($dateLabel)
+                        <div class="flex justify-center my-4" data-date-separator="{{ $dateKey }}">
+                            <span class="bg-white text-slate-500 text-[11px] font-semibold px-3 py-1 rounded-full shadow-sm border border-slate-200">
+                                {{ $dateLabel }}
+                            </span>
+                        </div>
+                    @endif
+
+                    <div class="flex items-end space-x-3 {{ $isMine ? 'flex-row-reverse space-x-reverse' : '' }} mb-1"
                          data-message-id="{{ $msg->id }}"
-                         data-sender="{{ $msg->user_id === auth()->id() ? 'You' : ($msg->user->name ?? 'Unknown') }}"
-                         data-body="{{ $msg->body }}">
+                         data-sender="{{ $isMine ? 'You' : ($msg->user->name ?? 'Unknown') }}"
+                         data-body="{{ $isDeleted ? '' : $msg->body }}"
+                         data-deleted="{{ $isDeleted ? '1' : '0' }}">
 
                         <div class="h-9 w-9 rounded-full bg-[#0b1329] text-slate-300 flex items-center justify-center text-xs font-bold shrink-0 shadow">
-                            @if($msg->user_id === auth()->id())
+                            @if($isMine)
                                 ME
                             @else
                                 {{ strtoupper(substr($msg->user->name ?? 'U', 0, 2)) }}
                             @endif
                         </div>
 
-                        <div class="flex flex-col max-w-xl {{ $msg->user_id === auth()->id() ? 'items-end' : 'items-start' }}">
-                            <div class="message-bubble relative px-4 py-2.5 shadow-md rounded-xl break-words w-full border
-                                {{ $msg->user_id === auth()->id()
+                        <div class="flex flex-col max-w-xl {{ $isMine ? 'items-end' : 'items-start' }}">
+                        @if($isDeleted)
+                            <div class="message-bubble-deleted flex items-center gap-2 px-4 py-2.5 rounded-xl w-full border border-dashed border-slate-300 bg-slate-50 italic text-slate-400 text-xs">
+                                <i class="fa-solid fa-ban text-[10px]"></i>
+                                <span>{{ (int) $msg->deleted_by === auth()->id() ? 'You deleted this message' : 'This message was deleted' }}</span>
+                            </div>
+                        @else
+                            <div class="message-bubble group relative px-4 pt-2.5 pb-5 shadow-md rounded-xl break-words w-full border
+                                {{ $isMine
                                     ? 'bg-sky-100 text-slate-900 border-sky-200 rounded-tr-none'
                                     : 'bg-white text-slate-800 border-slate-100 rounded-tl-none' }}">
+
+                                {{-- Floating action toolbar: dims to a hint until the bubble is hovered/focused --}}
+                                <div class="action-toolbar absolute -top-3 right-3 flex items-center gap-0.5 bg-white border border-slate-200 rounded-full shadow-sm px-1 py-1 opacity-70 group-hover:opacity-100 group-hover:shadow-md transition-all duration-150 z-20">
+                                    <button type="button"
+                                            class="reply-trigger w-6 h-6 flex items-center justify-center rounded-full text-slate-500 hover:text-sky-600 hover:bg-sky-50 transition-colors"
+                                            title="Reply">
+                                        <i class="fa-solid fa-reply text-[10px]"></i>
+                                    </button>
+
+                                    @if($msg->user_id === auth()->id())
+                                        <form action="{{ route('chat.destroy', $msg->id) }}" method="POST" class="delete-message-form inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit"
+                                                    class="w-6 h-6 flex items-center justify-center rounded-full text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                                    title="Delete">
+                                                <i class="fa-solid fa-trash-can text-[10px]"></i>
+                                            </button>
+                                        </form>
+                                    @endif
+                                </div>
 
                                 @if($msg->user_id !== auth()->id())
                                     <div class="text-[11px] font-bold text-emerald-600 mb-1 tracking-wide uppercase">
@@ -258,27 +312,6 @@
                                     {{ $msg->body }}
                                 </div>
 
-                                <div class="mt-2 pt-1 border-t border-slate-200/60 flex items-center justify-between space-x-2">
-                                    <button
-                                        type="button"
-                                        class="reply-trigger text-[10px] font-semibold text-blue-600 hover:text-blue-800 transition-colors flex items-center space-x-1">
-                                        <i class="fa-solid fa-reply text-[9px]"></i>
-                                        <span>Reply</span>
-                                    </button>
-
-                                    {{-- Delete Option for Owner --}}
-                                    @if($msg->user_id === auth()->id())
-                                        <form action="{{ route('chat.destroy', $msg->id) }}" method="POST" onsubmit="return confirm('Delete this message?');" class="inline">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="text-[10px] font-semibold text-red-500 hover:text-red-700 transition-colors flex items-center space-x-1">
-                                                <i class="fa-solid fa-trash-can text-[9px]"></i>
-                                                <span>Delete</span>
-                                            </button>
-                                        </form>
-                                    @endif
-                                </div>
-
                                 <span class="absolute bottom-1 right-2.5 text-[10px] select-none font-mono
                                     {{ $msg->user_id === auth()->id() ? 'text-slate-500' : 'text-gray-400' }}">
                                     {{ $msg->created_at ? $msg->created_at->format('H:i') : now()->format('H:i') }}
@@ -287,6 +320,7 @@
                                     @endif
                                 </span>
                             </div>
+                        @endif
                         </div>
 
                     </div>
@@ -396,6 +430,40 @@
         };
     });
 
+    // ===============================
+    // Date separators (WhatsApp-style) for messages appended after load —
+    // the initial batch already got theirs server-side (see the messages
+    // loop above); this just keeps the running total in sync for new arrivals.
+    // ===============================
+    let lastRenderedDateKey = "{{ $lastDateKey ?? '' }}";
+
+    const dateKeyFor = (d) =>
+        d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+
+    const dateLabelFor = (dateKey) => {
+        const today = dateKeyFor(new Date());
+        const yesterdayDate = new Date();
+        yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+        const yesterday = dateKeyFor(yesterdayDate);
+
+        if (dateKey === today) return 'Today';
+        if (dateKey === yesterday) return 'Yesterday';
+
+        const [y, m, d] = dateKey.split('-');
+        return new Date(y, m - 1, d).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+    };
+
+    const insertDateSeparatorIfNeeded = () => {
+        const key = dateKeyFor(new Date());
+        if (key === lastRenderedDateKey || !container) return;
+        lastRenderedDateKey = key;
+
+        const sep = document.createElement('div');
+        sep.className = 'flex justify-center my-4';
+        sep.innerHTML = `<span class="bg-white text-slate-500 text-[11px] font-semibold px-3 py-1 rounded-full shadow-sm border border-slate-200">${dateLabelFor(key)}</span>`;
+        container.appendChild(sep);
+    };
+
     const escapeHtml = (str) => {
         if (typeof str !== 'string') return '';
         return str
@@ -446,6 +514,25 @@
 
     document.getElementById('cancel-reply-btn').addEventListener('click', cancelReply);
 
+    // Swap a message row's bubble for the "deleted" placeholder — used both
+    // for the deleter's own optimistic update and for live MessageDeleted
+    // broadcasts landing on everyone else's screen.
+    function renderAsDeleted(row, deletedByMe) {
+        if (!row) return;
+        row.dataset.deleted = '1';
+        row.dataset.body = '';
+
+        const bubbleWrap = row.querySelector('.flex.flex-col');
+        if (!bubbleWrap) return;
+
+        bubbleWrap.innerHTML = `
+            <div class="message-bubble-deleted flex items-center gap-2 px-4 py-2.5 rounded-xl w-full border border-dashed border-slate-300 bg-slate-50 italic text-slate-400 text-xs">
+                <i class="fa-solid fa-ban text-[10px]"></i>
+                <span>${deletedByMe ? 'You deleted this message' : 'This message was deleted'}</span>
+            </div>
+        `;
+    }
+
     // Event Delegation
     document.addEventListener('click', (e) => {
         const trigger = e.target.closest('.reply-trigger');
@@ -462,15 +549,46 @@
             if (target) {
                 target.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-                const bubble = target.querySelector('.message-bubble');
-                if (bubble) {
-                    bubble.classList.remove('message-highlight');
-                    void bubble.offsetWidth;
-                    bubble.classList.add('message-highlight');
-                    setTimeout(() => bubble.classList.remove('message-highlight'), 1800);
-                }
+                // Highlight the whole row (avatar + bubble), not just the
+                // bubble — WhatsApp-style full-row flash.
+                target.classList.remove('message-highlight');
+                void target.offsetWidth;
+                target.classList.add('message-highlight');
+                setTimeout(() => target.classList.remove('message-highlight'), 1800);
             }
         }
+    });
+
+    // Delete Message AJAX Handler — same optimistic pattern as sending: swap
+    // the bubble immediately, let the confirm() gate it, no full page reload.
+    document.addEventListener('submit', (e) => {
+        const form = e.target.closest('.delete-message-form');
+        if (!form) return;
+
+        e.preventDefault();
+        if (!confirm('Delete this message?')) return;
+
+        const row = form.closest('[data-message-id]');
+        const targetUrl = form.getAttribute('action');
+
+        fetch(targetUrl, {
+            method: 'POST',
+            body: new FormData(form),
+            credentials: 'same-origin',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+        })
+            .then((response) => {
+                if (!response.ok) throw new Error(`Delete failed (${response.status})`);
+                return response.json();
+            })
+            .then(() => renderAsDeleted(row, true))
+            .catch((error) => {
+                console.error('Delete failed:', error);
+                alert('Could not delete this message. Please try again.');
+            });
     });
 
     // Restrict dropdown
@@ -516,12 +634,28 @@
     };
     scrollToBottom();
 
+    // Arrived via a "Recommend Topics" link — scroll to and flash the
+    // message it was recommended for, so the student sees why it matched.
+    const highlightMessageId = new URLSearchParams(window.location.search).get('highlight');
+    if (highlightMessageId) {
+        const highlightTarget = document.querySelector(`[data-message-id="${highlightMessageId}"]`);
+        if (highlightTarget) {
+            highlightTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            // Highlight the whole row, matching the quote-jump behavior above.
+            highlightTarget.classList.add('message-highlight');
+            setTimeout(() => highlightTarget.classList.remove('message-highlight'), 1800);
+        }
+    }
+
     // ===============================
     // Append a message DOM row
     // ===============================
     const appendNewMessage = (body, senderName, senderId, messageId, replyTo = null) => {
         if (!container) return;
         if (fallbackEmpty) { fallbackEmpty.remove(); fallbackEmpty = null; }
+
+        insertDateSeparatorIfNeeded();
 
         const isMe = parseInt(senderId) === currentUserId;
         const avatarDisplay = isMe ? "ME" : senderName.substring(0, 2).toUpperCase();
@@ -534,12 +668,11 @@
             </button>` : '';
 
         const deleteForm = (isMe && messageId) ? `
-            <form action="/chat/messages/${messageId}" method="POST" onsubmit="return confirm('Delete this message?');" class="inline">
+            <form action="/chat/messages/${messageId}" method="POST" class="delete-message-form inline">
                 <input type="hidden" name="_token" value="${csrfToken}">
                 <input type="hidden" name="_method" value="DELETE">
-                <button type="submit" class="text-[10px] font-semibold text-red-500 hover:text-red-700 transition-colors flex items-center space-x-1">
-                    <i class="fa-solid fa-trash-can text-[9px]"></i>
-                    <span>Delete</span>
+                <button type="submit" class="w-6 h-6 flex items-center justify-center rounded-full text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors" title="Delete">
+                    <i class="fa-solid fa-trash-can text-[10px]"></i>
                 </button>
             </form>` : '';
 
@@ -554,17 +687,17 @@
                 ${avatarDisplay}
             </div>
             <div class="flex flex-col max-w-xl ${isMe ? 'items-end' : 'items-start'}">
-                <div class="message-bubble relative px-4 py-2.5 shadow-sm rounded-xl break-words w-full border
+                <div class="message-bubble group relative px-4 pt-2.5 pb-5 shadow-sm rounded-xl break-words w-full border
                     ${isMe ? 'bg-sky-100 text-slate-900 border-sky-200 rounded-tr-none' : 'bg-white text-slate-800 border-slate-100 rounded-tl-none'}">
-                    ${!isMe ? `<div class="text-[11px] font-bold text-emerald-600 mb-1 tracking-wide uppercase">${escapeHtml(senderName)}</div>` : ''}
-                    ${replyBlock}
-                    <div class="pr-14 text-sm font-normal leading-relaxed">${escapeHtml(body)}</div>
-                    <div class="mt-2 pt-1 border-t border-slate-200/60 flex items-center justify-between space-x-2">
-                        <button type="button" class="reply-trigger text-[10px] font-semibold text-blue-600 hover:text-blue-800 transition-colors flex items-center space-x-1">
-                            <i class="fa-solid fa-reply text-[9px]"></i><span>Reply</span>
+                    <div class="action-toolbar absolute -top-3 right-3 flex items-center gap-0.5 bg-white border border-slate-200 rounded-full shadow-sm px-1 py-1 opacity-70 group-hover:opacity-100 group-hover:shadow-md transition-all duration-150 z-20">
+                        <button type="button" class="reply-trigger w-6 h-6 flex items-center justify-center rounded-full text-slate-500 hover:text-sky-600 hover:bg-sky-50 transition-colors" title="Reply">
+                            <i class="fa-solid fa-reply text-[10px]"></i>
                         </button>
                         ${deleteForm}
                     </div>
+                    ${!isMe ? `<div class="text-[11px] font-bold text-emerald-600 mb-1 tracking-wide uppercase">${escapeHtml(senderName)}</div>` : ''}
+                    ${replyBlock}
+                    <div class="pr-14 text-sm font-normal leading-relaxed">${escapeHtml(body)}</div>
                     <span class="absolute bottom-1 right-2.5 text-[10px] select-none font-mono ${isMe ? 'text-slate-500' : 'text-gray-400'}">
                         ${timeStr}
                         ${isMe ? '<i class="fa-solid fa-check-double text-sky-600 ml-0.5"></i>' : ''}
@@ -666,15 +799,14 @@
                         if (createdRow) {
                             createdRow.dataset.messageId = data.message.id;
                             // Attach delete form dynamically now that we have the real message ID
-                            const actionBox = createdRow.querySelector('.border-t');
+                            const actionBox = createdRow.querySelector('.action-toolbar');
                             if (actionBox && !actionBox.querySelector('form')) {
                                 actionBox.insertAdjacentHTML('beforeend', `
-                                    <form action="/chat/messages/${data.message.id}" method="POST" onsubmit="return confirm('Delete this message?');" class="inline">
+                                    <form action="/chat/messages/${data.message.id}" method="POST" class="delete-message-form inline">
                                         <input type="hidden" name="_token" value="${csrfToken}">
                                         <input type="hidden" name="_method" value="DELETE">
-                                        <button type="submit" class="text-[10px] font-semibold text-red-500 hover:text-red-700 transition-colors flex items-center space-x-1">
-                                            <i class="fa-solid fa-trash-can text-[9px]"></i>
-                                            <span>Delete</span>
+                                        <button type="submit" class="w-6 h-6 flex items-center justify-center rounded-full text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors" title="Delete">
+                                            <i class="fa-solid fa-trash-can text-[10px]"></i>
                                         </button>
                                     </form>
                                 `);
@@ -701,40 +833,140 @@
     const queryTopicId = "{{ request('topic') }}";
     const currentChannelType = queryTopicId ? "topic" : "{{ $type ?? 'broadcast' }}";
     const currentChannelId = queryTopicId ? queryTopicId : "{{ $id ?? 'general' }}";
+    const studentCourseCode = @json($currentStudent->courseCode ?? null);
+
+    const handleIncomingMessage = (e) => {
+        if (parseInt(e.message.user_id) === currentUserId) return;
+
+        const senderName = e.message.user?.name ?? 'Peer User';
+        let replyTo = null;
+
+        if (e.message.reply_to) {
+            replyTo = {
+                id: e.message.reply_to.id,
+                sender: e.message.reply_to.user_name ?? 'Unknown',
+                body: e.message.reply_to.body ?? '',
+            };
+        } else if (
+            e.message.reply_to_message_id &&
+            messageCache[e.message.reply_to_message_id]
+        ) {
+            replyTo = {
+                id: e.message.reply_to_message_id,
+                sender: messageCache[e.message.reply_to_message_id].sender,
+                body: messageCache[e.message.reply_to_message_id].body,
+            };
+        }
+
+        appendNewMessage(
+            e.message.body,
+            senderName,
+            e.message.user_id,
+            e.message.id,
+            replyTo
+        );
+    };
+
+    // Someone else deleted a message we already have on screen — swap it to
+    // the placeholder live instead of waiting for a reload. Our own deletes
+    // are handled optimistically at the point of clicking, so skip those.
+    const handleIncomingDelete = (e) => {
+        if (parseInt(e.message.deleted_by) === currentUserId) return;
+
+        const row = document.querySelector(`[data-message-id="${e.message.id}"]`);
+        renderAsDeleted(row, false);
+    };
+
+    // ===============================
+    // Sidebar "Active Topics" live updates — a message landing in a topic
+    // we're NOT currently viewing bumps that topic's badge instantly, and a
+    // topic the AI just created/assigned to appears in the list right away,
+    // instead of waiting for the next full page load.
+    // ===============================
+    const topicsList = document.getElementById('active-topics-list');
+    const topicBaseUrl = "{{ url('/forum-workspace/topic') }}";
+
+    const bumpTopicSidebarBadge = (topicId) => {
+        const li = document.querySelector(`[data-topic-item="${topicId}"]`);
+        if (!li) return;
+        const badge = li.querySelector('[data-topic-badge]');
+        if (!badge) return;
+        badge.textContent = (parseInt(badge.textContent) || 0) + 1;
+        badge.style.display = 'inline-block';
+    };
+
+    // One Echo channel subscription per sidebar topic so a message in a topic
+    // we're not looking at can still update its badge. Skipped for whichever
+    // topic is currently open — that one's already covered by the primary
+    // subscription below, and its badge intentionally stays cleared while open.
+    const subscribeToTopicChannel = (topicId) => {
+        if (!window.Echo) return;
+        if (currentChannelType === 'topic' && String(currentChannelId) === String(topicId)) return;
+
+        window.Echo.channel(`chat.topic.${topicId}`)
+            .listen('.MessageSent', (e) => {
+                if (parseInt(e.message.user_id) === currentUserId) return;
+                bumpTopicSidebarBadge(topicId);
+            });
+    };
+
+    @json($topics->pluck('id'))
+        .forEach(subscribeToTopicChannel);
+
+    const handleTopicAssigned = (e) => {
+        const topic = e.message.topic;
+        if (!topic || !topicsList) return;
+
+        const existing = document.querySelector(`[data-topic-item="${topic.id}"]`);
+        if (existing) {
+            // Already in the sidebar — just move it to the top (most recently
+            // active) and let the normal badge bump reflect the new message.
+            topicsList.insertBefore(existing, topicsList.firstChild);
+            if (parseInt(e.message.user_id) !== currentUserId) bumpTopicSidebarBadge(topic.id);
+            return;
+        }
+
+        const li = document.createElement('li');
+        li.setAttribute('data-topic-item', topic.id);
+        li.innerHTML = `
+            <a href="${topicBaseUrl}/${topic.id}" class="flex items-center justify-between px-3 py-2.5 text-xs rounded-md transition-all duration-200 relative group hover:bg-slate-800 hover:text-white text-slate-400">
+                <div class="flex items-center space-x-2 truncate">
+                    <i class="fa-solid fa-book-bookmark text-slate-500 group-hover:text-blue-400 transition-colors"></i>
+                    <span class="truncate">${escapeHtml(topic.title)}</span>
+                </div>
+                <span data-topic-badge class="bg-red-500 text-white font-bold text-[10px] px-2 py-0.5 rounded-full min-w-[20px] text-center shrink-0 shadow-sm ml-2" style="display:none;">0</span>
+            </a>
+        `;
+
+        topicsList.insertBefore(li, topicsList.firstChild);
+        subscribeToTopicChannel(topic.id);
+
+        // Keep the sidebar capped at 10, same as a fresh page load would show.
+        while (topicsList.children.length > 10) {
+            topicsList.removeChild(topicsList.lastElementChild);
+        }
+    };
 
     if (window.Echo) {
         window.Echo.channel(`chat.${currentChannelType}.${currentChannelId}`)
-            .listen('.MessageSent', (e) => {
-                if (parseInt(e.message.user_id) === currentUserId) return;
+            .listen('.MessageSent', handleIncomingMessage)
+            .listen('.MessageDeleted', handleIncomingDelete);
 
-                const senderName = e.message.user?.name ?? 'Peer User';
-                let replyTo = null;
+        // Course-restricted messages travel on their own private channel
+        // (see MessageSent::broadcastOn) — only subscribe if this student is
+        // actually registered to a course, and only on the main broadcast
+        // view where restricted messages are shown at all.
+        if (currentChannelType === 'broadcast' && studentCourseCode) {
+            window.Echo.private(`chat.course.${studentCourseCode}`)
+                .listen('.MessageSent', handleIncomingMessage)
+                .listen('.MessageDeleted', handleIncomingDelete);
+        }
 
-                if (e.message.reply_to) {
-                    replyTo = {
-                        id: e.message.reply_to.id,
-                        sender: e.message.reply_to.user_name ?? 'Unknown',
-                        body: e.message.reply_to.body ?? '',
-                    };
-                } else if (
-                    e.message.reply_to_message_id &&
-                    messageCache[e.message.reply_to_message_id]
-                ) {
-                    replyTo = {
-                        id: e.message.reply_to_message_id,
-                        sender: messageCache[e.message.reply_to_message_id].sender,
-                        body: messageCache[e.message.reply_to_message_id].body,
-                    };
-                }
-
-                appendNewMessage(
-                    e.message.body,
-                    senderName,
-                    e.message.user_id,
-                    e.message.id,
-                    replyTo
-                );
-            });
+        // Unconditional — a topic can be created/assigned while we're viewing
+        // main chat, a different topic, or a group, so this isn't tied to
+        // currentChannelType the way the main MessageSent subscription is.
+        window.Echo.channel('chat.broadcast.general')
+            .listen('.TopicAssigned', handleTopicAssigned);
     }
 </script>
 
