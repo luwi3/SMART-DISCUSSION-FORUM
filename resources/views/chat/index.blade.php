@@ -20,17 +20,37 @@
             animation: messageHighlightFlash 1.8s ease-out;
             border-radius: 10px;
         }
+
+        /* Plain CSS/JS drawer for the workspace sidebar — deliberately not
+           Alpine-driven, so it can't silently no-op if Alpine fails to boot. */
+        .chat-mobile-topbar { display: none; }
+        .chat-sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 30; }
+        .chat-sidebar-backdrop.active { display: block; }
+        .chat-sidebar-close { display: none; }
+
+        @media (max-width: 1023px) {
+            .chat-mobile-topbar { display: flex; }
+            .chat-sidebar-close { display: inline-block; }
+            #chat-sidebar {
+                position: fixed;
+                inset-block: 0;
+                left: 0;
+                z-index: 40;
+                transform: translateX(-100%);
+                transition: transform 0.2s ease;
+            }
+            #chat-sidebar.mobile-open { transform: translateX(0); }
+        }
     </style>
 </head>
 <body class="bg-gray-100 antialiased font-sans">
 
-<div class="flex h-screen bg-white" x-data="{ sidebarOpen: false }">
+<div class="flex h-screen bg-white">
     <!-- Mobile-only backdrop, shown while the sidebar drawer is open -->
-    <div x-show="sidebarOpen" x-transition.opacity @click="sidebarOpen = false" class="fixed inset-0 bg-black/50 z-30 lg:hidden" style="display: none;"></div>
+    <div id="chat-sidebar-backdrop" class="chat-sidebar-backdrop"></div>
 
     <!-- Sidebar Left Layout Workspace Pane -->
-    <div class="w-64 bg-[#0b1329] text-slate-300 flex flex-col border-r border-slate-900 fixed inset-y-0 left-0 z-40 transform transition-transform duration-200 lg:static lg:translate-x-0"
-         :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
+    <div id="chat-sidebar" class="w-64 bg-[#0b1329] text-slate-300 flex flex-col border-r border-slate-900">
 
         <div class="p-3 bg-[#070d1c] border-b border-slate-900">
            <a href="{{ route('dashboard') }}" class="flex items-center text-gray-400 hover:text-white px-4 py-3 transition">
@@ -44,7 +64,7 @@
                 <span class="text-[11px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full border border-slate-700 font-mono">
                     {{ auth()->user()->username ?? auth()->user()->name }}
                 </span>
-                <button type="button" @click="sidebarOpen = false" class="lg:hidden text-slate-400 hover:text-white text-lg leading-none px-1" aria-label="Close menu">&times;</button>
+                <button type="button" id="chat-sidebar-close" class="chat-sidebar-close text-slate-400 hover:text-white text-lg leading-none px-1" aria-label="Close menu">&times;</button>
             </div>
         </div>
 
@@ -160,8 +180,8 @@
     <div class="flex-1 flex flex-col h-full bg-[#f8fafc] relative min-w-0">
 
         <!-- Mobile-only top bar with sidebar toggle -->
-        <div class="lg:hidden flex items-center px-4 py-3 border-b border-slate-200 bg-white shrink-0">
-            <button type="button" @click="sidebarOpen = !sidebarOpen" class="text-slate-600 hover:text-slate-900 mr-3 text-xl leading-none px-1 w-6 text-center" :aria-label="sidebarOpen ? 'Close workspaces menu' : 'Open workspaces menu'" x-text="sidebarOpen ? '✕' : '☰'">☰</button>
+        <div class="chat-mobile-topbar items-center px-4 py-3 border-b border-slate-200 bg-white shrink-0">
+            <button type="button" id="chat-sidebar-toggle" class="text-slate-600 hover:text-slate-900 mr-3 text-xl leading-none px-1 w-6 text-center" aria-label="Open workspaces menu">☰</button>
             <span class="text-sm font-bold text-slate-800">Smart Forum Workspace</span>
         </div>
 
@@ -1048,5 +1068,27 @@
 })();
 </script>
 @endif
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const sidebar = document.getElementById('chat-sidebar');
+        const backdrop = document.getElementById('chat-sidebar-backdrop');
+        const openBtn = document.getElementById('chat-sidebar-toggle');
+        const closeBtn = document.getElementById('chat-sidebar-close');
+
+        function openSidebar() {
+            if (sidebar) sidebar.classList.add('mobile-open');
+            if (backdrop) backdrop.classList.add('active');
+        }
+        function closeSidebar() {
+            if (sidebar) sidebar.classList.remove('mobile-open');
+            if (backdrop) backdrop.classList.remove('active');
+        }
+
+        if (openBtn) openBtn.addEventListener('click', openSidebar);
+        if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+        if (backdrop) backdrop.addEventListener('click', closeSidebar);
+    });
+</script>
 </body>
 </html>
