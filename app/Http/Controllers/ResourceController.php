@@ -14,7 +14,7 @@ class ResourceController extends Controller
     /**
      * Display a listing of resources uploaded by the lecturer along with the upload form.
      */
-   public function index(Request $request)
+public function index(Request $request)
 {
     $userId = Auth::id();
 
