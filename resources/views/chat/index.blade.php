@@ -161,7 +161,7 @@
 
         <!-- Mobile-only top bar with sidebar toggle -->
         <div class="lg:hidden flex items-center px-4 py-3 border-b border-slate-200 bg-white shrink-0">
-            <button type="button" @click="sidebarOpen = true" class="text-slate-600 hover:text-slate-900 mr-3 text-xl leading-none px-1" aria-label="Open workspaces menu">☰</button>
+            <button type="button" @click="sidebarOpen = !sidebarOpen" class="text-slate-600 hover:text-slate-900 mr-3 text-xl leading-none px-1 w-6 text-center" :aria-label="sidebarOpen ? 'Close workspaces menu' : 'Open workspaces menu'" x-text="sidebarOpen ? '✕' : '☰'">☰</button>
             <span class="text-sm font-bold text-slate-800">Smart Forum Workspace</span>
         </div>
 
