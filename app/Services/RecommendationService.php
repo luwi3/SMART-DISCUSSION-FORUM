@@ -6,6 +6,7 @@ use App\Models\Message;
 use App\Models\Topic;
 use App\Models\User;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 class RecommendationService
 {
@@ -45,7 +46,14 @@ class RecommendationService
             return collect();
         }
 
-        $queryEmbedding = $this->embeddingService->createEmbedding($trimmed);
+        // If the embedding server is unreachable, fail quietly to an empty
+        // result set instead of crashing the search request.
+        try {
+            $queryEmbedding = $this->embeddingService->createEmbedding($trimmed);
+        } catch (\Throwable $e) {
+            Log::warning('Topic search skipped (embedding unavailable): ' . $e->getMessage());
+            return collect();
+        }
 
         return $this->scoreTopicsAgainst($queryEmbedding, $limit);
     }

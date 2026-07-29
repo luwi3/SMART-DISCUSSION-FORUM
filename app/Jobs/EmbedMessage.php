@@ -9,6 +9,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class EmbedMessage implements ShouldQueue
 {
@@ -34,7 +35,15 @@ class EmbedMessage implements ShouldQueue
             return;
         }
 
-        $message->embedding = $embeddingService->createEmbedding($message->body);
-        $message->save();
+        // If the embedding server is unreachable, skip quietly instead of
+        // retrying/failing loudly — same fallback as ProcessMessageAI.
+        try {
+            $message->embedding = $embeddingService->createEmbedding($message->body);
+            $message->save();
+        } catch (\Throwable $e) {
+            Log::warning('Message embedding skipped: ' . $e->getMessage(), [
+                'message_id' => $this->messageId,
+            ]);
+        }
     }
 }

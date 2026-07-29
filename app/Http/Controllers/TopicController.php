@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Notification;
 use App\Services\LlamaService;
 use App\Services\EmbeddingService;
 use App\Services\RecommendationService;
+use Illuminate\Support\Facades\Log;
 
 class TopicController extends Controller
 {
@@ -68,13 +69,21 @@ class TopicController extends Controller
 
         // 2. Llama adds academic context to the title/description, capped at
         // 30 words total, then that enriched text is embedded so the topic
-        // can be matched against related discussions.
-        $contextText = $this->llamaService->addContextToTopic(
-            $validated['title'],
-            $validated['description']
-        );
+        // can be matched against related discussions. If the AI services
+        // are unreachable, fall back to the user's own title/description
+        // and leave the topic unembedded rather than failing the request.
+        $embedding = null;
 
-        $embedding = $this->embeddingService->createEmbedding($contextText);
+        try {
+            $contextText = $this->llamaService->addContextToTopic(
+                $validated['title'],
+                $validated['description']
+            );
+
+            $embedding = $this->embeddingService->createEmbedding($contextText);
+        } catch (\Throwable $e) {
+            Log::warning('Topic AI enrichment skipped: ' . $e->getMessage());
+        }
 
         // 3. Create and store the topic record in $topic for notifications
         $topic = Topic::create([

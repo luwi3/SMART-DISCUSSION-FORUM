@@ -30,7 +30,7 @@ class EmbeddingService
         Send text to Python server
         */
 
-        $response = Http::post(
+        $response = Http::timeout(10)->post(
             $this->embeddingUrl,
             [
                 'text' => $text

@@ -2,118 +2,75 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
-
 class SpamDetectionService
 {
+    /**
+     * Known scam/phishing/promotional phrases that have no place in an
+     * academic discussion forum.
+     */
+    protected array $spamPhrases = [
+        'buy now', 'click here', 'click this link', 'limited time offer',
+        'act now', 'act immediately', 'investment opportunity',
+        'guaranteed profit', 'guaranteed return', 'risk free',
+        'forex trading', 'crypto giveaway', 'bitcoin giveaway',
+        'earn money fast', 'make money fast', 'work from home opportunity',
+        'wire transfer', 'claim your prize', 'you have won', 'lottery winner',
+        'no investment needed', 'double your money', 'dm me for',
+        'whatsapp me at', 'text me at', 'call this number now',
+        'subscribe to my channel', 'follow for follow', 'onlyfans',
+        'casino bonus', 'free spins', 'sports betting tips',
+    ];
 
-    protected $llamaUrl;
-
-
-    public function __construct()
+    /**
+     * Rule-based spam check — no external service, so it can't fail from
+     * a dead network call. Scores several independent signals and flags
+     * the message once they add up, rather than relying on any single
+     * heuristic (which would be too easy to trigger on legitimate posts).
+     */
+    public function isSpam(string $message): bool
     {
-        $this->llamaUrl = config('services.ollama.url', 'http://127.0.0.1:11434') . '/api/generate';
-    }
+        $normalized = strtolower(trim($message));
 
-
-
-    public function isSpam($message)
-    {
-
-        $prompt = "
-
-You are a spam detection system for an academic discussion forum.
-
-Analyze the student's message.
-
-Detect:
-- scams
-- phishing
-- fake offers
-- advertisements
-- malicious links
-- irrelevant promotional messages
-- suspicious requests
-
-Normal academic discussions are NOT spam.
-
-Return ONLY JSON.
-
-Format:
-
-{
-    \"spam\": true or false,
-    \"reason\": \"short reason\"
-}
-
-
-Student message:
-
-$message
-
-";
-
-
-        $response = Http::timeout(60)->post($this->llamaUrl,[
-
-            "model" => "llama3.2:3b",
-
-            "prompt" => $prompt,
-
-            "stream" => false,
-
-            "format" => "json",
-
-            "options" => [
-
-                "temperature" => 0.1,
-
-                "num_predict" => 100
-
-            ]
-
-        ]);
-
-
-
-        if(!$response->successful()){
-
-            // If Llama fails,
-            // allow the message instead of blocking users
-
+        if ($normalized === '') {
             return false;
-
         }
 
+        $score = 0;
 
-
-        $result = $response->json();
-
-
-
-        $aiResponse = json_decode(
-            $result['response'] ?? '',
-            true
-        );
-
-
-
-        if(!$aiResponse){
-
-            return false;
-
+        foreach ($this->spamPhrases as $phrase) {
+            if (str_contains($normalized, $phrase)) {
+                $score += 3;
+            }
         }
 
+        $linkCount = preg_match_all('/https?:\/\/|www\./i', $message);
+        if ($linkCount >= 2) {
+            $score += 2;
+        }
 
+        // Excessive character repetition, e.g. "wowwwwwww" or "!!!!!!!!"
+        if (preg_match('/(.)\1{5,}/', $message)) {
+            $score += 1;
+        }
 
-        // Convert AI string responses like "true"/"false"
-        // into real PHP boolean values
+        // Shouting: a longer message that's mostly uppercase letters
+        $letters = preg_replace('/[^a-zA-Z]/', '', $message);
+        if (strlen($letters) >= 15) {
+            $uppercase = preg_replace('/[^A-Z]/', '', $letters);
+            if (strlen($uppercase) / strlen($letters) > 0.7) {
+                $score += 1;
+            }
+        }
 
-        return filter_var(
-            $aiResponse['spam'] ?? false,
-            FILTER_VALIDATE_BOOLEAN
-        );
+        // A link paired with urgency/contact-me language is a strong signal
+        if ($linkCount >= 1 && (
+            str_contains($normalized, 'contact') ||
+            str_contains($normalized, 'dm me') ||
+            str_contains($normalized, 'whatsapp')
+        )) {
+            $score += 2;
+        }
 
+        return $score >= 3;
     }
-
 }
