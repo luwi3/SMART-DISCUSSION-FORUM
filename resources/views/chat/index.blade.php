@@ -181,7 +181,13 @@
                     <h2 class="text-sm font-bold text-slate-800 truncate">{{ $currentStreamTarget->title ?? 'Discussion Topic' }}</h2>
                 </div>
 
-                <div class="relative inline-block text-left shrink-0" id="share-wrapper">
+                <div class="flex items-center gap-2 shrink-0">
+                <a href="{{ route('topics.export-pdf', $shareTopicId) }}" class="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-200 transition-all text-xs font-semibold">
+                    <i class="fa-solid fa-download text-slate-500"></i>
+                    <span>Download</span>
+                </a>
+
+                <div class="relative inline-block text-left" id="share-wrapper">
                     <button type="button" id="share-toggle" class="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-200 transition-all text-xs font-semibold">
                         <i class="fa-solid fa-share-nodes text-slate-500"></i>
                         <span>Share</span>
@@ -207,6 +213,7 @@
                             <i class="fa-solid fa-link text-slate-500 w-4"></i><span id="copy-link-label">Copy Link</span>
                         </button>
                     </div>
+                </div>
                 </div>
             </div>
         @endif
