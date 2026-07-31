@@ -17,6 +17,7 @@ use App\Services\TopicService;
 use App\Services\SpamDetectionService;
 use App\Jobs\ProcessMessageAI;
 use App\Jobs\EmbedMessage;
+use Illuminate\Support\Facades\Log;
 
 class ForumChatController extends Controller
 {
@@ -469,7 +470,19 @@ class ForumChatController extends Controller
         |--------------------------------------------------------------------------
         */
         $message->load('user');
-        broadcast(new \App\Events\MessageSent($message));
+
+        // The message is already saved at this point — a broadcast failure
+        // (Reverb unreachable, connection hiccup) must not turn a
+        // successfully sent message into a "failed to send" response for
+        // the sender. Other clients just won't get the live update this
+        // time; they'll still see it on their next page load.
+        try {
+            broadcast(new \App\Events\MessageSent($message));
+        } catch (\Throwable $e) {
+            Log::warning('Message broadcast failed: ' . $e->getMessage(), [
+                'message_id' => $message->id,
+            ]);
+        }
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
@@ -513,7 +526,15 @@ class ForumChatController extends Controller
         $message->save();
         $message->delete();
 
-        broadcast(new \App\Events\MessageDeleted($message));
+        // Same reasoning as the send path — the delete already succeeded,
+        // so a broadcast failure shouldn't turn it into an error response.
+        try {
+            broadcast(new \App\Events\MessageDeleted($message));
+        } catch (\Throwable $e) {
+            Log::warning('Message-deleted broadcast failed: ' . $e->getMessage(), [
+                'message_id' => $message->id,
+            ]);
+        }
 
         if (request()->ajax() || request()->wantsJson()) {
             return response()->json([

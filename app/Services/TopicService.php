@@ -208,15 +208,15 @@ class TopicService
         /*
         Decision point
 
-        >= 0.6
+        >= 0.5
         means it belongs to an existing topic
 
-        < 0.6
+        < 0.5
         means create new topic
         */
 
 
-        if ($highestSimilarity >= 0.6) {
+        if ($highestSimilarity >= 0.5) {
 
             return $bestTopic;
 

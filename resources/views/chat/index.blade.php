@@ -796,12 +796,15 @@
                 },
             })
                 .then(async (response) => {
-                    // ADDED: read the body as JSON first (regardless of status code)
-                    // so we can inspect it for the { spam: true, message: ... } shape
-                    // that the backend now returns on HTTP 422 for spam detections.
+                    // A Response body can only be read ONCE — read it as text
+                    // first, then try to parse that text as JSON, instead of
+                    // calling response.json() and falling back to
+                    // response.text() on the same response (which throws
+                    // "body stream already read" on the second read).
+                    const rawText = await response.text();
                     let data = null;
                     try {
-                        data = await response.json();
+                        data = JSON.parse(rawText);
                     } catch (parseErr) {
                         // Body wasn't valid JSON — fall through to the old error path below.
                     }
@@ -814,7 +817,7 @@
                             return { spam: true, spamMessage: data.message };
                         }
 
-                        const text = data ? JSON.stringify(data) : await response.text();
+                        const text = data ? JSON.stringify(data) : rawText;
                         throw new Error(`Server rejected message (${response.status}): ${text}`);
                     }
 
@@ -859,6 +862,17 @@
                     // errors, non-spam 4xx/5xx responses) — spam responses no longer
                     // reach this block.
                     console.error('Sending failed:', error);
+
+                    // The optimistic bubble was already inserted before this request
+                    // even started — on a genuine failure it must come back out, or
+                    // the chat keeps showing a message that was never actually sent
+                    // (contradicting the alert below). Restore the text so nothing
+                    // typed is lost, so the user can just retry.
+                    if (createdRow) {
+                        createdRow.remove();
+                    }
+                    messageInput.value = messageText;
+
                     alert('Your message failed to send. Please try again.');
                 })
                 .finally(() => {
