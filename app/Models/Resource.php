@@ -9,6 +9,9 @@ class Resource extends Model
     // Defines the database table associated with course uploads
     protected $table = 'resources';
 
+    // Set custom primary key (matching $resource->resourceID in Blade)
+    protected $primaryKey = 'resourceID';
+
     // Protects attributes from mass-assignment vulnerabilities
     protected $fillable = [
         'staffNo',

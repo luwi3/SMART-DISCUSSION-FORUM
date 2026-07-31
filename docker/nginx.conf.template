@@ -2,7 +2,7 @@ server {
     listen ${PORT};
     server_name _;
 
-    client_max_body_size 25m;
+    client_max_body_size 30m;
 
     # Reverb's WebSocket endpoint (Pusher-protocol clients connect to
     # /app/{key} by default) — proxied to the internal Reverb process,

@@ -46,4 +46,4 @@ class EmbedMessage implements ShouldQueue
             ]);
         }
     }
-}
+}m
