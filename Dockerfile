@@ -29,7 +29,6 @@ RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Install the embedding server's Python dependencies here (before COPY . .)
-# so this slow, rarely-changing layer isn't invalidated by app code edits.
 # CPU-only torch wheel avoids pulling in an unnecessary multi-GB CUDA build.
 RUN pip3 install --no-cache-dir --break-system-packages \
     torch --index-url https://download.pytorch.org/whl/cpu \
@@ -59,7 +58,7 @@ RUN composer install --no-dev --optimize-autoloader || \
 # Build frontend assets so Vite generates public/build/manifest.json
 RUN npm install && npm run build
 
-# Remove nginx's default site so only our own templated config (below)
+# Remove nginx's default site so only our own templated config
 # binds to Render's port — leaving both would conflict.
 RUN rm -f /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf
 
@@ -71,6 +70,8 @@ COPY docker/embedding_server.py /var/www/embedding_server.py
 RUN chmod +x docker-entrypoint.sh
 ENTRYPOINT ["./docker-entrypoint.sh"]
 
-# Render assigns the port dynamically at runtime via $PORT — nginx binds
-# to it (via the templated config above), not PHP directly anymore.
+# Render assigns the port dynamically at runtime via $PORT
 EXPOSE 8000
+
+# Run migrations, seeders, and start supervisord on boot
+CMD ["sh", "-c", "php artisan migrate --force && php artisan db:seed --force && /usr/bin/supervisord -c /etc/supervisord.conf"]
