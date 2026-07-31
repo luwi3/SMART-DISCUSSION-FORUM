@@ -23,7 +23,7 @@ class AdminDashboardController extends Controller
             ->get();
 
         foreach ($studentsToWarn as $student) {
-           // Mail::to($student->user->email)->send(new WarningNotice($student));
+            Mail::to($student->user->email)->send(new WarningNotice($student));
             $student->update(['status' => 'warning']);
         }
 
