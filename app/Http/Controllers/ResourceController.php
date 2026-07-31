@@ -8,18 +8,17 @@ use App\Models\Announcement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Exception;
 
 class ResourceController extends Controller
 {
     /**
      * Display a listing of resources uploaded by the lecturer along with the upload form.
      */
-public function index(Request $request)
-{
-    $userId = Auth::id();
+    public function index(Request $request)
+    {
+        $userId = Auth::id();
 
-        // A lecturer row is created atomically with the user account in
-        // LecturerController::store — it must already exist here.
         $lecturer = Lecturer::where('user_id', $userId)->firstOrFail();
         $staffNo = $lecturer->staffNo;
 
@@ -39,54 +38,59 @@ public function index(Request $request)
     {
         $userId = Auth::id();
 
-        // A lecturer row is created atomically with the user account in
-        // LecturerController::store — it must already exist here.
         $lecturer = Lecturer::where('user_id', $userId)->firstOrFail();
         $staffNo = $lecturer->staffNo;
 
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
+            'title'      => 'required|string|max:255',
             'courseCode' => 'required|string|max:50',
-            'file' => 'required|file|mimes:pdf,doc,docx,ppt,pptx,zip,png,jpg,jpeg|max:20480',
+            'file'       => 'required|file|mimes:pdf,doc,docx,ppt,pptx,zip,png,jpg,jpeg|max:20480',
         ]);
 
-        if ($request->hasFile('file')) {
-            $file = $request->file('file');
-            
-            // Store file securely in the 'public/resources' directory
-            $path = $file->store('resources', 'public');
+        try {
+            if ($request->hasFile('file') && $request->file('file')->isValid()) {
+                $file = $request->file('file');
+                
+                // Store file in 'storage/app/public/resources'
+                $path = $file->store('resources', 'public');
 
-            // Trim and uppercase course code to ensure exact matches across the app
-            $courseCode = trim(strtoupper($validated['courseCode']));
+                $courseCode = trim(strtoupper($validated['courseCode']));
 
-            $resource = Resource::create([
-                'staffNo' => $staffNo,
-                'courseCode' => $courseCode,
-                'title' => $validated['title'],
-                'file_name' => $file->getClientOriginalName(),
-                'file_path' => $path,
-                'file_type' => $file->getClientOriginalExtension(),
-            ]);
+                // 1. Create Resource Entry
+                $resource = Resource::create([
+                    'staffNo'     => $staffNo,
+                    'courseCode'  => $courseCode,
+                    'title'       => $validated['title'],
+                    'file_name'   => $file->getClientOriginalName(),
+                    'file_path'   => $path,
+                    'file_type'   => $file->getClientOriginalExtension(),
+                    'uploaded_by' => $userId,
+                ]);
 
-            // Automatically create a student announcement with the download link
-            Announcement::create([
-                'title' => 'New Resource: ' . $validated['title'],
-                'courseCode' => $courseCode,
-                'message' => "A new learning resource has been published for your course.<br><a href='" . asset('storage/' . $path) . "' class='btn btn-sm btn-primary mt-2' download>Download " . htmlspecialchars($validated['title']) . "</a>",
-            ]);
+                // 2. Create Announcement Entry
+                Announcement::create([
+                    'title'      => 'New Resource: ' . $validated['title'],
+                    'courseCode' => $courseCode,
+                    'file_path'  => $path,
+                    'message'    => "A new learning resource has been published for your course.<br><a href='" . asset('storage/' . $path) . "' class='btn btn-sm btn-primary mt-2' download>Download " . htmlspecialchars($validated['title']) . "</a>",
+                ]);
 
-            if ($request->wantsJson()) {
-                return response()->json(['status' => 'success', 'resource' => $resource]);
+                if ($request->wantsJson()) {
+                    return response()->json(['status' => 'success', 'resource' => $resource]);
+                }
+
+                return redirect()->back()->with('success', 'Learning resource uploaded and broadcasted as an announcement successfully!');
             }
 
-            return redirect()->back()->with('success', 'Learning resource uploaded and broadcasted as an announcement successfully!');
-        }
+            throw new Exception('The file failed to upload. PHP rejected the file upload payload.');
 
-        if ($request->wantsJson()) {
-            return response()->json(['error' => 'File upload failed.'], 422);
-        }
+        } catch (Exception $e) {
+            if ($request->wantsJson()) {
+                return response()->json(['error' => $e->getMessage()], 422);
+            }
 
-        return redirect()->back()->with('error', 'File upload failed.');
+            return redirect()->back()->with('error', 'Upload failed: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -96,8 +100,7 @@ public function index(Request $request)
     {
         $resource = Resource::findOrFail($id);
 
-        // Delete raw file from local app storage disk
-        if (Storage::disk('public')->exists($resource->file_path)) {
+        if ($resource->file_path && Storage::disk('public')->exists($resource->file_path)) {
             Storage::disk('public')->delete($resource->file_path);
         }
 
