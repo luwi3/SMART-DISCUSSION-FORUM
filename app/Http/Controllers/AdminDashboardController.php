@@ -23,7 +23,8 @@ class AdminDashboardController extends Controller
             ->get();
 
         foreach ($studentsToWarn as $student) {
-            Mail::to($student->user->email)->send(new WarningNotice($student));
+            // 🟢 Changed from ->send() to ->queue() to prevent 504 Gateway Timeouts
+            Mail::to($student->user->email)->queue(new WarningNotice($student));
             $student->update(['status' => 'warning']);
         }
 
