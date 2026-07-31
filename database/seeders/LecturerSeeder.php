@@ -10,26 +10,34 @@ class LecturerSeeder extends Seeder
 {
     public function run(): void
     {
-        // 👨‍🏫 Create Lecturer User account
-        $lecturerUser = DB::table('users')->insertGetId([
-            'name' => 'Dr. Alex Mukasa',
-             'username' => 'alex.mukasa',
+        // 👨‍🏫 Check if Lecturer User account already exists
+        $existingUser = DB::table('users')->where('email', 'lecturer@test.com')->first();
 
-            'email' => 'lecturer@test.com',
-            'password' => Hash::make('lecturer123'),
-            'role' => 'lecturer',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        if (! $existingUser) {
+            $lecturerUserId = DB::table('users')->insertGetId([
+                'name'       => 'Dr. Alex Mukasa',
+                'username'   => 'alex.mukasa',
+                'email'      => 'lecturer@test.com',
+                'password'   => Hash::make('lecturer123'),
+                'role'       => 'lecturer',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } else {
+            $lecturerUserId = $existingUser->id;
+        }
 
-        // Link to the Lecturers profile registry table
-       DB::table('lecturers')->insert([
-    'staffNo' => 'LEC/2026/11',
-    'user_id' => $lecturerUser,
-    'department' => 'Information Technology',
-    'created_at' => now(),
-    'updated_at' => now(),
-]);
-        
+        // Link to the Lecturers profile registry table if not already linked
+        $existingLecturer = DB::table('lecturers')->where('staffNo', 'LEC/2026/11')->first();
+
+        if (! $existingLecturer) {
+            DB::table('lecturers')->insert([
+                'staffNo'    => 'LEC/2026/11',
+                'user_id'    => $lecturerUserId,
+                'department' => 'Information Technology',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
     }
 }
