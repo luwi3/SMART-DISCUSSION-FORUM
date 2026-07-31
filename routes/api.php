@@ -58,5 +58,6 @@ Route::post('/quizzes/store', [QuizController::class, 'store']);
 Route::get('/resources', [ResourceController::class, 'index']);
 Route::post('/resources', [ResourceController::class, 'store']);
 Route::delete('/resources/{id}', [ResourceController::class, 'destroy']);
+Route::delete('/admin/lecturers/{staffNo}', [AdminDashboardController::class, 'removeLecturer']);
 
 });

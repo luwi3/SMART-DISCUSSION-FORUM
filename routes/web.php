@@ -88,6 +88,7 @@ Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])
 Route::middleware(['auth', 'verified', 'role:administrator,admin'])->group(function () {
     Route::get('/admin/lecturers/create', [LecturerController::class, 'create'])->name('admin.lecturers.create');
     Route::post('/admin/lecturers', [LecturerController::class, 'store'])->name('admin.lecturers.store');
+    Route::delete('/admin/lecturers/{staffNo}', [AdminDashboardController::class, 'removeLecturer'])->name('admin.lecturers.destroy');
 });
 
 
